@@ -578,27 +578,264 @@ setInterval(throttle(function() {
 
 
 
+## 设计模式
+
+##### 发布订阅模式
+
+```javascript
+// Node中的EventEmitter 就是用的发布订阅模式
+class EventEmitter {
+      constructor() {
+          this.list = {}
+      }
+
+      on(name, fn, type = 1) {
+          if (!this.list[name]) {
+              this.list[name] = []
+          }
+          this.list[name].push([fn, type])
+
+      }
+
+      once(name, fn, type = 0) {
+          this.on(name, fn, type)
+      }
+
+      emit(name, ...args) {
+          let fns = this.list[name]
+          if (!fns || fns.length === 0) return
+          fns.forEach((fn, index) => {
+              fn[0].apply(this, args)
+              if (fn[1] === 0) {
+                  fns.splice(index, 1)
+              }
+          })
+      }
+
+      remove(name, func) {
+          let fns = this.list[name]
+          if (!fns) {
+              this.list[name] = []
+          }
+          fns.forEach((fn, index) => {
+              if (fn[0] === func) {
+                  fns.splice(index, 1)
+              }
+          })
+      }
+  }
+
+let bus = new EventEmitter()
+
+bus.on("click", (value) => {
+	console.log(value)
+})
+
+bus.emit("click", 111)
+```
+
+##### 观察者模式
+
+```javascript
+class Publisher {
+      constructor() {
+          this.list = []
+      }
+
+      addListener(listener) {
+          this.list.push(listener)
+      }
+
+      removeListener(listener) {
+          this.list.forEach((item, index) => {
+              if (listener === item) {
+                  this.list.splice(index, 1)
+              }
+          })
+      }
+
+      notify(obj) {
+          this.list.forEach((item) => {
+              item.process(obj)
+          })
+      }
+  }
+
+class Subscriber {
+    process(obj) {
+        console.log(obj.name)
+    }
+}
+```
 
 
-## 网站优化
 
-- 减少HTTP请求
-  - 合并资源文件（CSS, JS, 雪碧图）
-  - 压缩资源文件
-  - 图片懒加载（借助IntersectionObserver）
-  - 合理设置HTTP缓存， CDN缓存
-- 首屏渲染优化
-  - 代码分割，路由懒加载
-  - 骨架屏
-- 代码优化
-  - 不用table （流式布局）
-  - 不用with, eval
-- CSS优化
-  - CSS3（transform, opacity）硬件加速
-  - 频繁操作DOM时，可以先用`display: none`使其脱离文档流再进行DOM操作
-  - 对于复杂的动画效果，可以使用`display: position`使其脱离文档流
-- JS优化
-  - 函数防抖，函数节流
+
+
+## 数据结构
+
+##### 二叉树的建立
+
+```javascript
+class Node {
+    constructor(data, left, right) {
+        Object.assign(this, {
+            data,
+            left,
+            right
+        })
+    }
+}
+
+class BST {
+    constructor() {
+        this.root = null
+    }
+
+    insert(data) {
+        let node = new Node(data)
+        if (!this.root) {
+            this.root = node
+        }
+        else {
+            let current = this.root
+            while (true) {
+                if (data < current.data) {
+                    if (current.left) {
+                        current = current.left
+                    }
+                    else {
+                        current.left = node
+                        break
+                    }
+                }
+                else {
+                    if (current.right) {
+                        current = current.right
+                    }
+                    else {
+                        current.right = node
+                        break
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+// 使用
+let tree = new BST()
+tree.insert(10)
+tree.insert(20)
+tree.insert(15)
+tree.insert(12)
+tree.insert(5)
+```
+
+##### 二叉树的递归遍历
+
+``` javascript
+// 递归的先序遍历
+function preOrder (node, cb) {
+    if (node) {
+        cb(node.data)
+        preOrder(node.left, cb)
+        preOrder(node.right, cb)
+    }
+}
+
+// 递归的中序遍历
+function inOrder (node, cb) {
+    if (node) {
+        inOrder(node.left, cb)
+        cb(node.data)
+        inOrder(node.right, cb)
+    }
+}
+
+// 递归的后序遍历
+function postOrder (node, cb) {
+    if (node) {
+        postOrder(node.left, cb)
+        postOrder(node.right, cb)
+        cb(node.data)
+    }
+}
+
+```
+
+##### 二叉树的非递归遍历
+
+``` javascript
+// 非递归的先序遍历
+function preOrder(node) {
+    let stack = [], res = []
+    stack.push(node)
+    while (stack.length > 0) {
+        let node = stack.pop()
+        res.push(node.data)
+        if (node.right) {
+            stack.push(node.right)
+        }
+        if (node.left) {
+            stack.push(node.left)
+        }
+    }
+    return res
+}
+
+// 非递归的中序遍历
+function inOrder(node) {
+    let stack = [], res = []
+    while (stack.length > 0 || node) {
+        if (node) {
+            stack.push(node)
+            node = node.left
+        } else {
+            node = stack.pop()
+            res.push(node.data)
+            node = node.right
+        }
+    }
+    return res
+}
+
+// 非递归的后序遍历 方法1
+function postOrder(node, cb) {
+    let stack = []
+    let res = []
+    while (stack.length > 0 || node) {
+        res.unshift(node.data)
+        if (node.right) {
+            stack.push(node.right)
+        }
+        if (node.left) {
+            stack.push(node.left)
+        }
+        node = stack.pop()
+    }
+    return res
+}
+
+// 方法2，其实就是在先序遍历的基础上把返回数组进行reverse处理
+function postOrder(node) {
+    let stack = [], res = []
+    stack.push(node)
+    while (stack.length > 0) {
+        let node = stack.pop()
+        res.push(node.data)
+        if (node.right) {
+            stack.push(node.right)
+        }
+        if (node.left) {
+            stack.push(node.left)
+        }
+    }
+    return res.reverse()
+}
+```
+
 
 
 ## 排序
@@ -693,12 +930,6 @@ function twoSum(arr, target) {
 
 twoSum([1, 2, 3, 4], 7)
 ```
-
-
-
-
-
-
 
 
 
@@ -805,13 +1036,7 @@ function HardMan(name) {
 
 
 
-
-
-
-
-
-
-## Webpack 复习笔记（修订中）
+## Webpack 复习笔记
 
 
 
@@ -1001,3 +1226,27 @@ module.exports = {
 
 7. 性能优化手段
 
+
+
+
+
+
+## 网站优化
+
+- 减少HTTP请求
+  - 合并资源文件（CSS, JS, 雪碧图）
+  - 压缩资源文件
+  - 图片懒加载（借助IntersectionObserver）
+  - 合理设置HTTP缓存， CDN缓存
+- 首屏渲染优化
+  - 代码分割，路由懒加载
+  - 骨架屏
+- 代码优化
+  - 不用table （流式布局）
+  - 不用with, eval
+- CSS优化
+  - CSS3（transform, opacity）硬件加速
+  - 频繁操作DOM时，可以先用`display: none`使其脱离文档流再进行DOM操作
+  - 对于复杂的动画效果，可以使用`display: position`使其脱离文档流
+- JS优化
+  - 函数防抖，函数节流
