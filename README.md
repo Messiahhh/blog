@@ -193,6 +193,16 @@ setInterval(throttle(function() {
 }), 100)
 ```
 
+##### JS实现bind函数
+
+```javascript
+Function.prototype._bind = function (context, ...args) {
+    return (...newArgs) => {
+        this.call(context, ...args, ...newArgs)
+    }
+}
+```
+
 
 
 ## 浏览器渲染机制
@@ -603,6 +613,8 @@ class Subscriber {
 
 ## 数据结构
 
+### 二叉树
+
 ##### 二叉树的建立
 
 ```javascript
@@ -765,6 +777,94 @@ function postOrder(node) {
 }
 ```
 
+### 链表
+
+##### 链表的建立
+
+``` javascript
+class Node {
+    constructor(data) {
+        this.next = null
+        this.data = data
+    }
+}
+
+class List {
+    constructor() {
+        this.head = null
+        this.length = 0
+    }
+
+    append(data) {
+        let node = new Node(data)
+        if (this.head) {
+            let current = this.head
+            while(current.next !== null) {
+                current = current.next
+            }
+            current.next = node
+        }
+        else {
+            this.head = node
+        }
+        this.length++
+    }
+
+    insert(data, position) {
+        let node = new Node(data)
+        if (position >= 0 && position <= this.length) {
+            let currentNode = this.head
+            let previousNode = null
+            let index = 0
+            if ( position === 0 ) {
+                node.next = this.head
+                this.head = node
+            }
+            else {
+                while( index++ < position ) {
+                    previousNode = currentNode
+                    currentNode = currentNode.next
+                }
+                previousNode.next = node
+                node.next = currentNode
+            }
+            this.length++
+        }
+    }
+
+    size() {
+        return this.length
+    }
+
+    isEmpty() {
+        return this.length === 0
+    }
+}
+
+let list = new List()
+```
+
+##### 反转单向链表
+
+``` javascript
+function reverseList(list) {
+    let head = list.head
+    let currentNode = head
+    let pre
+    while (currentNode) {
+        let nextNode = currentNode.next
+        currentNode.next = pre
+         pre = currentNode
+         currentNode = nextNode
+    }
+    return pre
+}
+```
+
+
+
+
+
 
 
 ## 排序
@@ -840,7 +940,9 @@ function insertSort(arr) {
 
 ## 算法题
 
-两数之和(给定无序、不重复的数组 data，取出 n 个数，使其相加和为 sum)
+##### 两数之和
+
+(给定无序、不重复的数组 data，取出 n 个数，使其相加和为 sum)
 
 ```javascript
 // 使用Map而不是两个循环，空间换时间
@@ -860,9 +962,47 @@ function twoSum(arr, target) {
 twoSum([1, 2, 3, 4], 7)
 ```
 
+##### 累加器
+
+``` javascript
+function sum (...args) {
+    function fn(...newArgs) {
+        return sum(...args, ...newArgs)
+    }
+	
+  	// 重点是这个toString
+  	// 当最后返回函数的时候，自动调用toString函数进行累加
+    fn.toString = () => {
+        return args.reduce((a, b) => {
+            return a + b
+        })
+    }
+
+    return fn
+}
+```
+
+
+
+
+
+
+
 
 
 ## 面试题
+
+0.1 + 0.2 == 0.3 为何为false
+
+答案：
+
+十进制的0.1转化为二进制的0.1时，得到一个无限循环小数。所以当使用有限的位数保存数字的时候，会产生精度的确实，最终的数只是0.1的近似数。
+
+所以0.1和0.2的两个近似数相加，只能得到0.3的近似数。
+
+
+
+
 
 腾讯 微信事业群笔试题
 
@@ -1116,6 +1256,225 @@ module.exports = {
    2. 在Vue应用中，组件的依赖是在渲染过程中自动追踪的，所以系统能精确知晓哪个组件确实需要被重渲染。
 
 2. React中，一切都是JavaScript，html用jsx表示，css也可以纳入js中处理。
+
+
+## React
+
+### Redux(所有的状态保存在一个对象里)
+
+**基本原理**
+
+``` javascript
+import { createStore } from 'redux'
+// reducer 是个函数，参数为state（设置初始值）和action，返回值为新的state
+const reducer = (state = 0, action) => {
+    switch(action.type) {
+    	case 'add':
+        	return state + action.payload
+    	case 'delete':
+        	return 	state - action.payload
+      	default:
+        	return state
+    }
+}
+// 生成store
+let store = createStore(reducer)
+
+// 获取状态
+store.getState()
+// action是个对象，通常有type属性
+const action1 = {
+	type: 'add',
+	payload: 2,
+}
+// 我们也可以用一个action生成函数
+const createAction = (val) => ({
+	type: 'add',
+	payload: val
+})
+
+// 使用store.dispatch(action)来分发action
+store.dispatch(action1)
+store.dispatch(createAction(111))
+
+
+// store还可以订阅监听器
+// 当我们dispatch了action后，会触发函数
+store.subscribe(() => {
+	console.log('change state')
+})
+```
+
+**createStore的简单实现**
+
+``` javascript
+const createStore = (reducer) => {
+    let state
+    let listeners = []
+    const getState = () => {
+        return state
+    }
+
+    const dispatch = (action) => {
+        state = reducer(state, action)
+        listeners.forEach(listener => listener())
+    }
+
+    const subscribe = (listener) => {
+        listeners.push(listener)
+        return () => {
+            listeners = listeners.filter((l) => l !== listener)
+        }
+    }
+
+    dispatch()
+
+    return {
+        getState,
+        dispatch,
+        subscribe,
+    }
+}
+```
+
+
+
+**实战例子**
+
+```javascript
+// action.js
+export const CHANGE_CHANNEL = 'CHANGE_CHANNEL'
+// action 生成函数
+export const changeChannel = (channel) => ({
+    type: CHANGE_CHANNEL,
+    channel
+})
+
+
+```
+
+``` javascript
+// reducers.js
+import {
+	CHANGE_CHANNEL
+} from './action.js'
+// combineReducers用来分隔reducer
+import { combineReducers } from 'redux'
+
+const channel = (state = "nintendo", action) => {
+    switch(action.type) {
+        case CHANGE_CHANNEL:
+            return action.channel
+        default:
+            return state
+    }
+}
+
+const name = (state = "test", action) => {
+	return state
+}
+
+const rootReducer = combineReducers({
+	channel,
+  	name,
+})
+
+
+export default rootReducer
+```
+
+``` javascript
+// index.js
+import React from 'react'
+import ReactDOM from 'react-dom'
+import { createStore } from 'redux'
+import { Provider } from 'react-redux'
+import reducer from './reducers.js'
+import App from './app.js'
+let store = createStore(reducer)
+
+ReactDOM.render(
+  	// 把store注入进组件
+	<Provider store={store}>
+        <App />
+    </Provider>,
+    document.querySelector('#root')
+)
+
+```
+
+
+
+``` javascript
+// app.js
+import { connect } from 'react-redux'
+import {
+	changeChannel
+} from './action.js'
+const App = ({
+	channel,
+  	handlerClick,
+}) => {
+  	
+	return (
+    	<div>
+      		<span>{channel}</span>
+      		<button onClick={handlerClick}>Click me</button>
+      	</div>
+    )
+}
+
+// 本质是运用的高阶组件，根据输入的容器组件APP生成UI组件
+// mapStateToProps 把状态树中的状态映射进组件的props
+const mapStateToProps = (state) => {
+    return {
+      	// 组件的props 和 状态树中的state.channel对应
+        channel: state.channel
+    }
+}
+
+// mapDispatchToProps 把Dispatch方法映射为组件中props的方法
+const mapDispatchToProps = (dispatch) => {
+    return {
+        handlerClick: (value) => {
+            dispatch(changeChannel(value))
+        }
+    }
+}
+// mapDispatchToProps 也可以是个对象
+const mapDispatchToProps = {
+  	// 这里的函数是个action creator
+	handlerClick: () => {
+		type: 'add'
+    }
+}
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps,
+)(App)
+
+// connect本质是高阶组件，我们可以使用react-redux自带的hook代替connect
+import { useSelector, useDispatch } from 'react-redux' // 应该放开头，这里为了方便把import放在这里
+// 使用起来很简单
+const App = () => {
+	const channel = useSelector(state => state.channel)
+    const postsByChannel = useSelector(state => state.postsByChannel)
+    
+    return (
+    	<div>
+    		<div>...</div>
+      	</div>
+    )
+}
+```
+
+
+
+
+
+
+
 
 
 ## Vue
