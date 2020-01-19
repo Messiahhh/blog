@@ -1625,3 +1625,48 @@ const App = () => {
   - 对于复杂的动画效果，可以使用`display: position`使其脱离文档流
 - JS优化
   - 函数防抖，函数节流
+
+
+
+### 懒加载
+
+IntersectionObserver
+
+``` javascript
+// 使用IntersectionObserver，十分方便 
+let io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+        if (!entry.isIntersecting) return
+        else {
+            let el = entry.target
+            el.style.backgroundImage = `url(${el.dataset.url})`
+            io.unobserve(el)
+        }
+
+    })
+})
+io.observe(document.querySelector(".image"))
+// <div class="image" data-url="https://xxx.com/1.jpg" ></div>
+```
+
+``` javascript
+<body>
+  	<div></div>
+	<img />
+  	<script>
+  		let img = document.querySelector('img')
+		if (img.offsetTop - document.documentElement.scrollTop < 
+           		document.documentElement.clientHeight )
+		// 当以上成立时说明图片进入视口
+         // 或者
+          if (img.getBoundingClientRect() < document.documentElement.clientHeight)
+  	</script>
+<body>
+  
+
+```
+
+
+
+
+
