@@ -2,6 +2,437 @@
 
 [TOC]
 
+## CSS
+
+### 布局
+
+**块级元素（block）**：div, h1~h6, p 等
+
+独占一行；可以设置宽和高
+
+**行内元素（inline）**：a, span, img, input 等
+
+不独占一行；不能设置宽和高
+
+**inline-block** ：selection
+
+不独占一行；可以设置宽和高。
+
+#### 水平垂直居中
+
+一：absolute + margin-top
+
+``` css
+.outer {
+    position: relative
+}
+
+.inner {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -100px;
+    margin-left: -100px;
+}
+```
+
+二：absolute + calc
+
+``` css
+.outer {
+    position: relative
+}
+
+.inner {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    position: absolute;
+    top: calc(50% - 100px);
+    left: calc(50% - 100px);
+}
+```
+
+三：absolute + transform 
+
+``` css
+.outer {
+    position: relative
+}
+
+.inner {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+```
+
+四：flex + margin: auto
+
+``` css
+.outer {
+    display: flex;
+}
+.inner {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    margin: auto;
+}
+```
+
+五：flex
+
+``` css
+.outer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+```
+
+#### 两栏布局
+
+一：float + margin-left 或者 float + overflow: auto
+
+``` html
+<style>
+	.aside {
+        width: 30vw;
+        height: 100vh;
+        float: left;
+        background: blue;
+    }
+
+    .main {
+        margin-left: 30vw;
+        // 或者换成 overflow: auto，使其成为BFC
+    }
+</style>
+<body>
+    <div class="aside">
+
+    </div>
+    <div class="main">
+        <div class="content">
+
+        </div>
+    </div>
+</body>
+```
+
+二：flex
+
+``` html
+<style>
+    body {
+        display: flex;
+    }
+    
+    .aside {
+        flex: 0 0 25vw;
+        // or width: 25vw;
+    }
+    
+    .main {
+        flex: 1; // 等于flex: 1 1;
+    }
+</style>
+<body>
+    <div class="aside">
+
+    </div>
+    <div class="main">
+        
+    </div>
+</body>
+```
+
+#### 三栏布局
+
+一：圣杯布局
+
+``` html
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>实现三栏水平布局之圣杯布局</title>
+    <style type="text/css">
+      /*基本样式*/
+      .left, .right, .main {
+        min-height: 300px;
+      }
+      .left {
+        width: 200px;
+        background-color:thistle;
+      }
+      .main {
+        background-color: #999;
+      }
+      .right {
+        width: 300px;
+        background-color: violet;
+      }
+      /* 圣杯布局关键代码 */
+      .left, .main, .right {
+        float: left;
+        position: relative;
+      }
+      .main {
+        width: 100%;
+      }
+      .container {
+        padding-left: 200px;
+        padding-right: 300px;
+      }
+      .left {
+        margin-left: -100%;
+        left: -200px;
+      }
+      .right {
+        margin-left: -300px;
+        right: -300px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="main">main</div>
+      <div class="left">left</div>
+      <div class="right">right</div>
+    </div>
+  </body>
+</html>
+
+```
+
+二：双飞翼布局
+
+``` html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>双飞翼布局</title>
+    <style>
+      .left,
+      .right,
+      .main {
+        min-height: 200px;
+      }
+      .left {
+        width: 200px;
+        background-color: thistle;
+      }
+      .main {
+        background: #999;
+      }
+      .right {
+        width: 300px;
+        background-color: violet;
+      }
+      /* 双飞翼布局重点 */
+      .left,
+      .main,
+      .right {
+        float: left;
+      }
+      .main {
+        width: 100%;
+      }
+      .main-inner {
+        margin-left: 200px;
+        margin-right: 300px;
+      }
+      .left {
+        margin-left: -100%;
+      }
+      .right {
+        margin-left: -300px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main"><div class="main-inner">中心区</div></div>
+    <div class="left">left</div>
+    <div class="right">right</div>
+  </body>
+</html>
+
+```
+
+三：flex布局
+
+``` html
+<style>
+	.left {
+        width: 30vw;
+    }
+
+    .main {
+        flex: 1;
+    }
+
+    .right {
+        width: 20vw;
+    }
+</style>
+<body>
+    <div class="left">
+
+    </div>
+    <div class="main">
+
+    </div>
+    <div class="right">
+
+    </div>
+</body>
+```
+
+#### 移动端布局
+
+``` html
+<meta name="viewport" content="width=device-width,initial-scale=1">
+```
+
+**em和rem**
+
+1em等于父元素的字体大小（font-size）
+
+1rem等于根元素（html）的字体大小。移动端的时候根据媒体查询动态改变根元素的字体大小即可。
+
+
+
+1vw 等于 1 / 100 视口宽
+
+1vh 等于 1 / 100 视口高
+
+
+
+### BFC 
+
+BFC，也就是Block Formatting Contexts （块级格式化上下文)
+
+**何时会触发BFC**：
+
+- 根元素`<html>`
+- `float`的值不为`none`。
+- `position`的值不为`relative`和`static`。
+- `overflow`的值为`auto`,`scroll`或`hidden`。
+- `display`的值为`table-cell`, `table-caption`, `inline-block`中的任何一个。
+
+**作用**
+
+一：清除浮动
+
+``` css
+.outer {
+	// 使用overflow: auto;使outer元素成为BFC（触发outer元素的BFC）
+    overflow: auto;
+}
+.inner {
+    width: 200px;
+    height: 200px;
+    float: left;
+}
+```
+
+二：外边距合并：同属一个BFC的相邻元素会发生外边距（margin）重叠。
+
+```html
+<style>
+    .upper {
+        margin: 20px;
+    }
+    .lower {
+        margin: 20px;
+    }
+    .bfc {
+        overflow: auto;
+    }
+</style>
+<div class="upper"></div>
+<div class="bfc">
+    <div class="lower">
+
+    </div>
+</div>
+```
+
+三：阻止元素被浮动元素覆盖，可用来实现**两列布局**
+
+``` html
+<style>
+    .float {
+        float: left;
+    }
+    
+    .content {
+        overflow: auto;
+    }
+</style>
+<div class="float"></div>
+<div class="content"></div>
+```
+
+### 清除浮动
+
+一：上述的BFC清除浮动
+
+二：添加额外标签，应用clear: both
+
+``` html
+<style>
+    .float {
+        float: left;
+    } 
+    .clear {
+        clear: both;
+    }
+</style>
+<div>
+    <div class="float">
+        
+    </div>
+    <div class="clear">
+        
+    </div>
+</div>
+```
+
+三：使用伪元素，应用clear: both
+
+``` html
+<style>
+    .float {
+        float: left;
+    } 
+    .clearfix:after {
+        content: "";
+        display: block;
+        clear: both;
+    }
+</style>
+<div class="clearfix">
+    <div class="float">
+        
+    </div>
+</div>
+```
+
+
+
 
 
 ## ES6
@@ -1820,16 +2251,17 @@ io.observe(document.querySelector(".image"))
 
 
 
-## CSS
+### Base64
 
-块级元素（block）：div, h1~h6, p 等
+Base64就是用64个可见字符（26个大写字母，26个小写字母，10个数字，一个+号，一个/号共64个字符）来表示二进制的方法。
 
-独占一行；可以设置宽和高
+Base会将三个字节转化成四个字节，可以编码后的文本会比之前多三分之一左右。
 
-行内元素（inline）：a, span, img, input 等
+例如 3 * 8 => 4 * 6 (前面加两个0变成8)
 
-不独占一行；不能设置宽和高
 
-inline-block ：selection
 
-不独占一行；可以设置宽和高。
+### 雪碧图
+
+合并HTTP请求，使用background-position来选择使用的图片。
+
