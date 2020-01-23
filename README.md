@@ -586,24 +586,33 @@ JSON.parse(JSON.stringify(obj))
 class Promise {
     constructor(executor) {
         this.status = "pending"
-        this.data = undefined
+        this.value = undefined
         this.onResolvedCallback = []
         this.onRejectedCallback = []
 
-        const resolve = (data) => {
-            if (this.status === "pending") {
-                this.status = "fulfilled"
-                this.data = data
-                this.onResolvedCallback.forEach(callback => {
-                    callback()
+        const resolve = (value) => {
+            if (value instanceof Promise) {
+                value.then((data) => {
+                    resolve(data)
+                }, (reason) => {
+                    reject(reason)
                 })
+            }
+            else {
+                if (this.status === "pending") {
+                    this.status = "fulfilled"
+                    this.value = value
+                    this.onResolvedCallback.forEach(callback => {
+                        callback()
+                    })
+                }
             }
         }
 
         const reject = (reason) => {
             if (this.status === "pending") {
                 this.status = "rejected"
-                this.data = reason
+                this.value = reason
                 this.onRejectedCallback.forEach(callback => {
                     callback()
                 })
@@ -619,24 +628,71 @@ class Promise {
     }
 
     then(onResolve, onReject) {
-        return new Promise((resolve, reject) => {
+        let promise = new Promise((resolve, reject) => {
             if (this.status === "pending") {
                 this.onResolvedCallback.push(() => {
-                    resolve(onResolve(this.data))
+                    // setTimeout 模拟异步， 实际上then是放进微队列而setTimeout是放进宏队列
+                    setTimeout(() => {
+                        try {
+                            resolve(onResolve(this.value))
+                        } catch (e) {
+                            reject(e)
+                        }
+                    })
                 })
                 this.onRejectedCallback.push(() => {
-                    reject(onReject(this.reason))
+                    setTimeout(() => {
+                        try {
+                            resolve(onReject(this.reason))
+                        } catch (e) {
+                            reject(e)
+                        }
+                    })
                 })
             }
             else if (this.status === "fulfilled") {
-                resolve(onResolve(this.data))
+                setTimeout(() => {
+                    try {
+                        let x = onResolve(this.value)
+                        resolvePromise(promise, x, resolve, reject)
+                        // resolve(onResolve(this.value))
+                    } catch (e) {
+                        reject(e)
+                    }
+                })
             }
-            else {
-                reject(onReject(this.reason))
+            else if (this.status === "rejected") {
+                setTimeout(() => {
+                    try {
+                        resolve(onReject(this.reason))
+                    } catch (e) {
+                        reject(e)
+                    }
+                })
             }
         })
+        return promise
+    }
+
+    catch(onReject) {
+        return this.then(null, onReject)
+    }
+
+}
+
+function resolvePromise(promise, x, resolve, reject) {
+    if (x instanceof Promise) {
+        x.then((data) => {
+            resolvePromise(promise, data, resolve, reject)
+        }, (reason) => {
+            reject(x)
+        })
+    } else {
+        resolve(x)
     }
 }
+
+
 ```
 
 
