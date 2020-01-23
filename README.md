@@ -580,6 +580,67 @@ deepClone(obj)
 JSON.parse(JSON.stringify(obj))
 ```
 
+##### Promise
+
+``` javascript
+class Promise {
+    constructor(executor) {
+        this.status = "pending"
+        this.data = undefined
+        this.onResolvedCallback = []
+        this.onRejectedCallback = []
+
+        const resolve = (data) => {
+            if (this.status === "pending") {
+                this.status = "fulfilled"
+                this.data = data
+                this.onResolvedCallback.forEach(callback => {
+                    callback()
+                })
+            }
+        }
+
+        const reject = (reason) => {
+            if (this.status === "pending") {
+                this.status = "rejected"
+                this.data = reason
+                this.onRejectedCallback.forEach(callback => {
+                    callback()
+                })
+            }
+        }
+
+        try {
+            executor(resolve, reject)
+        } catch (e) {
+            reject(e)
+        }
+
+    }
+
+    then(onResolve, onReject) {
+        return new Promise((resolve, reject) => {
+            if (this.status === "pending") {
+                this.onResolvedCallback.push(() => {
+                    resolve(onResolve(this.data))
+                })
+                this.onRejectedCallback.push(() => {
+                    reject(onReject(this.reason))
+                })
+            }
+            else if (this.status === "fulfilled") {
+                resolve(onResolve(this.data))
+            }
+            else {
+                reject(onReject(this.reason))
+            }
+        })
+    }
+}
+```
+
+
+
 ##### 函数防抖
 
 ```html
