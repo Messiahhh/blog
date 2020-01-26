@@ -18,7 +18,7 @@
 
 不独占一行；可以设置宽和高。
 
-#### 水平垂直居中
+##### 水平垂直居中
 
 一：absolute + margin-top
 
@@ -98,7 +98,7 @@
 }
 ```
 
-#### 两栏布局
+##### 两栏布局
 
 一：float + margin-left 或者 float + overflow: auto
 
@@ -155,7 +155,7 @@
 </body>
 ```
 
-#### 三栏布局
+##### 三栏布局
 
 一：圣杯布局
 
@@ -300,7 +300,7 @@
 </body>
 ```
 
-#### 移动端布局
+##### 移动端布局
 
 ``` html
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -437,9 +437,9 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 
 ## ECMAScript
 
-##### 数组
+### 数组
 
-###### 判断数组
+##### 判断数组
 
 ``` javascript
 var arr = []
@@ -455,7 +455,7 @@ Object.prototype.toString.call(arr) === "[object Array]"
 Array.isArray(arr)
 ```
 
-###### 转化为数组
+##### 转化为数组
 
 ``` javascript
 var set = new Set([1, 2])
@@ -469,7 +469,7 @@ Array.from(set)
 Array.prototype.slice.call(arguments)
 ```
 
-###### 数组去重
+##### 数组去重
 
 ``` javascript
 var arr = [1, 2, 2, 4, 9, 6, 7, 5, 2, 3, 5, 6, 5]
@@ -526,15 +526,18 @@ function unique(arr) {
 }
 ```
 
-###### 数组扁平化
+##### 数组扁平化
 
-```javascript
+``` javascript
 var arr = [1, 2, [3, [4, 5]]]
 
 arr.flat(Infinity)
+```
 
-// reduce 实现 map
-Array.prototype._map = function (fn) {
+##### reduce 实现 map
+
+```javascript
+Array.prototype.map = function (fn) {
     let result = []
     this.reduce((total, current, index) => {
         result.push(fn(current))
@@ -543,12 +546,34 @@ Array.prototype._map = function (fn) {
 }
 ```
 
-##### 对象
+### 对象
 
-###### 深拷贝
+##### 浅拷贝
+
+``` javascript
+// Object.assign
+let source = {
+    name: 'akara',
+    age: 20,
+}
+let target = Object.assign({}, source)
+
+// 扩展运算符
+let source = {
+    name: 'akara',
+    age: 20,
+}
+let target = {...source}
+```
+
+##### 深拷贝
 
 ```javascript
-// 深拷贝
+// 一:
+// 只能用于对象内部没有方法时
+JSON.parse(JSON.stringify(obj))
+
+// 二:
 // 1.判断属性是对象还是函数
 // 2.数组或是对象
 // 3.判断是否为对象的isObject
@@ -583,12 +608,67 @@ obj.a = obj
 deepClone(obj)
 
 
-//深拷贝
-//只能用于对象内部没有方法时
-JSON.parse(JSON.stringify(obj))
 ```
 
-##### Promise
+### 函数
+
+##### 函数防抖
+
+```html
+<input type="text" name="" value="">
+<script type="text/javascript">
+    let el = document.querySelector('input')
+    el.addEventListener("input", debounce(A, 500))
+
+    function debounce(fn, delay) {
+        let timer = null
+        return function () {
+            timer && clearTimeout(timer)
+            timer = setTimeout(() => {
+                fn.call(this)
+            }, delay)
+        }
+    }
+
+    function A() {
+        console.log(this.value)
+    }
+</script>
+```
+
+##### 函数节流
+
+```javascript
+function throttle (fn, time = 1000) {
+    let canRun = true;
+    return function () {
+        if (!canRun) return false;
+        canRun = false;
+        setTimeout(() => {
+            fn.call(this)
+            canRun = true
+        }, time)
+    }
+}
+
+setInterval(throttle(function() {
+    console.log("hello world")
+}), 100)
+```
+
+##### 实现bind函数
+
+```javascript
+Function.prototype.bind = function (context, ...args) {
+    return (...newArgs) => {
+        this.call(context, ...args, ...newArgs)
+    }
+}
+```
+
+
+
+### Promise
 
 ``` javascript
 class Promise {
@@ -761,61 +841,285 @@ Promise.all([p1, p2, p3])
 
 ```
 
-##### 函数
+### AJAX的封装
 
-###### 函数防抖
+##### 回调函数封装
 
-```html
-<input type="text" name="" value="">
-<script type="text/javascript">
-    let el = document.querySelector('input')
-    el.addEventListener("input", debounce(A, 500))
-
-    function debounce(fn, delay) {
-        let timer = null
-        return function () {
-            timer && clearTimeout(timer)
-            timer = setTimeout(() => {
-                fn.call(this)
-            }, delay)
+``` javascript
+const Ajax = ({
+    method = 'get',
+    url = '/',
+    data,
+    async = true
+}, callback) => {
+    let xhr = new XMLHttpRequest()
+    xhr.onreadystatechange = () => {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            let res = JSON.parse(xhr.responseText)
+            callback(res)
         }
     }
-
-    function A() {
-        console.log(this.value)
+    xhr.open(method, url, async)
+    if (method === 'get') {
+        xhr.send()
     }
-</script>
-```
-
-###### 函数节流
-
-```javascript
-function throttle (fn, time = 1000) {
-    let canRun = true;
-    return function () {
-        if (!canRun) return false;
-        canRun = false;
-        setTimeout(() => {
-            fn.call(this)
-            canRun = true
-        }, time)
+    if (method === 'post') {
+        let type = typeof data
+        let header
+        if (type === 'string') {
+            header = 'application/x-www-form-urlencoded'
+        }
+        else {
+            header = 'application/json'
+            data = JSON.stringify(data)
+        }
+        xhr.setRequestHeader('Content-type', header)
+        xhr.send(data)
     }
 }
 
-setInterval(throttle(function() {
-    console.log("hello world")
-}), 100)
+Ajax.get = (url, callback) => {
+    return Ajax({
+        url
+    }, callback)
+}
+
+Ajax.get('http://localhost:3000/getData', (res) => {
+    console.log(res)
+})
 ```
 
-###### 实现bind函数
+##### Promise封装
 
-```javascript
-Function.prototype.bind = function (context, ...args) {
-    return (...newArgs) => {
-        this.call(context, ...args, ...newArgs)
-    }
+``` javascript
+const Ajax = ({
+    method = 'get',
+    url = '/',
+    data,
+    async = true
+}) => {
+    return new Promise((resolve, reject) => {
+        let xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                let res = JSON.parse(xhr.responseText)
+                resolve(res)
+            }
+        }
+        xhr.open(method, url, async)
+        if (method === 'get') {
+            xhr.send()
+        }
+        if (method === 'post') {
+            let type = typeof data
+            let header
+            if (type === 'string') {
+                header = 'application/x-www-form-urlencoded'
+            }
+            else {
+                header = 'application/json'
+                data = JSON.stringify(data)
+            }
+            xhr.setRequestHeader('Content-type', header)
+            xhr.send(data)
+        }
+    })
+}
+
+Ajax.get = (url) => {
+    return Ajax({
+        url
+    })
+}
+
+
+
+Ajax.get('http://localhost:3000/getData')
+    .then((data) => {
+        console.log(data)
+    })
+```
+
+##### Generator封装
+
+``` javascript
+const Ajax = ({
+    method = 'get',
+    url = '/',
+    data,
+    async = true
+}) => {
+    return new Promise((resolve, reject) => {
+        let xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                let res = JSON.parse(xhr.responseText)
+                resolve(res)
+            }
+        }
+        xhr.open(method, url, async)
+        if (method === 'get') {
+            xhr.send()
+        }
+        if (method === 'post') {
+            let type = typeof data
+            let header
+            if (type === 'string') {
+                header = 'application/x-www-form-urlencoded'
+            }
+            else {
+                header = 'application/json'
+                data = JSON.stringify(data)
+            }
+            xhr.setRequestHeader('Content-type', header)
+            xhr.send(data)
+        }
+    })
+}
+
+Ajax.get = (url) => {
+    return Ajax({
+        url
+    })
+}
+
+
+function* use() {
+    let data = yield Ajax.get('http://localhost:3000/getData')
+    console.log(data)
+}
+
+let obj = use()
+obj.next().value.then((res) => {
+    obj.next(res)
+})
+```
+
+##### Generator + Co 封装
+
+``` javascript
+const Ajax = ({
+    method = 'get',
+    url = '/',
+    data,
+    async = true
+}) => {
+    return new Promise((resolve, reject) => {
+        let xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                let res = JSON.parse(xhr.responseText)
+                resolve(res)
+            }
+        }
+        xhr.open(method, url, async)
+        if (method === 'get') {
+            xhr.send()
+        }
+        if (method === 'post') {
+            let type = typeof data
+            let header
+            if (type === 'string') {
+                header = 'application/x-www-form-urlencoded'
+            }
+            else {
+                header = 'application/json'
+                data = JSON.stringify(data)
+            }
+            xhr.setRequestHeader('Content-type', header)
+            xhr.send(data)
+        }
+    })
+}
+
+Ajax.get = (url) => {
+    return Ajax({
+        url
+    })
+}
+
+
+
+function* use() {
+    let data = yield Ajax.get('http://localhost:3000/getData')
+    console.log(data)
+}
+
+co(use)
+```
+
+Co模块的原理类似如下
+
+``` javascript
+function co(gen){
+  var g = gen();
+
+  function next(data){
+    var result = g.next(data);
+    if (result.done) return result.value;
+    result.value.then(function(data){
+      next(data);
+    });
+  }
+
+  next();
 }
 ```
+
+##### Async封装
+
+``` javascript
+const Ajax = ({
+    method = 'get',
+    url = '/',
+    data,
+    async = true
+}) => {
+    return new Promise((resolve, reject) => {
+        let xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                let res = JSON.parse(xhr.responseText)
+                resolve(res)
+            }
+        }
+        xhr.open(method, url, async)
+        if (method === 'get') {
+            xhr.send()
+        }
+        if (method === 'post') {
+            let type = typeof data
+            let header
+            if (type === 'string') {
+                header = 'application/x-www-form-urlencoded'
+            }
+            else {
+                header = 'application/json'
+                data = JSON.stringify(data)
+            }
+            xhr.setRequestHeader('Content-type', header)
+            xhr.send(data)
+        }
+    })
+    
+}
+
+Ajax.get = (url) => {
+    return Ajax({url})
+}
+
+
+async function use() {
+    let data = await Ajax.get('http://localhost:3000/getData')
+    console.log(data)
+}
+
+use()
+```
+
+
+
+
 
 
 
@@ -895,10 +1199,6 @@ Function.prototype.bind = function (context, ...args) {
 20. 绘制：将计算好的像素绘制到屏幕
 
 21. 合成层合并
-
-
-
-
 
 
 
