@@ -435,13 +435,13 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 
 
 
-## ES6
+## ECMAScript
 
 ##### 数组
 
-```javascript
-// 1.判断数组
+###### 判断数组
 
+``` javascript
 var arr = []
 
 arr instanceof Array
@@ -453,21 +453,25 @@ arr.constructor === Array
 Object.prototype.toString.call(arr) === "[object Array]"
 
 Array.isArray(arr)
+```
 
+###### 转化为数组
 
-//2.转化为数组 （类数组对象以及部署了遍历器接口的对象）
-
+``` javascript
 var set = new Set([1, 2])
 
+// 类数组对象以及部署了遍历器接口的对象
 Array.from(set)
 
 [...set]
 
-Array.prototype.slice.call(arguments) // 类数组对象
+// 类数组对象 (arguments和Nodelist) 
+Array.prototype.slice.call(arguments)
+```
 
+###### 数组去重
 
-
-//3.数组去重
+``` javascript
 var arr = [1, 2, 2, 4, 9, 6, 7, 5, 2, 3, 5, 6, 5]
 
 
@@ -520,9 +524,11 @@ function unique(arr) {
     }
     return newArr
 }
+```
 
-//数组扁平化
+###### 数组扁平化
 
+```javascript
 var arr = [1, 2, [3, [4, 5]]]
 
 arr.flat(Infinity)
@@ -538,6 +544,8 @@ Array.prototype._map = function (fn) {
 ```
 
 ##### 对象
+
+###### 深拷贝
 
 ```javascript
 // 深拷贝
@@ -677,6 +685,39 @@ class Promise {
     catch(onReject) {
         return this.then(null, onReject)
     }
+    
+    static all(promiseArr) {
+        return new Promise((resolve, reject) => {
+            let res = []
+            let length = promiseArr.length
+            let count = 0
+            promiseArr.forEach((promise, index) => {
+                promise.then(value => {
+                    res[index] = value
+                    count++
+                    if (count === length) {
+                        resolve(res)
+                    }
+                }, (reason) => {
+                    reject(reason)
+                })
+            })
+        })
+    }
+
+
+    static race(promiseArr) {
+        return new Promise((resolve, reject) => {
+            promiseArr.forEach((promise) => {
+                promise.then(value => {
+                    resolve(value)
+                }, reason => {
+                    reject(reason)
+                })
+            })
+        })
+    }
+}
 
 }
 
@@ -693,11 +734,36 @@ function resolvePromise(promise, x, resolve, reject) {
 }
 
 
+// example 
+
+let p1 = new Promise((resolve,reject)=>{
+    setTimeout(() => {
+        console.log(1);
+        resolve(1)
+    }, 3000)
+})
+let p2 = new Promise((resolve,reject)=>{
+    setTimeout(() => {
+        console.log(2);
+        resolve(2)
+    }, 2000)
+})
+let p3 = new Promise((resolve,reject)=>{
+    setTimeout(() => {
+        console.log(3);
+        resolve(3)
+    }, 1000)
+})
+
+Promise.all([p1, p2, p3])
+.then(console.log)
+.catch(console.error)
+
 ```
 
+##### 函数
 
-
-##### 函数防抖
+###### 函数防抖
 
 ```html
 <input type="text" name="" value="">
@@ -721,7 +787,7 @@ function resolvePromise(promise, x, resolve, reject) {
 </script>
 ```
 
-##### 函数节流
+###### 函数节流
 
 ```javascript
 function throttle (fn, time = 1000) {
@@ -741,10 +807,10 @@ setInterval(throttle(function() {
 }), 100)
 ```
 
-##### JS实现bind函数
+###### 实现bind函数
 
 ```javascript
-Function.prototype._bind = function (context, ...args) {
+Function.prototype.bind = function (context, ...args) {
     return (...newArgs) => {
         this.call(context, ...args, ...newArgs)
     }
