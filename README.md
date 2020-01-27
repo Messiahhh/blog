@@ -2,7 +2,59 @@
 
 [TOC]
 
-## CSS
+## HTML5
+
+script脚本的**执行**会阻塞HTML的解析
+
+``` html
+<script>
+	// do something...
+</script>
+<div>
+    <!-- html解析被阻塞 -->
+</div>
+```
+
+因此，外链脚本的**加载**也会阻塞HTML的解析
+
+``` html 
+<script src="./index.js"></script>
+<div>
+    // 加载完脚本，执行完脚本，才进行html的解析
+</div>
+```
+
+不过，多个外链script的**加载是并行的**。
+
+``` html
+<script src="1.js"></script>
+<script src="2.js"></script>
+<script src="3.js"></script>
+<script src="3.js"></script>
+```
+
+按理来说，因为加载会阻塞接下来HTML的解析，所以加载也会是串行的。
+
+但实际上浏览器会进行**预解析**，提前把html中要引用到的资源放进任务队列中。
+
+### defer和async的区别
+
+共同点：script资源的加载和html的解析是同步的，不会阻塞html的解析。
+
+不同点：
+
+- async属性。脚本下载完之后会停止html的解析，开始脚本的执行，等脚本执行完后再继续html的解析。
+- defer属性。等整个html文档解析完（DOMContentLoaded事件发生），脚本才开始执行。
+
+async属性
+
+<img src="https://segmentfault.com/img/bVWhRl?w=801&amp;h=814" style="zoom:80%;" />
+
+
+
+
+
+## CSS3
 
 ### 布局
 
@@ -564,6 +616,14 @@ let source = {
     age: 20,
 }
 let target = {...source}
+
+// slice
+let source = [1, 2, 3]
+let target = source.slice()
+
+// concat
+let source = [1, 2, 3]
+let target = source.concat()
 ```
 
 ##### 深拷贝
@@ -668,7 +728,7 @@ Function.prototype.bind = function (context, ...args) {
 
 
 
-### Promise
+### Promise实现
 
 ``` javascript
 class Promise {
@@ -1283,19 +1343,63 @@ use()
 2. secure: 当secure为true时只能使用https
 3. httpOnly: 设置浏览器能否读取Cookie
 4. domain和path: 限制Cookie能被哪些URL访问
+5. SameSite
 
 
 
 ##### Session
 
-1. Cookie设置在浏览器，Session设置在服务端。
+通常使用Cookie时，会话数据都存在Cookie中。使用Session时，Cookie中只存放一个Session_id，会话数据放在服务端的内存或数据库中。
 
+
+
+![Session鉴权原理](https://pic3.zhimg.com/v2-b4c952a1f71313670b94898b2bea4f6a_r.jpg)
 
 
 
 ##### JWT （JSON Web Token）
 
-用来做鉴权，Session中数据保存在服务端，在使用服务器集群的时候很麻烦；而JWT保存在客户端。
+同样是用来做鉴权。Session的一个缺点就是由于会话数据保存在服务端，所以在使用服务器集群的时候处理起来很麻烦。而使用JWT的话，会话数据都保存在客户端，就没有这种问题了。
+
+JWT是个很长的字符串，中间用两个`.`分割为三个部分，三个部分依次如下：Header（头部）， Payload（负载），Signature（签名）
+
+###### Header
+
+头部是个JSON对象，结构通常如下
+
+``` json
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+```
+
+alg属性表示签名的算法，默认为HMAC SHA256(写成HS256)。
+
+typ属性表示这个token的类型，通常为“JWT”
+
+最后使用Base64URL把这个JSON对象转化为字符串
+
+###### Payload
+
+负载也是个JSON对象，存放需要传输的数据。除去官方字段，可以在这里定义私有字段。
+
+###### Signature
+
+Signature 部分是对前两部分的签名，防止数据篡改
+
+``` javascript
+HMACSHA256(
+Base64URL(header) + "." + Base64URL(payload),
+secret
+)
+```
+
+其中secret为服务端指定的密钥。
+
+![JWT鉴权原理](https://pic3.zhimg.com/v2-f1556c71042566d4a6f69ee20c2870ae_r.jpg)
+
+
 
 
 ## 前端安全（XSS和CSRF）
@@ -1318,16 +1422,42 @@ use()
 
    
 
-##### XSS的防御，在数据输出时进行检测
+###### XSS的防御，在数据输出时进行检测
 
-XSS的本质是一种“HTML注入”，用户的输入数据被当成HTML代码的一部分来执行。
+XSS的本质是一种“HTML注入”，用户的输入数据被当成HTML代码的一部分来执行。	
 
 1. 在HTML标签或属性中输出数据，使用HTMLEncode，将字符转化为html实体字符。通常转化& < > " ' / 这几个字符。
 2. 在Script标签或事件中输出数据，使用JavaScriptEncode，使用转义符 \ 对特殊字符转义。除了数字和字母，对小于127的字符编码使用\xHH表示，对大于127的字符用Unicode表示。
 
 
 
-其他：Cookie设置为HttpOnly也可以防止XSS劫持Cookie
+其他：
+
+1. Cookie设置为HttpOnly也可以防止XSS劫持Cookie
+2. CSP 内容安全策略，本质建立白名单，开发者明确告诉浏览器哪些外部资源可以加载和执行。
+   - 设置HTTP Header的Content-security-Policy
+   
+   - 或者设置meta标签的<meta http-equv="Content-Security-Policy">
+   
+   - 以设置 HTTP Header 来举例
+   
+     - 只允许加载本站资源
+   
+       ```
+       Content-Security-Policy: default-src ‘self’
+       ```
+   
+     - 图片只允许加载 HTTPS 协议
+   
+       ```
+       Content-Security-Policy: img-src https://*
+       ```
+   
+     - 允许加载任何来源框架
+   
+       ```
+       Content-Security-Policy: child-src 'none'
+       ```
 
 
 
@@ -1339,23 +1469,86 @@ XSS的本质是一种“HTML注入”，用户的输入数据被当成HTML代码
 
 　　2.受害者访问危险网站B， 网站B中发送请求给网站A，请求会自动带上Cookie。
 
-##### CSRF的防御
+###### CSRF的防御
 
 1. 验证码（因为CSRF的攻击往往在受害者不知情的时候成功）
 
-2. 检查Referer（通常网站的页面与页面之间有一定的逻辑联系）缺陷：某些情况下浏览器不会放松Referer
+2. 检查请求的Referer头部
 
-3. Token
+   通常网站的页面与页面之间有一定的逻辑联系，例如想要发送登录的请求example.com/api/login时，通常用户在登录的页面example.com/login下。那么我们只需要验证请求的Referer是否为example.com/login即可。
+
+   缺陷：某些情况下浏览器不会发送Referer
+
+3. Cookie的SameSite属性。
+
+   SameSite可以设置为三个值：Strict，Lax，None。
+
+   Strict模式：浏览器禁止第三方请求携带Cookie，比如example.com以外的网站在向example.com/api/login发送请求时不会发送Cookie。
+
+   Lax模式：相对宽松，只能在 `get 方法提交表单`况或者`a 标签发送 get 请求`的情况下可以携带 Cookie，其他情况均不能。
+
+   None模式：默认模式，请求自动带上Cookie。
+
+4. CSRF Token
 
    CSRF的本质在于**请求的参数可以被攻击者猜到**
 
    Token是一个随机数，同时存放在表单和用户的Cookie中，发送请求后服务器对请求实体的token和cookie中的token进行对比。
 
+## 错误监控
 
+### 前端错误的类型
+
+##### 即时运行错误
+
+也就是代码错误
+
+##### 资源加载错误
+
+比如图片加载失败，JS加载失败，CSS加载失败。
+
+### 前端错误的捕捉方式
+
+##### 即时运行错误的捕捉方式
+
+1. try...catch
+
+   ``` javascript
+   try {
+       var a = 1;
+       var b = a + c;
+   } catch (e) {
+       // 捕获处理
+       console.log(e); // ReferenceError: c is not defined
+   }
+   ```
+   
+2. window.onerror
+  
+  ``` javascript
+  window.onerror = function(errorMessage, scriptURI, lineNo, columnNo, error) {
+      console.log('errorMessage: ' + errorMessage); // 异常信息
+      console.log('scriptURI: ' + scriptURI); // 异常文件路径
+      console.log('lineNo: ' + lineNo); // 异常行号
+      console.log('columnNo: ' + columnNo); // 异常列号
+      console.log('error: ' + error); // 异常堆栈信息
+  }
+  ```
+  
+
+##### 资源加载错误的捕捉方式
+
+1. object.onerror
+
+   img标签、script标签都可以添加onerror事件，用来捕获资源加载错误
+
+2. performance.getEntries
+
+   可以获取所有已加载资源的加载时间，通过这种方式，可以间接的拿到没有加载的资源错误。
 
 ## 事件循环
 
-##### 宏任务（macroTask）和 微任务（microTask）
+##### 宏任务 和 微任务
 
 macroTask: setTimeout， setInterval，setImmediate(Node专有)， I/O 操作，定时器
 
@@ -1515,6 +1708,12 @@ Node事件循环一共有六个阶段，每个阶段中都有一个宏队列，�
 
 
 ## 设计模式
+
+##### 单例模式
+
+一个类只有一个实例
+
+
 
 ##### 发布-订阅模式
 
