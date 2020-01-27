@@ -901,7 +901,30 @@ Promise.all([p1, p2, p3])
 
 ```
 
-### AJAX的封装
+### AJAX
+
+``` javascript
+let xhr = new XMLHttpRequese()
+xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4) {
+        
+    }
+}
+
+xhr.onprogress = function (event) {
+    if (event.lengthComputable) {
+     	var complete = (event.loaded / event.total * 100 | 0);
+      	progress.value = complete;
+    }
+}
+xhr.open('get', '/getInfo')
+// 设置请求头
+xhr.setRequestHeader()
+// 超时控制
+xhr.timeout = 
+xhr.ontimeout = function () {}
+xhr.send()
+```
 
 ##### 回调函数封装
 
@@ -1177,9 +1200,84 @@ async function use() {
 use()
 ```
 
+### fetch
 
+``` javascript
+fetch(url, options).then(function(response) { 
+// handle HTTP response
+	 if(response.status!==200){
+            console.log("存在一个问题，状态码为："+response.status);
+            return;
+        }
+        //检查响应文本
+        response.json().then(function(data){
+            console.log(data);
+        });
+}, function(error) {
+ // handle network error
+})
+```
 
+##### XHR（AJAX）和Fetch的区别
 
+1. AJAX同源默认携带Cookie，不同源则默认不会携带Cookie。如果使用CORS进行跨域的AJAX请求时，若想带上Cookie，则应该同时在客户端和服务端进行设置
+
+   1. 客户端
+
+      ``` javascript
+      var xhr = new XMLHttpRequest()
+      xhr.withCredentials = true
+      ```
+
+   2. 服务端，设置响应头部
+
+      ``` http
+      Access-Control-Allow-Credentials: true
+      ```
+
+   Fetch的credentials属性，默认值为same-origin，想要跨域发送Cookie则设置为include
+
+   - `omit`: 从不发送cookies.
+   - `same-origin`: 只有当URL与响应脚本同源才发送 cookies、 HTTP Basic authentication 等验证信息.(浏览器默认值,在旧版本浏览器，例如safari 11依旧是omit，safari 12已更改)
+   - `include`: 不论是不是跨域的请求,总是发送请求资源域在本地的 cookies、 HTTP Basic authentication 等验证信息.
+
+   这一点来看ajax和fetch是相同的。
+
+2. fetch不支持abort，也不支持超时控制（timeout）
+
+   我们如何实现**fetch的超时控制**
+
+   ``` javascript
+   Promise.race([
+       fetch(url),
+       new Promise((resolve, reject) => {
+           setTimeout(() => reject(new Error("request timeout")), 2000)
+       })
+   ])
+   .then(data => {}) // 请求成功
+   .catch(reason => {}) // 请求失败
+   ```
+
+3. fetch无法检测请求的进度(onprogress)
+
+### axios
+
+``` javascript
+axios({
+    method: 'post',
+    url: '/user/12345',
+    data: {
+        firstName: 'Fred',
+        lastName: 'Flintstone'
+    }
+})
+.then(function (response) {
+    console.log(response);
+})
+.catch(function (error) {
+    console.log(error);
+});
+```
 
 
 
