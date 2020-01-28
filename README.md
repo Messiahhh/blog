@@ -50,7 +50,27 @@ async属性
 
 <img src="https://segmentfault.com/img/bVWhRl?w=801&amp;h=814" style="zoom:80%;" />
 
+### href和src的区别
 
+href： 用于在当前文档和指定资源间确定联系
+
+``` html
+<a href="http://www.baidu.com"></a> 
+<link type="text/css" rel="stylesheet" href="common.css"> 
+```
+
+src：下载资源并替换当前内容
+
+``` html
+<img src="img/girl.jpg"> 
+<iframe src="top.html"> 
+<script src="show.js"> 
+```
+
+### link和@import的区别
+
+1. link是XHTML提供的标签，不仅可以加载CSS。@import是CSS提供的语法规则，只能加载CSS
+2. 加载页面时，`link`标签引入的 CSS 被同时加载；`@import`引入的 CSS 将在页面加载完毕后被加载。
 
 
 
@@ -609,10 +629,36 @@ function unique(arr) {
 
 ##### 数组扁平化
 
+###### flat(Infinity)
+
 ``` javascript
 var arr = [1, 2, [3, [4, 5]]]
 
 arr.flat(Infinity)
+```
+
+###### replace + split
+
+``` javascript
+var arr = [1, 2, [3, [4, 5]]]
+var str = JSON.stringify(arr)
+arr = str.replace(/(\[|\])/g, "").split(",")
+```
+
+###### 递归
+
+``` javascript
+var arr = [1, 2, [3, [4, 5]]]
+let result = []
+
+function fn(arr) {
+    arr.forEach(i => {
+        if (Array.isArray(i)) fn(i)
+        else {
+            result.push(i)
+        }
+    })
+}
 ```
 
 ##### reduce 实现 map
@@ -835,6 +881,28 @@ Function.prototype.bind = function (context, ...args) {
     return (...newArgs) => {
         this.call(context, ...args, ...newArgs)
     }
+}
+```
+
+##### 实现call/apply函数
+
+``` javascript
+Function.prototype.call = function (context, ...args) {
+    // context为null时，为window
+    let context = context || window
+    context.fn = this
+    let result = context.fn(...args)
+    delete context.fn
+    return result
+}
+
+// apply 只需要把参数修改即可
+Function.prototype.apply = function (context, args) {
+    let context = context || window
+    context.fn = this
+    let result = context.fn(...args)
+    delete context.fn
+    return result
 }
 ```
 
