@@ -1,4 +1,4 @@
-# Akara的前端复习笔记
+# Akara前端开发复习
 
 [TOC]
 
@@ -1458,6 +1458,280 @@ axios({
     console.log(error);
 });
 ```
+
+## Node.js
+
+### Http模块
+
+``` javascript
+const http = require('http')
+const server = http.createServer((req, res) => {
+    console.log(req.url) // 请求url
+    console.log(req.method) // 请求方法
+    console.log(req.headers) // 请求头部
+    
+    if (req.url === '/') {
+        // 设置响应的状态码和头部
+        res.writeHead(200, {'Content-Type': 'text/plain; charset=utf-8'})
+        
+        // 单独设置状态码
+        res.statusCode = 200
+        // 单独设置响应头部
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.setHeader('Set-Cookie', 'name=akara; secure')
+        
+        // 设置响应实体
+        res.write("hello world")
+        res.write("!!!")
+        // 发送响应报文
+        res.end()
+    }
+    
+})
+
+server.listen(3000, () => {
+    console.log("服务器跑在3000端口")
+})
+```
+
+##### 静态目录
+
+``` javascript
+const http = require('http')
+const server = http.createServer((req, res) => {
+    if (req.url === '/') {
+        // ...
+    }
+    else {
+        let filePath = path.join(__dirname, 'static', url.pathname)
+        try {
+            let file = await fs.readFileAsync(filePath)
+            res.statusCode = 200
+            res.end(file)
+        } catch (error) {
+            res.statusCode = 404
+            res.end("404 Not Found")
+        }
+    }
+}).listen(3000)
+```
+
+##### 处理Post请求（文件上传）
+
+``` javascript
+const http = require('http')
+const fs = require('fs')
+const server = http.createServer((req, res) => {
+    if (req.url === '/upload') {
+        
+        let segment = []
+        
+        req.on('data', (chunk) => {
+            // chunk为Buffer对象
+            // 字符串aaa=bbb对应的Buffer对象如下
+            // <Buffer 61 61 61 3d 62 62 62> 
+            segment.push(chunk)
+        })
+        
+        req.on('end', () => {
+            // 文件上传代码
+            segment = Buffer.concat(segment)
+            // 下方代码获取buffer转成的字符串
+            // segment = Buffer.concat(segment).toString()
+            fs.writeFile('fileName', segment, (err) => {
+                res.writeHead(200, {'Content-Type': 'text/plain; charset=utf-8'})
+                res.write("文件上传成功！")
+                res.end()
+            })
+        })
+    }
+})
+
+server.listen(3000, () => {
+    console.log("服务器跑在3000端口")
+})
+```
+
+### fs模块
+
+``` javascript
+const fs = require('fs')
+```
+
+##### readFile
+
+``` javascript
+fs.readFile('./image.png', (err, buffer) => {
+    if (err) throw err
+ 
+})
+```
+
+##### writeFile
+
+``` javascript
+// 写入文本
+fs.writeFile('index.txt', 'hello world', 'utf8')
+// 写入buffer
+fs.writeFile('image.png', buffer)
+```
+
+##### createReadStream
+
+##### createWriteStream
+
+``` javascript
+const reader = fs.createReadStream(data.path)
+const stream = fs.createWriteStream(`./image/${Math.floor(Math.random() * 10000)}.jpg`)
+reader.pipe(stream)
+```
+
+### Path模块
+
+``` javascript
+const path = require('path')
+```
+
+##### __dirname
+
+返回当前文件所在的绝对路径
+
+#####path.resolve
+
+将一个路径解析成绝对路径
+
+``` javascript
+const path1 = path.resolve('static')
+console.log(path1)
+// 输出
+C:\Users\Messiah\test\static
+```
+
+##### path.join
+
+用平台特定的分割符号(Linux为`/`， Window为`\`)对路径进行拼接
+
+``` javascript
+const path1 = path.join(__dirname, 'a')
+const path2 = path.join(__dirname, 'a/b')
+const path3 = path.join('/a', 'b', 'c/d', 'e', '..')
+
+console.log(path1)
+console.log(path2)
+console.log(path3)
+// 输出
+C:\Users\Messiah\test\a
+C:\Users\Messiah\test\a\b
+\a\b\c\d
+
+const path4 = path.join(__dirname, '/static')
+const path5 = path.join(path.resolve('.'), '/static')
+```
+
+### url模块
+
+``` javascript
+// 当请求url为 http://localhost:3000/index.html?name=akara#aa
+const url = require('url')
+let {
+    search, // '?name=akara'
+    query, // 'name=akara'
+    pathname, // '/index.html'
+    path, // '/index.html?name=akara'
+} = url.parse(req.url)
+```
+
+### querystring模块
+
+``` javascript
+const qs = require('querystring')
+var str = 'foo=bar&abc=xyz&abc=123';
+
+querystring.parse(str)
+// { foo: 'bar', abc: [ 'xyz', '123' ] }
+```
+
+### Event模块
+
+> 实现原理见本文的设计模式-发布订阅章节
+
+``` javascript
+var EventEmitter = require('events').EventEmitter
+var emitter = new EventEmitter()
+
+emitter.on('ev', function () {
+    
+})
+
+emitter.emit('ev')
+```
+
+### Bluebird库
+
+可以将回调函数实现的异步改写成Promise的方式来写
+
+##### Bluebird + fs
+
+回调
+
+``` javascript
+const fs = require('fs')
+fs.readFile('index.html', (err, data) => {
+    response.end(data)
+})
+```
+
+Promise
+
+``` javascript
+const bluebird = require('bluebird')
+const fs = bluebird.promisifyAll(require('fs'))
+
+fs.readFileAsync('index.html')
+.then(data => {
+    response.end(data)
+})
+```
+
+##### Bluebird + mysql
+
+回调
+
+``` javascript
+const mysql = require('mysql')
+// mysql配置文件
+let config = require('./config')
+conn.connect()
+
+// 使用
+conn.query(`sql code here...`, (err, data) => {
+    
+})
+```
+
+Promise
+
+``` javascript
+const bluebird = require('bluebird')
+const mysql = require('mysql')
+// mysql配置文件
+let config = require('./config')
+const conn = bluebird.promisifyAll(config)
+conn.connect()
+
+// 使用
+let data = await conn.queryAsync(`sql code here...`)
+```
+
+
+
+
+
+
+
+
+
+
 
 
 
