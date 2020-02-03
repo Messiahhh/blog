@@ -2834,6 +2834,17 @@ function User() {
 - `store`
 - `router`
 
+##### 生命周期
+
+- beforeCreate
+- created
+- beforeMount
+- mounted
+- beforeUpdate
+- updated
+- beforeDestory
+- destoryed
+
 ### Vuex
 
 ``` javascript
@@ -3074,16 +3085,14 @@ const router = new VueRouter({
          5. 如果新老节点都没有子节点，替换DOM的文本
 
 10. 调用updated生命周期函数
-
 11. 调用vm.$destroy()
-
 12. 调用beforeDestroy生命周期函数
-
 13. 删除组件（包括watchers和事件监听器等）
-
 14. 调用destroyed生命周期函数
 
-    
+
+
+
 
 
 
