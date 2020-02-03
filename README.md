@@ -1723,7 +1723,7 @@ conn.connect()
 let data = await conn.queryAsync(`sql code here...`)
 ```
 
-### Koa
+## Koa
 
 ##### 使用
 
@@ -1963,7 +1963,554 @@ class Router {
 
 ## React
 
-### Redux(所有的状态保存在一个对象里)
+##### JSX
+
+JSX是JavaScript的一种语法扩展，JSX可以生成React元素。
+
+``` jsx
+const element = <h1>hello, world!</h1>
+```
+
+实际上Babel会把JSX转译为`React.createElement()`函数调用，下面代码是一样的。
+
+``` jsx
+const element = (
+  <h1 className="greeting">
+    Hello, world!
+  </h1>
+);
+```
+
+```react
+const element = React.createElement(
+  'h1',
+  {className: 'greeting'},
+  'Hello, world!'
+);
+```
+
+**这也是为什么你必须引入React库，因为使用JSX就需要React库。**
+
+`React.createElement()`会创建这样的对象，也叫做React元素，其实就是**虚拟DOM**
+
+``` javascript
+// 注意：这是简化过的结构
+const element = {
+  type: 'h1',
+  props: {
+    className: 'greeting',
+    children: 'Hello, world!'
+  }
+};
+```
+
+##### 组件
+
+组件名一定要大写，因为在JSX中小写的会当成html标签。
+
+- <todo />  编译为 React.createElement('todo')
+- <Todo />  编译为 React.createElement(Todo)
+
+React的组件分为**函数组件**和**class组件**
+
+**函数组件**没有内部的**状态**，也没有**事件**，也没有**生命周期**。
+
+``` javascript
+// 函数组件
+function Hello(props) {
+    return (
+        <div>
+        	// 函数组件使用props
+            hello world {props.name}
+        </div>
+    )
+}
+```
+
+**Class组件**则拥有**状态**，**事件**，**生命周期**
+
+``` js
+class Count extends React.Component {
+    constructor(props) {
+        super(props)
+    }
+
+    render() {
+        return (
+            <div>
+            	// class组件使用props
+                {this.props.count}
+            </div>
+        )
+    }
+}
+
+
+class App extends React.Component {
+    constructor(props) {
+        super(props)
+        // 根组件的状态
+        this.state = {
+            count: 0,
+            name: 'akara'
+        }
+    }
+    
+    render() {
+        return (
+            <div>
+                {this.state.count}
+                <button onClick={this.handlerClick}>click me</button>
+				// 根组件传值给子组件的props
+                <Hello name={this.state.name}/>
+                <Count count={this.state.count}/>
+            </div>
+        )
+    }
+    
+    // 根组件的方法，已绑定this
+    handlerClick = () => {
+        this.setState({
+            count: this.state.count + 1
+        })
+    }
+    
+    
+}
+```
+
+##### 事件处理
+
+传统的HTML使用的纯小写`onclick`，React使用的驼峰式`onClick`
+
+``` html
+// html
+<button onclick='func'></button>
+```
+
+``` react
+// react
+<button onClick={activateLasers}>
+	Activate Lasers
+</button>
+```
+
+传统的HTML可以通过`return false`来阻止默认行为，React不行，必须使用`event.preventDefault`
+
+``` html
+<a href="#" onclick="console.log('The link was clicked.'); return false">
+  Click me
+</a>
+```
+
+``` react
+function ActionLink() {
+  function handleClick(e) {
+    e.preventDefault();
+    console.log('The link was clicked.');
+  }
+
+  return (
+    <a href="#" onClick={handleClick}>
+      Click me
+    </a>
+  );
+}
+```
+
+React中的e为**合成事件**，因此无需担心浏览器的兼容性问题。
+
+当我们使用`onClick={this.handleClick}`时，我们需要给handleClick绑定this。
+
+1. ``` react
+   constructor() {
+       this.handlerClick = this.handlerClick.bind(this)
+   }
+   ```
+
+2. 使用箭头函数
+
+   ``` react
+    <button onClick={(e) => this.handleClick(e)}>
+       Click me
+     </button>
+   ```
+
+3. ``` javascript
+   // 实验性语法
+   // Create-React-App 默认支持
+   class Btn extends React.component {
+       handlerClick = (e) => {
+           console.log(this)
+       }
+       
+       render() {
+           return (
+           	 <button onClick={this.handlerClick}>
+                   Click me
+                </button>
+           )
+       }
+   }
+   ```
+
+##### [组件生命周期](http://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/)
+
+###### 挂载
+
+- **constructor()**
+- static getDerivedStateFromProps()
+- **render()**
+- **componetDidMount()**
+
+###### 更新
+
+- static getDerivedStateFromProps()
+- shouldComponentUpdate()
+- **render()**
+- getSnapshotBeforeUpdate()
+- **componetDidUpdate()**
+
+###### 卸载
+
+- **componentWillUnmount()**
+
+##### setState
+
+**不要直接修改State**
+
+``` react
+// Wrong
+// 此代码不会重新渲染组件
+this.state.comment = 'Hello';
+```
+
+而是应该使用`setState()`
+
+``` react
+// Correct
+this.setState({comment: 'hello'})
+```
+
+**State的更新可能/通常是异步的**
+
+``` react
+class App ..{
+    ..() {
+        this.state = {
+            count: 0
+        }
+    }
+    
+    ..() {
+        this.setState({
+        	count: 1
+    	})
+        console.log(this.state.count) // 输出0
+    }
+}
+```
+
+想要获取修改后的值，我们可以传一个回调函数给setState
+
+``` react
+this.setState({
+    count: 1
+}, () => {
+    console.log(this.state.count) // 输出1
+})
+```
+
+如果setState依赖于之前的state，如
+
+``` react
+this.setState({
+    count: 1
+}, () => {
+    console.log(this.state.count);
+})
+
+this.setState({
+    count: this.state.count + 1
+})
+```
+
+由于setState是异步的，那么第二个setState中获取到的`this.state.count`为初始的0
+
+为了解决这个问题，setState的第二个参数可以设置为函数
+
+``` react
+this.setState({
+    count: 1
+}, () => {
+    console.log(this.state.count);
+})
+
+this.setState((state, props) => {
+    return {
+        count: state.count + 1
+    }
+})
+```
+
+
+
+**setState何时是异步的**
+
+一句话描述，在**合成事件**和**组件的生命周期**中`setState`是异步的；在**原生事件**和**定时器**中`setState`是同步的。
+
+React内部维护了一个标识`isBatchingUpdates`，当这个值为`true`表示把state缓存进队列，最后进行批量更行；当这个值为`false`表示直接进行更新。
+
+**合成事件**和**组件的生命周期**中，会把`isBatchingUpdates`设置为true
+
+**原生事件**和**定时器**中，会把`isBatchingUpdates`设置为false
+
+
+
+##### 条件渲染
+
+&&运算符
+
+``` jsx
+function App(props) {
+    return (
+    	<div>
+        	{ props.count > 0 &&
+            	<span>hello world</span>
+            }
+        </div>
+    )
+}
+```
+
+三目运算符
+
+``` react
+render() {
+  const isLoggedIn = this.state.isLoggedIn;
+  return (
+    <div>
+      The user is <b>{isLoggedIn ? 'currently' : 'not'}</b> logged in.
+    </div>
+  );
+}
+```
+
+阻止组件渲染
+
+``` react
+function App(props) {
+    if(props.flag) return null
+    ...
+}
+```
+
+##### 列表渲染
+
+``` react
+{
+    props.todos.map((todo) => {
+        return <Todo todo={todo} key={todo.id}/>
+    })
+}
+```
+
+##### 表单
+
+``` react
+class App extends React.Component {
+    constructor(props) {
+        super(props)
+        this.state = {
+            value: ''
+        }
+    }
+    handleChange = (e) => {
+        this.setState({
+            value: e.target.value
+        })
+    }
+    render() {
+        return (
+            <div>
+                {this.state.value}
+                <input type="text" value={this.state.value} onChange={this.handleChange}/>
+            </div>
+        )
+    }
+}
+```
+
+**受控组件**
+
+React的state成为组件/表单的唯一数据源，渲染表单的组件还控制着用户输入过程中表单发生的操作。被 React 以这种方式控制取值的表单输入元素就叫做“受控组件”。当然，与之对应的成为“非受控组件”。
+
+我们可以把用户输入的小写字符转化为大写
+
+``` react
+handleChange = (e) => {
+    this.setState({
+        value: e.target.value.toUpperCase()
+    })
+}
+```
+
+##### Refs
+
+何时使用 Refs
+
+- 管理焦点，文本选择或媒体交换
+- 继承第三方DOM库
+- 触发强制动画
+
+使用refs
+
+``` javascript
+class App extends React.Component {
+    constructor(props) {
+        super(props)
+        // 创建
+        this.myRef = React.createRef()
+    }
+
+    handleClick = () => {
+        this.myRef.current.focus()
+    }
+
+    render() {
+        return (
+            <div>
+            	// 绑定
+                <input type="text" ref={this.myRef} />
+                <button onClick={this.handleClick}>点我</button>
+            </div>
+        )
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+### Hook
+
+Hook 是一个特殊的函数，它可以让你“钩入” React 的特性。它可以让你在不编写 class 的情况下使用 state 以及其他的 React 特性。
+
+##### useState
+
+``` javascript
+import React, { useState } from 'react'
+function example(props) {
+    let [count, setCount] = useState(0) // 初始值0
+    return (
+    	<div>
+        	{ count }
+            <button onClick={() => setCount(count + 1)}>
+            	Click me
+          	</button>
+        </div>
+    )
+}
+```
+
+##### useEffect
+
+*Effect Hook* 可以让你在函数组件中执行副作用操作
+
+``` javascript
+import React, {
+    useState,
+    useEffect,
+} from 'react';
+
+function App() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    document.title = `You clicked ${count} times`;
+  });
+
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>
+        Click me
+      </button>
+    </div>
+  );
+}
+```
+
+`useEffect` 会在每次渲染后都执行，包括初次渲染和每次数据更新之后。
+
+`useEffect`可以返回一个函数来清除副作用
+
+``` javascript
+useEffect(() => {
+    // 运行副作用
+    ChatAPI.subscribe()
+    // 清除副作用
+    return () => {
+        ChatAPI.unsubscribe()
+    }
+})
+```
+
+组件挂载时，运行副作用（effect）。
+
+组件更新时，先清除上一个effect，再运行下一个effect
+
+组件卸载时，清除最后一个effect
+
+``` javascript
+function FriendStatus(props) {
+  // ...
+  useEffect(() => {
+    // ...
+    ChatAPI.subscribeToFriendStatus(props.friend.id, handleStatusChange);
+    return () => {
+      ChatAPI.unsubscribeFromFriendStatus(props.friend.id, handleStatusChange);
+    };
+  });
+```
+
+``` javascript
+// Mount with { friend: { id: 100 } } props
+ChatAPI.subscribeToFriendStatus(100, handleStatusChange);     // 运行第一个 effect
+
+// Update with { friend: { id: 200 } } props
+ChatAPI.unsubscribeFromFriendStatus(100, handleStatusChange); // 清除上一个 effect
+ChatAPI.subscribeToFriendStatus(200, handleStatusChange);     // 运行下一个 effect
+
+// Update with { friend: { id: 300 } } props
+ChatAPI.unsubscribeFromFriendStatus(200, handleStatusChange); // 清除上一个 effect
+ChatAPI.subscribeToFriendStatus(300, handleStatusChange);     // 运行下一个 effect
+
+// Unmount
+ChatAPI.unsubscribeFromFriendStatus(300, handleStatusChange); // 清除最后一个 effect
+```
+
+##### useRef
+
+``` javascript
+import React, { useRef } from 'react'
+
+function App(props) {
+    let refs = useRef(null)
+    return (
+    	<input ref={refs}>
+    )
+}
+```
+
+
+
+### Redux
 
 **基本原理**
 
@@ -2173,9 +2720,69 @@ const App = () => {
 
 
 
+### React-Router
+
+安装
+
+``` javascript
+import React from 'react'
+import {
+    BrowserRouter as Router,
+    Link,
+    Switch,
+    Route
+} from 'react-router-dom' // web端用react-router-dom
+
+function App () {
+    return (
+    	<Router>
+        	<Link to='/'>首页</Link>
+        	<Link to='/blog'>博客</Link>
+            <Link to='/about'>关于我</Link>
+        
+        	<Switch>
+        		<Route path='/about'>
+        			<About />
+        		</Route>
+        		<Route path='/blog'>
+        			<Blog />
+        		</Route>
+        		<Route path='/'>
+        			<Home />
+        		</Route>
+        	</Switch>
+        </Router>
+    )
+}
 
 
+```
 
+##### 动态路由匹配
+
+``` javascript
+import {
+    ...
+    useParams,
+} from 'react-router-dom'
+
+<Switch>
+    <Route path='/user/:id'>
+    	<User />    
+    </Route>
+</Switch>
+
+
+function User() {
+    let { id } = useParams()
+    
+    return (
+    	<div>
+        	user: { id }
+        </div>
+    )
+}
+```
 
 
 
