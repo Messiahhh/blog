@@ -673,6 +673,28 @@ Array.prototype.map = function (fn) {
 }
 ```
 
+##### 数组乱序
+
+``` javascript
+let arr = [1, 2, 3, 4, 5]
+arr.sort(() => {
+    return Math.random() - 0.5
+})
+
+// 加强版
+// 遍历数组，每一项和该项之前的随机项交换位置
+function shuffle(arr) {
+    for (let i = 0; i < arr.length; i++) {
+        let j = ~~(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]]
+    }
+}
+```
+
+
+
+
+
 ### 对象
 
 ##### 浅拷贝
@@ -4323,13 +4345,27 @@ function HardMan(name) {
 
 ## 面试题
 
-0.1 + 0.2 == 0.3 为何为false
+##### 0.1 + 0.2 == 0.3
+
+以上代码为何为false
 
 答案：
 
 十进制的0.1转化为二进制的0.1时，得到一个无限循环小数。所以当使用有限的位数保存数字的时候，会产生精度的确实，最终的数只是0.1的近似数。
 
 所以0.1和0.2的两个近似数相加，只能得到0.3的近似数。
+
+##### 5升瓶子和6升瓶子装3升水
+
+5L装满 -> 6L瓶子
+
+5L再装满 -> 6L瓶子， 6L倒掉
+
+5L再装满 -> 6L瓶子
+
+5L再装满 -> 6L瓶子
+
+5L瓶子剩下3L水
 
 
 
@@ -4710,4 +4746,37 @@ Base会将三个字节转化成四个字节，可以编码后的文本会比之�
 ### 雪碧图
 
 合并HTTP请求，使用background-position来选择使用的图片。
+
+
+
+
+
+### 其他
+
+##### 分号的问题
+
+平时我写JavaScript代码的时候习惯不加分号，因为这样子代码看着更加简洁，不过有的时候必须得加
+
+``` javascript
+let y = 2
+let x = 1
+[y, x] = [x, y]
+```
+
+以上代码就被会当成
+
+``` javascript
+let y = 2
+let x = 1[y, x] = [x, y]
+```
+
+##### 移动端300ms延迟
+
+以前的移动端网页，点击事件会有个300ms的延迟，Fastclick库就是为了解决这个问题的。
+
+不过现代化的浏览器已经没有这问题了。
+
+``` html
+<meta name="viewport" content="width=device-width, initial-scale=1">
+```
 
