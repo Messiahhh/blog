@@ -3043,7 +3043,21 @@ const router = new VueRouter({
 
 
 
-### Vue底层原理
+### Vue双向绑定的原理
+
+Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑定。通过Object.defineProperty()来劫持属性的，使用属性的时候触发getter函数，收集依赖；修改属性的时候触发setter函数，触发相应的回调。
+
+1. Observer 对数据的属性进行递归遍历，使用Object.defineProperty进行数据劫持。
+2. Compiler 用于将模板编译为渲染函数，并渲染视图页面
+   1. parse使用正则等方式解析template中的指令，class，style等数据，生成AST（抽象语法树）
+   2. optimize进行优化，标记静态节点，该节点会跳过diff
+   3. generate，把AST转化为渲染函数，渲染函数用于生成虚拟DOM
+3. Watcher 是Observer和Compiler之间通信的桥梁
+   1. 自身实例化的时候，调用getter函数，向deps添加watch
+   2. 当数据修改时，调用getter函数，调用deps.notify，执行watch的update函数
+   3. 执行watch的update函数，重新生成虚拟DOM，并进行Diff对页面进行修改
+
+##### 流水线的解释
 
 当我们使用`new Vue()  `生成Vue实例的时候，先会调用Vue._init 进行初始化。
 
@@ -3114,7 +3128,25 @@ const router = new VueRouter({
 
 
 
+## Vue和React的对比
 
+共同点：
+
+1. 都使用了Virtual DOM
+2. 都提供了响应式和组件化的视图组件
+3. 将注意力集中保持在核心库，其他功能如路由和全局状态管理交给相关的库
+
+不同：
+
+1. 优化：
+
+   1. React应用中，某个组件的状态发生改变时，它会以组件为根，重新渲染整个组件子树。
+
+      如果要避免不必要的子组件的渲染，需要使用PureComponent或者shouldComponentUpdate方法进行优化
+
+   2. 在Vue应用中，组件的依赖是在渲染过程中自动追踪的，所以系统能精确知晓哪个组件确实需要被重渲染。
+
+2. React中，一切都是JavaScript，html用jsx表示，css也可以纳入js中处理。
 
 
 
@@ -4520,27 +4552,6 @@ module.exports = {
 
 
 
-
-
-## Vue和React的对比
-
-共同点：
-
-1. 都使用了Virtual DOM
-2. 都提供了响应式和组件化的视图组件
-3. 将注意力集中保持在核心库，其他功能如路由和全局状态管理交给相关的库
-
-不同：
-
-1. 优化：
-
-   1. React应用中，某个组件的状态发生改变时，它会以组件为根，重新渲染整个组件子树。
-
-      如果要避免不必要的子组件的渲染，需要使用PureComponent或者shouldComponentUpdate方法进行优化
-
-   2. 在Vue应用中，组件的依赖是在渲染过程中自动追踪的，所以系统能精确知晓哪个组件确实需要被重渲染。
-
-2. React中，一切都是JavaScript，html用jsx表示，css也可以纳入js中处理。
 
 
 
