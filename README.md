@@ -2,6 +2,10 @@
 
 [TOC]
 
+
+
+
+
 ## HTML5
 
 script脚本的**执行**会阻塞HTML的解析
@@ -535,6 +539,12 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
    ```
 
 2. 父元素设置font-size: 0; 子元素重新设置正确的font-size
+
+### display: none，visibility: hidden, opacity: 0 的区别
+
+// todo
+
+
 
 ## ECMAScript
 
@@ -3150,6 +3160,146 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
 
 
 
+## 前端模块化
+
+1. 立即执行函数（IIFE）
+
+   ``` javascript
+   // 定义模块
+   (function (window) {
+       function A() {
+           return 'aaa'
+       }
+       
+       function B() {
+           return 'bbb'
+       }
+       
+       window.myModule = {A, B}
+   })(window)
+   
+   // 使用模块
+   myModule.A()
+   ```
+
+2. AMD（需要安装require.js库）
+
+   使用define定义模块，使用require加载模块
+
+3. CommonJS
+
+   1. 使用方法
+
+      ``` javascript
+      // 定义模块
+      // a.js
+      function getName() {
+          return 'Akara'
+      }
+      
+      module.exports = getName
+      
+      // 使用模块
+      // b.js
+      const getName = require('./a')
+      getName() // 'Akara'
+      ```
+
+   2. require和module
+
+      require相当于包装了一层立即执行函数
+
+      ``` javascript
+      const getName = require('./a')
+      // 等价于
+      const getName = (function () {
+          function getName() {
+              return 'Akara'
+          }
+      
+          module.exports = getName
+          
+          // 返回module.exports
+          return module.exports
+      })()
+      ```
+
+      JS文件有两个全局变量，module和exports，module对象的结构如下
+
+      ``` javascript
+      module: {
+          id: '.',
+          exports: {}
+      }
+      ```
+
+      module.exports 和 全局变量exports指向同一个对象
+
+      ``` javascript
+      module.exports === exports // true
+      ```
+
+      所以我们可以
+
+      ``` javascript
+      module.exports.a = 111
+      // 等价于
+      exports.a = 111
+      ```
+
+      但是我们不可以
+
+      ``` javascript
+      exports = {
+          a: 111
+      }
+      console.log(module.exports === exports) // false
+      ```
+
+   3. **在Node中引入模块，会发生什么？**
+
+      在Node中，模块分为两类：一类是node提供的**核心模块**，一类是用于编写的**文件模块**
+
+      - 路径分析
+
+        如果发现引入的是核心模块，则不用进行接下来的两步了，因为核心模块早已编译为二进制，当node进程启动时，部分核心代码已经直接加载进内存中。
+
+      - 文件定位
+
+      - 编译执行
+      
+       
+      
+   4. 缓存
+
+      模块在被用require引入后会缓存。
+
+4. UMD （IIFE + AMD + CommonJS）
+
+   用来兼容多套模块系统
+
+5. ES6模块
+
+   想使用ES6模块的`import`和`export`，需要将文件名的后缀改为`.mjs`
+
+   并且使用`--experimental-modules`开启此特性
+
+   ``` javascript
+   node --experimental-modules file.mjs
+   ```
+   
+    
+   
+   CommonJS是运行时加载，ES6模块是编译时加载。
+   
+   不过在ES6模块里，我们也可以使用import()来实现运行时加载
+   
+   CommonJS我们即使只想使用库中的一个函数，也会加载全部的代码；ES6模块只会加载我们需要的那个函数。
+
+
+
+
+
 ## 输入URL之后会发生什么
 
 1. 浏览器解析URL获取协议，域名，端口，路径
@@ -4377,11 +4527,7 @@ function HardMan(name) {
 
 ## 面试题
 
-##### 0.1 + 0.2 == 0.3
-
-以上代码为何为false
-
-答案：
+##### 0.1 + 0.2 == 0.3为何为false
 
 十进制的0.1转化为二进制的0.1时，得到一个无限循环小数。所以当使用有限的位数保存数字的时候，会产生精度的确实，最终的数只是0.1的近似数。
 
@@ -4399,33 +4545,21 @@ function HardMan(name) {
 
 5L瓶子剩下3L水
 
+##### 计算时针和分针的夹角
 
-
-## 前端模块化
-
-1. 立即执行函数（IIFE）
-
-2. AMD（使用require.js库），define定义模块，require加载模块。
-
-3. CommonJS
-
-   每个文件都当成一个模块，使用module.exports 来设置模块的出口，使用require()来加载模块，本质是用一个立即执行函数把文件包起来执行，获取文件内的module.exports。
-
-4. UMD（IIFE + AMD + CommonJS）
-
-5. ES6模块
-
-CommonJS是运行时加载，ES6模块是编译时加载（使用import()来实现运行时加载）
-
-
-
-想在Node中使用import 和 export语法
-
-文件名js改为mjs, 并且使用
-
-``` 
-node --experimental-modules file.mjs
+``` javascript
+function getDegree(m, n) {
+    let mDegree = m * 30 + n * 0.5
+    let nDegree = n * 6
+    let degree = Math.abs(mDegree - nDegree)
+    if (degree > 180) {
+        degree = 360 - degree
+    }
+    return degree
+}
 ```
+
+
 
 
 
@@ -4760,9 +4894,7 @@ Base会将三个字节转化成四个字节，可以编码后的文本会比之�
 
 
 
-
-
-### 其他
+## 其他
 
 ##### 分号的问题
 
