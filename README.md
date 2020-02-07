@@ -1,5 +1,5 @@
 ## 博客
-https://messiahhh.github.io
+https://messiahhh.github.io/blog
 
 
 
