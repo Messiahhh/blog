@@ -1,8 +1,9 @@
 # Akara前端开发复习
 
+测试一下
+
+
 [TOC]
-
-
 
 
 
@@ -21,7 +22,7 @@ script脚本的**执行**会阻塞HTML的解析
 
 因此，外链脚本的**加载**也会阻塞HTML的解析
 
-``` html 
+``` html
 <script src="./index.js"></script>
 <div>
     // 加载完脚本，执行完脚本，才进行html的解析
@@ -59,16 +60,16 @@ async属性
 href： 用于在当前文档和指定资源间确定联系
 
 ``` html
-<a href="http://www.baidu.com"></a> 
-<link type="text/css" rel="stylesheet" href="common.css"> 
+<a href="http://www.baidu.com"></a>
+<link type="text/css" rel="stylesheet" href="common.css">
 ```
 
 src：下载资源并替换当前内容
 
 ``` html
-<img src="img/girl.jpg"> 
-<iframe src="top.html"> 
-<script src="show.js"> 
+<img src="img/girl.jpg">
+<iframe src="top.html">
+<script src="show.js">
 ```
 
 ### link和@import的区别
@@ -126,7 +127,7 @@ src：下载资源并替换当前内容
     from {
         background: pink;
     }
-    
+
     to {
         background: yellow;
     }
@@ -207,7 +208,7 @@ src：下载资源并替换当前内容
 }
 ```
 
-三：absolute + transform 
+三：absolute + transform
 
 ``` css
 .outer {
@@ -286,12 +287,12 @@ src：下载资源并替换当前内容
     body {
         display: flex;
     }
-    
+
     .aside {
         flex: 0 0 25vw;
         // or width: 25vw;
     }
-    
+
     .main {
         flex: 1; // 等于flex: 1 1;
     }
@@ -301,7 +302,7 @@ src：下载资源并替换当前内容
 
     </div>
     <div class="main">
-        
+
     </div>
 </body>
 ```
@@ -471,7 +472,7 @@ src：下载资源并替换当前内容
 
 
 
-### BFC 
+### BFC
 
 BFC，也就是Block Formatting Contexts （块级格式化上下文)
 
@@ -528,7 +529,7 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
     .float {
         float: left;
     }
-    
+
     .content {
         overflow: auto;
     }
@@ -547,17 +548,17 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 <style>
     .float {
         float: left;
-    } 
+    }
     .clear {
         clear: both;
     }
 </style>
 <div>
     <div class="float">
-        
+
     </div>
     <div class="clear">
-        
+
     </div>
 </div>
 ```
@@ -568,7 +569,7 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 <style>
     .float {
         float: left;
-    } 
+    }
     .clearfix:after {
         content: "";
         display: block;
@@ -577,7 +578,7 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 </style>
 <div class="clearfix">
     <div class="float">
-        
+
     </div>
 </div>
 ```
@@ -669,7 +670,7 @@ text-overflow: ellipsis;
 
 
 
- 
+
 
 ## ECMAScript
 
@@ -701,7 +702,7 @@ Array.from(set)
 
 [...set]
 
-// 类数组对象 (arguments和Nodelist) 
+// 类数组对象 (arguments和Nodelist)
 Array.prototype.slice.call(arguments)
 ```
 
@@ -1162,7 +1163,7 @@ class Promise {
     catch(onReject) {
         return this.then(null, onReject)
     }
-    
+
     static all(promiseArr) {
         return new Promise((resolve, reject) => {
             let res = []
@@ -1211,7 +1212,7 @@ function resolvePromise(promise, x, resolve, reject) {
 }
 
 
-// example 
+// example
 
 let p1 = new Promise((resolve,reject)=>{
     setTimeout(() => {
@@ -1244,7 +1245,7 @@ Promise.all([p1, p2, p3])
 let xhr = new XMLHttpRequese()
 xhr.onreadystatechange = function () {
     if (xhr.readyState === 4) {
-        
+
     }
 }
 
@@ -1258,7 +1259,7 @@ xhr.open('get', '/getInfo')
 // 设置请求头
 xhr.setRequestHeader()
 // 超时控制
-xhr.timeout = 
+xhr.timeout =
 xhr.ontimeout = function () {}
 xhr.send()
 ```
@@ -1521,7 +1522,7 @@ const Ajax = ({
             xhr.send(data)
         }
     })
-    
+
 }
 
 Ajax.get = (url) => {
@@ -1540,7 +1541,7 @@ use()
 ### fetch
 
 ``` javascript
-fetch(url, options).then(function(response) { 
+fetch(url, options).then(function(response) {
 // handle HTTP response
 	 if(response.status!==200){
             console.log("存在一个问题，状态码为："+response.status);
@@ -1626,24 +1627,24 @@ const server = http.createServer((req, res) => {
     console.log(req.url) // 请求url
     console.log(req.method) // 请求方法
     console.log(req.headers) // 请求头部
-    
+
     if (req.url === '/') {
         // 设置响应的状态码和头部
         res.writeHead(200, {'Content-Type': 'text/plain; charset=utf-8'})
-        
+
         // 单独设置状态码
         res.statusCode = 200
         // 单独设置响应头部
         res.setHeader('Content-Type', 'text/plain; charset=utf-8')
         res.setHeader('Set-Cookie', 'name=akara; secure')
-        
+
         // 设置响应实体
         res.write("hello world")
         res.write("!!!")
         // 发送响应报文
         res.end()
     }
-    
+
 })
 
 server.listen(3000, () => {
@@ -1680,16 +1681,16 @@ const http = require('http')
 const fs = require('fs')
 const server = http.createServer((req, res) => {
     if (req.url === '/upload') {
-        
+
         let segment = []
-        
+
         req.on('data', (chunk) => {
             // chunk为Buffer对象
             // 字符串aaa=bbb对应的Buffer对象如下
-            // <Buffer 61 61 61 3d 62 62 62> 
+            // <Buffer 61 61 61 3d 62 62 62>
             segment.push(chunk)
         })
-        
+
         req.on('end', () => {
             // 文件上传代码
             segment = Buffer.concat(segment)
@@ -1720,7 +1721,7 @@ const fs = require('fs')
 ``` javascript
 fs.readFile('./image.png', (err, buffer) => {
     if (err) throw err
- 
+
 })
 ```
 
@@ -1817,7 +1818,7 @@ var EventEmitter = require('events').EventEmitter
 var emitter = new EventEmitter()
 
 emitter.on('ev', function () {
-    
+
 })
 
 emitter.emit('ev')
@@ -1862,7 +1863,7 @@ conn.connect()
 
 // 使用
 conn.query(`sql code here...`, (err, data) => {
-    
+
 })
 ```
 
@@ -1974,7 +1975,7 @@ Koa的实例app有三个公共的API
 
   ``` javascript
   app.use((ctx, next) => {
-      
+
   })
   ```
 
@@ -2212,7 +2213,7 @@ class App extends React.Component {
             name: 'akara'
         }
     }
-    
+
     render() {
         return (
             <div>
@@ -2224,15 +2225,15 @@ class App extends React.Component {
             </div>
         )
     }
-    
+
     // 根组件的方法，已绑定this
     handlerClick = () => {
         this.setState({
             count: this.state.count + 1
         })
     }
-    
-    
+
+
 }
 ```
 
@@ -2300,7 +2301,7 @@ React中的e为**合成事件**，因此无需担心浏览器的兼容性问题�
        handlerClick = (e) => {
            console.log(this)
        }
-       
+
        render() {
            return (
            	 <button onClick={this.handlerClick}>
@@ -2358,7 +2359,7 @@ class App ..{
             count: 0
         }
     }
-    
+
     ..() {
         this.setState({
         	count: 1
@@ -2932,7 +2933,7 @@ import { useSelector, useDispatch } from 'react-redux' // 应该放开头，这�
 const App = () => {
 	const channel = useSelector(state => state.channel)
     const postsByChannel = useSelector(state => state.postsByChannel)
-    
+
     return (
     	<div>
     		<div>...</div>
@@ -2962,7 +2963,7 @@ function App () {
         	<Link to='/'>首页</Link>
         	<Link to='/blog'>博客</Link>
             <Link to='/about'>关于我</Link>
-        
+
         	<Switch>
         		<Route path='/about'>
         			<About />
@@ -2998,7 +2999,7 @@ import {
 
 function User() {
     let { id } = useParams()
-    
+
     return (
     	<div>
         	user: { id }
@@ -3323,7 +3324,7 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
 
    2. 数据改变时，调用所有监听对应属性的Watcher的update函数，这个函数会把Watcher放进一个队列中，等到下一个tick时才取出。从而实现异步更新DOM。
 
-   3. 重新生成虚拟DOM，并对新老VDom进行patch（patch的核心是diff算法）处理 
+   3. 重新生成虚拟DOM，并对新老VDom进行patch（patch的核心是diff算法）处理
 
       1. 如果oldVnode不存在，不存在则直接根据newVnode新建节点
 
@@ -3343,11 +3344,11 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
                2. 如果没有key，则通过循环，一个个的调用sameVnode函数比较。（体现了**key能够提高diff算法的效率**）
                3. 如果找不到相同的Vnode，则新建一个Vnode
             6. 循环结束。处理多余的或者不够的真实节点。oldStartIdx > oldEndIdx 新增节点 或者 newStartIdx > newEndIdx 删除节点。
-    
+
          3. 如果oldVnode没有children，newVnode有，则先清空老节点的文本内容，再为DOM加入子节点
-    
+
          4. 如果oldVnode有children，newVnode没有，则删除该节点所有子节点
-    
+
          5. 如果新老节点都没有子节点，替换DOM的文本
 
 10. 调用updated生命周期函数
@@ -3390,14 +3391,14 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
        function A() {
            return 'aaa'
        }
-       
+
        function B() {
            return 'bbb'
        }
-       
+
        window.myModule = {A, B}
    })(window)
-   
+
    // 使用模块
    myModule.A()
    ```
@@ -3416,9 +3417,9 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
       function getName() {
           return 'Akara'
       }
-      
+
       module.exports = getName
-      
+
       // 使用模块
       // b.js
       const getName = require('./a')
@@ -3436,9 +3437,9 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
           function getName() {
               return 'Akara'
           }
-      
+
           module.exports = getName
-          
+
           // 返回module.exports
           return module.exports
       })()
@@ -3487,9 +3488,9 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
       - 文件定位
 
       - 编译执行
-      
-       
-      
+
+
+
    4. 缓存
 
       模块在被用require引入后会缓存。
@@ -3507,13 +3508,13 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
    ``` javascript
    node --experimental-modules file.mjs
    ```
-   
-    
-   
+
+
+
    CommonJS是运行时加载，ES6模块是编译时加载。
-   
+
    不过在ES6模块里，我们也可以使用import()来实现运行时加载
-   
+
    CommonJS我们即使只想使用库中的一个函数，也会加载全部的代码；ES6模块只会加载我们需要的那个函数。
 
 
@@ -3566,7 +3567,7 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
 
 
 
-##### 优化 
+##### 优化
 
 1. 浏览器会维护一定队列，所有引起回流或重绘的操作会放进这个队列，一定时间后会对这些操作进行批处理。
 
@@ -3616,7 +3617,7 @@ let outer = document.querySelector('.outer')
 
 inner.addEventListener('click', function (e) {
     e.stopPropagation()
-}, true) 
+}, true)
 
 outer.addEventListener('click', function (e) {
     inner.style.display = 'none'
@@ -3652,7 +3653,7 @@ ul.addEventListener("click", (e) => {
 
 ​	**会话结束（关闭页面）后，数据清除。**
 
-##### Cookie 
+##### Cookie
 
 ​	浏览器发送HTTP请求时，先检查是否有相应的Cookie，如果有则将Cookie放在请求头中的Cookie字段中发送。
 
@@ -3958,11 +3959,11 @@ TCP 是全双工的，在断开连接时两端都需要发送 FIN 和 ACK。
 
    类似于反射性XSS，但是与服务端并不交互。
 
-   
+
 
 ###### XSS的防御，在数据输出时进行检测
 
-XSS的本质是一种“HTML注入”，用户的输入数据被当成HTML代码的一部分来执行。	
+XSS的本质是一种“HTML注入”，用户的输入数据被当成HTML代码的一部分来执行。
 
 1. 在HTML标签或属性中输出数据，使用HTMLEncode，将字符转化为html实体字符。通常转化& < > " ' / 这几个字符。
 2. 在Script标签或事件中输出数据，使用JavaScriptEncode，使用转义符 \ 对特殊字符转义。除了数字和字母，对小于127的字符编码使用\xHH表示，对大于127的字符用Unicode表示。
@@ -3974,25 +3975,25 @@ XSS的本质是一种“HTML注入”，用户的输入数据被当成HTML代码
 1. Cookie设置为HttpOnly也可以防止XSS劫持Cookie
 2. CSP 内容安全策略，本质建立白名单，开发者明确告诉浏览器哪些外部资源可以加载和执行。
    - 设置HTTP Header的Content-security-Policy
-   
+
    - 或者设置meta标签的<meta http-equv="Content-Security-Policy">
-   
+
    - 以设置 HTTP Header 来举例
-   
+
      - 只允许加载本站资源
-   
+
        ```
        Content-Security-Policy: default-src ‘self’
        ```
-   
+
      - 图片只允许加载 HTTPS 协议
-   
+
        ```
        Content-Security-Policy: img-src https://*
        ```
-   
+
      - 允许加载任何来源框架
-   
+
        ```
        Content-Security-Policy: child-src 'none'
        ```
@@ -4103,9 +4104,9 @@ XSS的本质是一种“HTML注入”，用户的输入数据被当成HTML代码
        console.log(e); // ReferenceError: c is not defined
    }
    ```
-   
+
 2. window.onerror
-  
+
   ``` javascript
   window.onerror = function(errorMessage, scriptURI, lineNo, columnNo, error) {
       console.log('errorMessage: ' + errorMessage); // 异常信息
@@ -4115,7 +4116,7 @@ XSS的本质是一种“HTML注入”，用户的输入数据被当成HTML代码
       console.log('error: ' + error); // 异常堆栈信息
   }
   ```
-  
+
 
 ##### 资源加载错误的捕捉方式
 
@@ -4245,7 +4246,7 @@ Node事件循环一共有六个阶段，每个阶段中都有一个宏队列，�
 
    `Access-Control-Request-Headers`  用来表示非简单请求的额外头部，例如自定义头部
 
-   
+
 
 6. postMessage 跨文档通信
 
@@ -4729,7 +4730,7 @@ function sum (...args) {
     function fn(...newArgs) {
         return sum(...args, ...newArgs)
     }
-	
+
   	// 重点是这个toString
   	// 当最后返回函数的时候，自动调用toString函数进行累加
     fn.toString = () => {
@@ -5033,7 +5034,7 @@ module.exports = {
     },
     plugins: [
         new VueLoaderPlugin()，
-      	
+
         // 根据模板html，在dist目录下生成html
       	new HtmlWebpackPlugin({
             template: path.resolve(__dirname, "./index.html")
@@ -5160,12 +5161,12 @@ module.exports = {
 
         window.onscroll = throttle(() => {
             // 方法一，使用offsetTop - scrollTop
-            if (image.offsetTop - document.documentElement.scrollTop <                                   document.documentElement.clientHeight) 
+            if (image.offsetTop - document.documentElement.scrollTop <                                   document.documentElement.clientHeight)
             {
                 let url = image.dataset.url
                 image.style.backgroundImage = `url(${url})`
             }
-            
+
             // 方法二，使用getBoundingClientRect
             if (image.getBoundingClientRect().top <                                                       document.documentElement.clientHeight) {
                     let url = image.dataset.url
@@ -5197,7 +5198,7 @@ offsetParent定义: 一个元素的已定位（position不为static）的父元�
 
 此例子中image.offsetTop，image没有已经定位的父元素，则image的offsetParent为body。
 
-如果我们的代码结构如下， 
+如果我们的代码结构如下，
 
 ``` html
     <body>
@@ -5209,7 +5210,7 @@ offsetParent定义: 一个元素的已定位（position不为static）的父元�
 
             </div>
         </div>
-        
+
     </body>
 ```
 
@@ -5232,7 +5233,7 @@ image.offsetTop - outer.scrollTop < outer.clientHeight
 **IntersectionObserver**
 
 ``` javascript
-// 使用IntersectionObserver，十分方便 
+// 使用IntersectionObserver，十分方便
 let io = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
         if (!entry.isIntersecting) return
@@ -5296,4 +5297,3 @@ let x = 1[y, x] = [x, y]
 ``` html
 <meta name="viewport" content="width=device-width, initial-scale=1">
 ```
-
