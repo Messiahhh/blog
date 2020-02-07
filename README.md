@@ -2548,6 +2548,72 @@ class App extends React.Component {
 
 
 
+##### 组件通信
+
+###### 父子组件通信
+
+父组件通过props传递数据给子组件。
+
+父组件通过props把自己的函数传递给子组件，子组件内部可直接调用，实现子组件向父组件通信。
+
+###### 非父子组件通信
+
+可以实现`events`实现发布-订阅。也可以借助于Context。
+
+
+
+复杂的情况可以考虑使用Redux。
+
+
+
+##### Context
+
+Context 设计目的是为了共享那些对于一个组件树而言是“全局”的数据，例如当前认证的用户、主题或首选语言。
+
+借用官方代码说明，偷个懒。
+
+``` react
+// Context 可以让我们无须明确地传遍每一个组件，就能将值深入传递进组件树。
+// 为当前的 theme 创建一个 context（“light”为默认值）。
+const ThemeContext = React.createContext('light');
+
+class App extends React.Component {
+  render() {
+    // 使用一个 Provider 来将当前的 theme 传递给以下的组件树。
+    // 无论多深，任何组件都能读取这个值。
+    // 在这个例子中，我们将 “dark” 作为当前的值传递下去。
+    return (
+      <ThemeContext.Provider value="dark">
+        <Toolbar />
+      </ThemeContext.Provider>
+    );
+  }
+}
+
+// 中间的组件再也不必指明往下传递 theme 了。
+function Toolbar(props) {
+  return (
+    <div>
+      <ThemedButton />
+    </div>
+  );
+}
+
+class ThemedButton extends React.Component {
+  // 指定 contextType 读取当前的 theme context。
+  // React 会往上找到最近的 theme Provider，然后使用它的值。
+  // 在这个例子中，当前的 theme 值为 “dark”。
+  static contextType = ThemeContext;
+  render() {
+    return <Button theme={this.context} />;
+  }
+}
+```
+
+
+
+
+
 
 
 
@@ -3001,6 +3067,35 @@ function User() {
 - updated
 - beforeDestory
 - destoryed
+
+##### 组件间通信
+
+###### 父子组件通信
+
+父组件通过props传递数据给子组件。
+
+父组件对子组件的自定义事件使用`v-on:eventName=doSomething`进行监听，当子组件内部触发了该自定义事件时（使用`$emit('eventName')`），父组件执行doSomething，从而实现子组件向父组件的通信。
+
+
+
+###### 非父子组件通信
+
+在简单的场景下，可以使用一个空的 Vue 实例作为事件总线。
+
+``` javascript
+var bus = new Vue()
+// 触发组件 A 中的事件
+bus.$emit('id-selected', 1)
+
+// 在组件 B 创建的钩子中监听事件
+bus.$on('id-selected', function (id) {
+  // ...
+})
+```
+
+复杂的情况下，我们可以使用Vuex。
+
+
 
 ### Vuex
 
