@@ -16,6 +16,7 @@ function getSidebar(dir) {
 
 module.exports = {
     base: '/blog/',
+    logo: '/assets/img/logo.jpg',
     title: 'Akara',
     description: 'Fooly Cooly',
     themeConfig: {
@@ -35,10 +36,6 @@ module.exports = {
             {
                 text: '关于我',
                 link: '/about'
-            },
-            {
-                text: 'Github',
-                link: 'https://github.com/Messiahhh'
             }
         ],
         sidebar: {
@@ -48,6 +45,14 @@ module.exports = {
             '/gossip/': [
                 ...getSidebar('gossip')
             ]
-        }
+        },
+        lastUpdated: '上次更新时间',
+        // 一些github的配置
+        repo: 'messiahhh/blog',
+        repoLabel: 'Github',
+        docsDir: 'docs',
+        docsBranch: 'master',
+        editLinks: true,
+        editLinkText: 'Edit this page'
     }
 }
