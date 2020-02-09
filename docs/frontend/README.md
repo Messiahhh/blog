@@ -2154,7 +2154,7 @@ const element = <h1>hello, world!</h1>
 
 实际上Babel会把JSX转译为`React.createElement()`函数调用，下面代码是一样的。
 
-``` jsx
+``` javascript
 const element = (
   <h1 className="greeting">
     Hello, world!
@@ -2269,7 +2269,7 @@ class App extends React.Component {
 <button onclick='func'></button>
 ```
 
-``` javascript
+``` jsx
 // react
 <button onClick={activateLasers}>
 	Activate Lasers
@@ -3369,11 +3369,11 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
                2. 如果没有key，则通过循环，一个个的调用sameVnode函数比较。（体现了**key能够提高diff算法的效率**）
                3. 如果找不到相同的Vnode，则新建一个Vnode
             6. 循环结束。处理多余的或者不够的真实节点。oldStartIdx > oldEndIdx 新增节点 或者 newStartIdx > newEndIdx 删除节点。
-    
+
          3. 如果oldVnode没有children，newVnode有，则先清空老节点的文本内容，再为DOM加入子节点
-    
+
          4. 如果oldVnode有children，newVnode没有，则删除该节点所有子节点
-    
+
          5. 如果新老节点都没有子节点，替换DOM的文本
 
 10. 调用updated生命周期函数

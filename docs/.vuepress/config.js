@@ -17,11 +17,15 @@ function getSidebar(dir) {
 module.exports = {
     base: '/blog/',
     logo: '/assets/img/logo.jpg',
-    title: 'Akara',
+    title: 'Akara的小站',
     description: 'Fooly Cooly',
     markdown: {
         extractHeaders: [ 'h2', 'h3', 'h4', 'h5' ]
     },
+    plugins: [
+        '@vuepress/back-to-top',
+        '@vuepress/nprogress'
+    ],
     themeConfig: {
         nav: [
             {
@@ -33,12 +37,16 @@ module.exports = {
                 link: '/frontend/'
             },
             {
-                text: '悄悄话',
+                text: '杂文',
                 link: '/gossip/'
             },
             {
                 text: '关于我',
                 link: '/about'
+            },
+            {
+                text: '简历',
+                link: 'https://messiahhh.github.io/resume/'
             }
         ],
         sidebar: {
