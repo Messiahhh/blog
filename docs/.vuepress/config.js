@@ -33,16 +33,16 @@ module.exports = {
                 link: '/'
             },
             {
-                text: '博客',
+                text: '文档',
                 link: '/frontend/'
             },
             {
-                text: '杂文',
+                text: '博客',
                 link: '/gossip/'
             },
             {
-                text: '关于我',
-                link: '/about'
+                text: '杂文',
+                link: '/others/'
             },
             {
                 text: '简历',
@@ -53,9 +53,8 @@ module.exports = {
             '/frontend/': [
                 '',
             ],
-            '/gossip/': [
-                ...getSidebar('gossip')
-            ]
+            '/gossip/': getSidebar('gossip'),
+            '/others/': getSidebar('others')
         },
         lastUpdated: '上次更新时间',
         // 一些github的配置

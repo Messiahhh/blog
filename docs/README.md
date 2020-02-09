@@ -4,7 +4,7 @@ title: Akara
 heroImage: /logo.png
 heroText: Akara
 tagline: Never Knows Best
-actionText: 博客 →
+actionText: 文档 →
 actionLink: /frontend/index.html
 features:
 - title: 前端工程师
