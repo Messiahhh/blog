@@ -1,9 +1,13 @@
 ---
 sidebarDepth: 2
 ---
-# Akara前端开发复习
+# 前端开发笔记
 
 祝大家每天开心
+
+[toc]
+
+
 
 
 
@@ -78,7 +82,7 @@ src：下载资源并替换当前内容
 1. link是XHTML提供的标签，不仅可以加载CSS。@import是CSS提供的语法规则，只能加载CSS
 2. 加载页面时，`link`标签引入的 CSS 被同时加载；`@import`引入的 CSS 将在页面加载完毕后被加载。
 
-### 重定向
+### 前端重定向
 
 content内可设置时间，此处为2s后重定向
 
@@ -1771,7 +1775,7 @@ const path = require('path')
 
 返回当前文件所在的绝对路径
 
-#####path.resolve
+##### path.resolve
 
 将一个路径解析成绝对路径
 
@@ -2138,6 +2142,8 @@ class Router {
 
 ## React
 
+### React基础
+
 ##### JSX
 
 JSX是JavaScript的一种语法扩展，JSX可以生成React元素。
@@ -2263,7 +2269,7 @@ class App extends React.Component {
 <button onclick='func'></button>
 ```
 
-``` react
+``` javascript
 // react
 <button onClick={activateLasers}>
 	Activate Lasers
@@ -2278,7 +2284,7 @@ class App extends React.Component {
 </a>
 ```
 
-``` react
+``` javascript
 function ActionLink() {
   function handleClick(e) {
     e.preventDefault();
@@ -2297,7 +2303,7 @@ React中的e为**合成事件**，因此无需担心浏览器的兼容性问题�
 
 当我们使用`onClick={this.handleClick}`时，我们需要给handleClick绑定this。
 
-1. ``` react
+1. ``` javascript
    constructor() {
        this.handlerClick = this.handlerClick.bind(this)
    }
@@ -2305,7 +2311,7 @@ React中的e为**合成事件**，因此无需担心浏览器的兼容性问题�
 
 2. 使用箭头函数
 
-   ``` react
+   ``` javascript
     <button onClick={(e) => this.handleClick(e)}>
        Click me
      </button>
@@ -2354,7 +2360,7 @@ React中的e为**合成事件**，因此无需担心浏览器的兼容性问题�
 
 **不要直接修改State**
 
-``` react
+``` javascript
 // Wrong
 // 此代码不会重新渲染组件
 this.state.comment = 'Hello';
@@ -2362,14 +2368,14 @@ this.state.comment = 'Hello';
 
 而是应该使用`setState()`
 
-``` react
+``` javascript
 // Correct
 this.setState({comment: 'hello'})
 ```
 
 **State的更新可能/通常是异步的**
 
-``` react
+``` javascript
 class App ..{
     ..() {
         this.state = {
@@ -2388,7 +2394,7 @@ class App ..{
 
 想要获取修改后的值，我们可以传一个回调函数给setState
 
-``` react
+``` javascript
 this.setState({
     count: 1
 }, () => {
@@ -2398,7 +2404,7 @@ this.setState({
 
 如果setState依赖于之前的state，如
 
-``` react
+``` javascript
 this.setState({
     count: 1
 }, () => {
@@ -2414,7 +2420,7 @@ this.setState({
 
 为了解决这个问题，setState的第二个参数可以设置为函数
 
-``` react
+``` javascript
 this.setState({
     count: 1
 }, () => {
@@ -2460,7 +2466,7 @@ function App(props) {
 
 三目运算符
 
-``` react
+``` javascript
 render() {
   const isLoggedIn = this.state.isLoggedIn;
   return (
@@ -2473,7 +2479,7 @@ render() {
 
 阻止组件渲染
 
-``` react
+``` javascript
 function App(props) {
     if(props.flag) return null
     ...
@@ -2482,7 +2488,7 @@ function App(props) {
 
 ##### 列表渲染
 
-``` react
+``` javascript
 {
     props.todos.map((todo) => {
         return <Todo todo={todo} key={todo.id}/>
@@ -2492,7 +2498,7 @@ function App(props) {
 
 ##### 表单
 
-``` react
+``` javascript
 class App extends React.Component {
     constructor(props) {
         super(props)
@@ -2522,7 +2528,7 @@ React的state成为组件/表单的唯一数据源，渲染表单的组件还控
 
 我们可以把用户输入的小写字符转化为大写
 
-``` react
+``` javascript
 handleChange = (e) => {
     this.setState({
         value: e.target.value.toUpperCase()
@@ -2590,7 +2596,7 @@ Context 设计目的是为了共享那些对于一个组件树而言是“全局
 
 借用官方代码说明，偷个懒。
 
-``` react
+``` javascript
 // Context 可以让我们无须明确地传遍每一个组件，就能将值深入传递进组件树。
 // 为当前的 theme 创建一个 context（“light”为默认值）。
 const ThemeContext = React.createContext('light');
@@ -3028,6 +3034,8 @@ function User() {
 
 
 ## Vue
+
+### Vue基础
 
 ``` vue
 <div class='app'>
@@ -3960,7 +3968,9 @@ TCP 是全双工的，在断开连接时两端都需要发送 FIN 和 ACK。
 
 ## 前端安全（XSS和CSRF）
 
-##### XSS（csoss-site scripting 跨站脚本攻击）
+##### XSS
+
+XSS，也叫做跨站脚本攻击（Csoss-site Scripting）
 
 类型：
 
@@ -3976,9 +3986,9 @@ TCP 是全双工的，在断开连接时两端都需要发送 FIN 和 ACK。
 
    类似于反射性XSS，但是与服务端并不交互。
 
+###### XSS的防御
 
-
-###### XSS的防御，在数据输出时进行检测
+在数据输出时进行检测
 
 XSS的本质是一种“HTML注入”，用户的输入数据被当成HTML代码的一部分来执行。
 
@@ -4017,7 +4027,9 @@ XSS的本质是一种“HTML注入”，用户的输入数据被当成HTML代码
 
 
 
-##### CSRF（Cross-site request forgery 跨站请求伪造）
+##### CSRF
+
+CSRF，也叫做跨站请求伪造（Cross-site request forgery ）
 
 要完成一次CSRF攻击，受害者必须依次完成两个步骤：
 
@@ -5161,7 +5173,7 @@ module.exports = {
 
 
 
-### 图片懒加载
+##### 图片懒加载
 
 常规方法（使用offsetTop - scrollTop  或者 getBoundingClientRect()）
 
@@ -5270,7 +5282,7 @@ io.observe(document.querySelector(".image"))
 
 
 
-### Base64
+##### Base64
 
 Base64就是用64个可见字符（26个大写字母，26个小写字母，10个数字，一个+号，一个/号共64个字符）来表示二进制的方法。
 
@@ -5280,7 +5292,7 @@ Base会将三个字节转化成四个字节，可以编码后的文本会比之�
 
 
 
-### 雪碧图
+##### 雪碧图
 
 合并HTTP请求，使用background-position来选择使用的图片。
 

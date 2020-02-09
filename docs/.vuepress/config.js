@@ -19,6 +19,9 @@ module.exports = {
     logo: '/assets/img/logo.jpg',
     title: 'Akara',
     description: 'Fooly Cooly',
+    markdown: {
+        extractHeaders: [ 'h2', 'h3', 'h4', 'h5' ]
+    },
     themeConfig: {
         nav: [
             {
