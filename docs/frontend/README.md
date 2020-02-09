@@ -1,14 +1,7 @@
 ---
 sidebarDepth: 2
 ---
-# 前端开发笔记
-
-祝大家每天开心
-
-[toc]
-
-
-
+# 前端博客
 
 
 
@@ -56,9 +49,18 @@ script脚本的**执行**会阻塞HTML的解析
 - async属性。脚本下载完之后会停止html的解析，开始脚本的执行，等脚本执行完后再继续html的解析。
 - defer属性。等整个html文档解析完（DOMContentLoaded事件发生），脚本才开始执行。
 
-async属性
+![defer and async](https://segmentfault.com/img/bVWhRl?w=801&h=814)
 
-<img src="https://segmentfault.com/img/bVWhRl?w=801&amp;h=814" style="zoom:80%;" />
+
+
+
+
+
+
+
+
+
+
 
 ### href和src的区别
 
@@ -1011,7 +1013,7 @@ class Cat extends Animal {
 
 ##### 函数防抖
 
-```html
+``` html
 <input type="text" name="" value="">
 <script type="text/javascript">
     let el = document.querySelector('input')
@@ -2189,8 +2191,8 @@ const element = {
 
 组件名一定要大写，因为在JSX中小写的会当成html标签。
 
-- <todo />  编译为 React.createElement('todo')
-- <Todo />  编译为 React.createElement(Todo)
+- `<todo /> ` 编译为 React.createElement('todo')
+- `<Todo /> ` 编译为 React.createElement(Todo)
 
 React的组件分为**函数组件**和**class组件**
 
@@ -3369,11 +3371,11 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
                2. 如果没有key，则通过循环，一个个的调用sameVnode函数比较。（体现了**key能够提高diff算法的效率**）
                3. 如果找不到相同的Vnode，则新建一个Vnode
             6. 循环结束。处理多余的或者不够的真实节点。oldStartIdx > oldEndIdx 新增节点 或者 newStartIdx > newEndIdx 删除节点。
-
+    
          3. 如果oldVnode没有children，newVnode有，则先清空老节点的文本内容，再为DOM加入子节点
-
+    
          4. 如果oldVnode有children，newVnode没有，则删除该节点所有子节点
-
+    
          5. 如果新老节点都没有子节点，替换DOM的文本
 
 10. 调用updated生命周期函数

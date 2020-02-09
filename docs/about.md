@@ -1,25 +1,22 @@
-## 关于Akara
+### 关于我
 
-重庆邮电大学大三在读，男，21岁，是21届学生。
+我没有话想说。
+
+
+
+
 
 
 
 
 
 ##### 相关链接
+| Find Me |          |
+| ------------- |:-------------:|
+| [知乎](https://www.zhihu.com/people/messiahhh) | 乱写过一些文章随笔 |
+| [Github](https://github.com/Messiahhh) | 贻笑大方的代码仓库 |
+| 邮箱 | messiahhhc@gmail.com |
 
-[知乎](https://www.zhihu.com/people/messiahhh)
+##### 悄悄话
 
-已经淡出知乎了。
-
-[Github](https://github.com/Messiahhh)
-
-本人又不勤勉又不聪明，贴出来贻笑大方了。
-
-邮箱
-
-messiahhhc@gmail.com 或者 616348105@qq.com
-
-
-
-##### 求实习，求Star:sparkles:，谢谢。
+如果有人能看到这行话，说明我们有缘分，求你去帮我点个:sparkles: 谢谢！
