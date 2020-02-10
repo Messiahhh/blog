@@ -775,6 +775,37 @@ text-overflow: ellipsis;
 
 ## ECMAScript
 
+##### typeof
+
+``` js
+typeof undefined === 'undefined'
+typeof null === 'object'
+typeof 123 === 'number'
+typeof '123' === 'string'
+typeof true === 'boolean'
+typeof Symbol() === 'symbol'
+typeof {} === 'object'
+typeof function() {} === 'function'
+```
+
+##### 基本包装类型
+
+当我们使用`'1'.toString()`的时候，实际上发生了以下过程。
+
+``` js
+var s = new String('1');
+s.toString();
+s = null;
+```
+
+##### 判断相等
+
+1. `==` 会进行类型转换
+2. `===` 不会进行类型转换，但是`NaN`不等于自身，以及`+0`等于`-0 `
+3. `Object.is()` 完全相等
+
+
+
 ### 数组
 
 ##### 判断数组
@@ -933,6 +964,42 @@ function shuffle(arr) {
 
 
 ### 对象
+
+##### new操作符
+
+1. 首先创建一个空的对象，空对象的__proto__属性指向构造函数的原型对象
+2. 把上面创建的空对象赋值构造函数内部的this，用构造函数内部的方法修改空对象
+3. 如果构造函数返回一个非基本类型的值，则返回这个值，否则上面创建的对象
+
+
+
+###### 实现一个new
+
+``` javascript
+function _new(fn, ...arg) {
+    const obj = Object.create(fn.prototype);
+    const ret = fn.apply(obj, arg);
+    return ret instanceof Object ? ret : obj;
+}
+```
+
+
+
+##### 实现instanceof
+
+``` javascript
+function myInstanceof(a, b) {
+    if (typeof a !== 'object' || a === null) return false
+    let proto = Object.getPrototypeOf(a)
+    while(true) {
+        if (proto === null) return false
+        if (proto === b.prototype) return true
+        proto = Object.getPrototypeOf(proto)
+    }
+}
+```
+
+
 
 ##### 浅拷贝
 
@@ -1165,9 +1232,59 @@ Function.prototype.apply = function (context, args) {
 }
 ```
 
+### Set, Map
 
+##### Set
+
+它类似于数组，但是成员的值都是唯一的，没有重复的值。
+
+```js
+const s = new Set();
+
+[2, 3, 5, 4, 5, 2, 2].forEach(x => s.add(x));
+
+for (let i of s) {
+  console.log(i);
+}
+// 2 3 5 4
+```
+
+Set 函数可以接受一个数组（或者具有 iterable 接口的其他数据结构）作为参数，用来初始化。
+
+```js
+const set = new Set([1, 2, 3, 4, 4]);
+[...set]
+// [1, 2, 3, 4] 实现了数组的去重
+```
+
+Set 实例的方法分为两大类：操作方法（用于操作数据）和遍历方法（用于遍历成员）。下面先介绍四个操作方法。
+
+- `add(value)`：添加某个值，返回 Set 结构本身。
+- `delete(value)`：删除某个值，返回一个布尔值，表示删除是否成功。
+- `has(value)`：返回一个布尔值，表示该值是否为`Set`的成员。
+- `clear()`：清除所有成员，没有返回值。
+
+##### Map
+
+类似于对象，是键值对的集合，但普通的对象的键只能是字符串，Map的键可以不是。
+
+```js
+const m = new Map();
+const o = {p: 'Hello World'};
+
+m.set(o, 'content')
+m.get(o) // "content"
+
+m.has(o) // true
+m.delete(o) // true
+m.has(o) // false
+```
+
+比如这里， Map实例m的一个键是对象o，键值微'content'。
 
 ### Promise实现
+
+一个简单的Promise实现
 
 ``` javascript
 class Promise {
@@ -1339,6 +1456,187 @@ Promise.all([p1, p2, p3])
 .catch(console.error)
 
 ```
+
+### Generator
+
+Generator是种特殊的函数。
+
+``` js
+function* A() {
+	yield 'a'
+	yield 'b'
+	return 'c'
+}
+```
+
+和普通函数相比
+
+- 在function后面有个星号
+- 函数内部使用了yield关键字
+
+``` js
+var x = A()
+console.log(x)
+```
+
+> Generator 函数的调用方法与普通函数一样，也是在函数名后面加上一对圆括号。不同的是，调用 Generator 函数后，该函数并不执行，返回的也不是函数运行结果，而是一个指向内部状态的指针对象，遍历器对象。
+
+遍历器对象部署了next方法，调用next方法会返回对象，对象具有两个属性。
+
+```js
+x.next()
+//{value: 'a'; done: false}
+x.next()
+//{value: 'b'; done: false}
+x.next()
+//{value: 'c'; done: true}
+```
+
+`next`方法可以带一个参数，该参数就会被当作上一个`yield`表达式的返回值。
+
+相当于在外面改变了函数内部的行为。
+
+
+
+#### Iterator/遍历器
+
+JavaScript 原有的表示“集合”的数据结构，主要是数组（`Array`）和对象（`Object`），ES6 又添加了`Map`和`Set`。这样就有了四种数据集合，用户还可以组合使用它们，定义自己的数据结构，比如数组的成员是`Map`，`Map`的成员是对象。这样就需要一种统一的接口机制，来处理所有不同的数据结构。
+
+遍历器（Iterator）就是这样一种机制。它是一种接口，为各种不同的数据结构提供统一的访问机制。任何数据结构只要部署 Iterator 接口，就可以完成遍历操作（即依次处理该数据结构的所有成员）。
+
+Iterator 的作用有三个：一是为各种数据结构，提供一个统一的、简便的访问接口；二是使得数据结构的成员能够按某种次序排列；三是 ES6 创造了一种新的遍历命令`for...of`循环，Iterator 接口主要供`for...of`消费。Iterator 的遍历过程是这样的。
+
+（1）创建一个指针对象，指向当前数据结构的起始位置。也就是说，遍历器对象本质上，就是一个指针对象。
+
+（2）第一次调用指针对象的`next`方法，可以将指针指向数据结构的第一个成员。
+
+（3）第二次调用指针对象的`next`方法，指针就指向数据结构的第二个成员。
+
+（4）不断调用指针对象的`next`方法，直到它指向数据结构的结束位置。
+
+每一次调用`next`方法，都会返回数据结构的当前成员的信息。具体来说，就是返回一个包含`value`和`done`两个属性的对象。其中，`value`属性是当前成员的值，`done`属性是一个布尔值，表示遍历是否结束。
+
+下面是一个模拟`next`方法返回值的例子。
+
+```js
+function makeIterator(array) {
+  var nextIndex = 0;
+  return {
+    next: function() {
+      return nextIndex < array.length ?
+        {value: array[nextIndex++], done: false} :
+        {value: undefined, done: true};
+    }
+  };
+
+var it = makeIterator(['a', 'b']);
+
+it.next() // { value: "a", done: false }
+it.next() // { value: "b", done: false }
+it.next() // { value: undefined, done: true }
+```
+
+上面代码定义了一个`makeIterator`函数，它是一个遍历器生成函数，作用就是返回一个遍历器对象。对数组`['a', 'b']`执行这个函数，就会返回该数组的遍历器对象（即指针对象）`it`。
+
+
+
+ES6 规定，默认的 Iterator 接口部署在数据结构的`Symbol.iterator`属性，或者说，一个数据结构只要具有`Symbol.iterator`属性，就可以认为是“可遍历的”（iterable）。`Symbol.iterator`属性本身是一个函数，就是当前数据结构默认的遍历器生成函数。执行这个函数，就会返回一个遍历器。至于属性名`Symbol.iterator`，它是一个表达式，返回`Symbol`对象的`iterator`属性，这是一个预定义好的、类型为 Symbol 的特殊值，所以要放在方括号内（参见《Symbol》一章）。
+
+```js
+const obj = {
+  [Symbol.iterator] : function () {
+    return {
+      next: function () {
+        return {
+          value: 1,
+          done: true
+        };
+      }
+    };
+  }
+};
+```
+
+
+
+ES6 的有些数据结构原生具备 Iterator 接口（比如数组），即不用任何处理，就可以被`for...of`循环遍历。原因在于，这些数据结构原生部署了`Symbol.iterator`属性（详见下文），另外一些数据结构没有（比如对象）。凡是部署了`Symbol.iterator`属性的数据结构，就称为部署了遍历器接口。调用这个接口，就会返回一个遍历器对象。
+
+原生具备 Iterator 接口的数据结构如下。
+
+- Array
+
+- Map
+
+- Set
+
+- String
+
+- TypedArray
+
+- 函数的 arguments 对象
+
+- NodeList 对象  
+
+
+  对于原生部署 Iterator 接口的数据结构，不用自己写遍历器生成函数，`for...of`循环会自动遍历它们。除此之外，其他数据结构（主要是对象）的 Iterator 接口，都需要自己在`Symbol.iterator`属性上面部署，这样才会被`for...of`循环遍历。
+
+  对象（Object）之所以没有默认部署 Iterator 接口，是因为对象的哪个属性先遍历，哪个属性后遍历是不确定的，需要开发者手动指定。本质上，遍历器是一种线性处理，对于任何非线性的数据结构，部署遍历器接口，就等于部署一种线性转换。不过，严格地说，对象部署遍历器接口并不是很必要，因为这时对象实际上被当作 Map 结构使用，ES5 没有 Map 结构，而 ES6 原生提供了。
+
+##### 调用 Iterator 接口的场合
+
+###### 解构赋值
+
+```
+对数组和 Set 结构进行解构赋值时，会默认调用Symbol.iterator方法。
+
+let set = new Set().add('a').add('b').add('c');
+
+let [x,y] = set;
+// x='a'; y='b'
+
+let [first, ...rest] = set;
+// first='a'; rest=['b','c'];
+```
+
+###### 扩展运算符
+
+```
+扩展运算符（...）也会调用默认的 Iterator 接口。
+
+// 例一
+var str = 'hello';
+[...str] //  ['h','e','l','l','o']
+
+// 例二
+let arr = ['b', 'c'];
+['a', ...arr, 'd']
+// ['a', 'b', 'c', 'd']
+```
+
+###### Array.from
+
+`Array.from`方法用于将两类对象转为真正的数组：类似数组的对象（array-like object）和可遍历（iterable）的对象（包括 ES6 新增的数据结构 Set 和 Map）。
+
+下面是一个类似数组的对象，`Array.from`将它转为真正的数组。
+
+```
+let arrayLike = {
+    '0': 'a',
+    '1': 'b',
+    '2': 'c',
+    length: 3
+};
+
+// ES5的写法
+var arr1 = [].slice.call(arrayLike); // ['a', 'b', 'c']
+
+// ES6的写法
+let arr2 = Array.from(arrayLike); // ['a', 'b', 'c']
+```
+
+###### for...of 循环
+
+一个数据结构只要部署了`Symbol.iterator`属性，就被视为具有 iterator 接口，就可以用`for...of`循环遍历它的成员。也就是说，`for...of`循环内部调用的是数据结构的`Symbol.iterator`方法。
 
 ### AJAX
 
@@ -1589,6 +1887,8 @@ function co(gen){
 ```
 
 ##### Async封装
+
+其实async可以看成Generator + co的集成，不同的是关键字分别用async和await代替了*和yield，更加的语义化。除此之外，async函数会返回一个Promise对象。
 
 ``` javascript
 const Ajax = ({
@@ -3488,139 +3788,148 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
 
 ## 前端模块化
 
-1. 立即执行函数（IIFE）
+##### 立即执行函数（IIFE）
 
-   ``` javascript
-   // 定义模块
-   (function (window) {
-       function A() {
-           return 'aaa'
-       }
+``` javascript
+// 定义模块
+(function (window) {
+    function A() {
+        return 'aaa'
+    }
 
-       function B() {
-           return 'bbb'
-       }
+    function B() {
+        return 'bbb'
+    }
 
-       window.myModule = {A, B}
-   })(window)
+    window.myModule = {A, B}
+})(window)
 
-   // 使用模块
-   myModule.A()
-   ```
-
-2. AMD（需要安装require.js库）
-
-   使用define定义模块，使用require加载模块
-
-3. CommonJS
-
-   1. 使用方法
-
-      ``` javascript
-      // 定义模块
-      // a.js
-      function getName() {
-          return 'Akara'
-      }
-
-      module.exports = getName
-
-      // 使用模块
-      // b.js
-      const getName = require('./a')
-      getName() // 'Akara'
-      ```
-
-   2. require和module
-
-      require相当于包装了一层立即执行函数
-
-      ``` javascript
-      const getName = require('./a')
-      // 等价于
-      const getName = (function () {
-          function getName() {
-              return 'Akara'
-          }
-
-          module.exports = getName
-
-          // 返回module.exports
-          return module.exports
-      })()
-      ```
-
-      JS文件有两个全局变量，module和exports，module对象的结构如下
-
-      ``` javascript
-      module: {
-          id: '.',
-          exports: {}
-      }
-      ```
-
-      module.exports 和 全局变量exports指向同一个对象
-
-      ``` javascript
-      module.exports === exports // true
-      ```
-
-      所以我们可以
-
-      ``` javascript
-      module.exports.a = 111
-      // 等价于
-      exports.a = 111
-      ```
-
-      但是我们不可以
-
-      ``` javascript
-      exports = {
-          a: 111
-      }
-      console.log(module.exports === exports) // false
-      ```
-
-   3. **在Node中引入模块，会发生什么？**
-
-      在Node中，模块分为两类：一类是node提供的**核心模块**，一类是用于编写的**文件模块**
-
-      - 路径分析
-
-        如果发现引入的是核心模块，则不用进行接下来的两步了，因为核心模块早已编译为二进制，当node进程启动时，部分核心代码已经直接加载进内存中。
-
-      - 文件定位
-
-      - 编译执行
+// 使用模块
+myModule.A()
+```
 
 
 
-   4. 缓存
+##### AMD
 
-      模块在被用require引入后会缓存。
+需要安装require.js库
 
-4. UMD （IIFE + AMD + CommonJS）
-
-   用来兼容多套模块系统
-
-5. ES6模块
-
-   想使用ES6模块的`import`和`export`，需要将文件名的后缀改为`.mjs`
-
-   并且使用`--experimental-modules`开启此特性
-
-   ``` javascript
-   node --experimental-modules file.mjs
-   ```
+使用define定义模块，使用require加载模块
 
 
 
-   CommonJS是运行时加载，ES6模块是编译时加载。
+##### CommonJS
 
-   不过在ES6模块里，我们也可以使用import()来实现运行时加载
+使用方法
 
-   CommonJS我们即使只想使用库中的一个函数，也会加载全部的代码；ES6模块只会加载我们需要的那个函数。
+``` javascript
+// 定义模块
+// a.js
+function getName() {
+    return 'Akara'
+}
+
+module.exports = getName
+
+// 使用模块
+// b.js
+const getName = require('./a')
+getName() // 'Akara'
+```
+
+require和module
+
+require相当于包装了一层立即执行函数
+
+``` javascript
+const getName = require('./a')
+// 等价于
+const getName = (function () {
+    function getName() {
+        return 'Akara'
+    }
+
+    module.exports = getName
+
+    // 返回module.exports
+    return module.exports
+})()
+```
+
+JS文件有两个全局变量，module和exports，module对象的结构如下
+
+``` javascript
+module: {
+    id: '.',
+    exports: {}
+}
+```
+
+module.exports 和 全局变量exports指向同一个对象
+
+``` javascript
+module.exports === exports // true
+```
+
+所以我们可以
+
+``` javascript
+module.exports.a = 111
+// 等价于
+exports.a = 111
+```
+
+但是我们不可以
+
+``` javascript
+exports = {
+    a: 111
+}
+console.log(module.exports === exports) // false
+```
+
+**在Node中引入模块，会发生什么？**
+
+在Node中，模块分为两类：一类是node提供的**核心模块**，一类是用于编写的**文件模块**
+
+- 路径分析
+
+  如果发现引入的是核心模块，则不用进行接下来的两步了，因为核心模块早已编译为二进制，当node进程启动时，部分核心代码已经直接加载进内存中。
+
+- 文件定位
+
+- 编译执行
+
+**缓存**
+
+模块在被用require引入后会缓存。
+
+
+
+##### UMD 
+
+UMD = IIFE + AMD + CommonJS 用来兼容多套模块系统
+
+
+
+##### ES6模块
+
+想使用ES6模块的`import`和`export`，需要将文件名的后缀改为`.mjs`
+
+并且使用`--experimental-modules`开启此特性
+
+``` javascript
+node --experimental-modules file.mjs
+```
+
+
+
+CommonJS是运行时加载，ES6模块是编译时加载。
+
+不过在ES6模块里，我们也可以使用import()来实现运行时加载
+
+CommonJS我们即使只想使用库中的一个函数，也会加载全部的代码；ES6模块只会加载我们需要的那个函数。
+
 
 
 ## 浏览器相关
@@ -4143,16 +4452,97 @@ CSRF，也叫做跨站请求伪造（Cross-site request forgery ）
 
    Token是一个随机数，同时存放在表单和用户的Cookie中，发送请求后服务器对请求实体的token和cookie中的token进行对比。
 
+
+
 ## 密码学相关
+
+在我看来，密码学最重要的三个点
+
+1. **机密性**
+
+即保证通信的内容不会被第三者知晓。
+
+2. **完整性**
+
+即使能保证机密性，也要保证通信的内容没有被篡改过或丢失。
+
+3. **认证**
+
+即确认通信的对象并不是伪造的第三方。
+
+
+
+### 加密算法
+
+想要保证消息的机密性，就要使用合理的加密算法。
+
+而加密算法根据使用的密钥的类型可以分为以下三种
+
+1. **对称加密算法**
+2. **非对称加密算法（公钥加密算法）**
+3. **混合加密算法**
+
+
+
+##### 对称加密算法
+
+正如其名，通信双方使用的密钥是完全相同的，密钥既可以把明文加密成密文，也可以把密文解密成明文。
+
+不过对称加密算法的一大问题就是难以做到把密钥安全的送达给对方。对称加密算法使用到的密钥，需要使用对称加密算法，这样一看就变成死循环了，很明显不行。
+
+常见对称加密算法：DES, 3DES, AES
+
+对称加密有不同的分组模式，比如CBC模式就被用在TLS协议中。使用此模式的时候必须要准备好初始向量（对称密钥）
+
+##### 非对称加密算法
+
+非对称加密算法使用的密钥对是一个公钥一个私钥。
+
+公钥可以把明文加密成密文，而私钥则是把密文解密成明文。私钥是不能被其他人知道的，而公钥即使第三方拿到了也没有问题。因为最终完成解密的私钥只在你手上，别人只能加密而无法查看密文的内容。
+
+因此，对称加密算法中运送密钥的难题在这里就不会发生了。但是，非对称加密算法在性能上比对称加密算法还是差了许多的，这也是为什么有混合加密算法。
+
+常见非对称加密算法: RSA
+
+**混合加密算法**
+
+使用随机生成函数来生成一对密钥，利用公钥对密钥进行加密，这样就能解决密钥的配送难题了。
+
+
+
+### 中间人攻击
+
+混合加密基本上保证了数据的机密性，只要你能确定你所使用的公钥确实是对方发出的。
+
+通常用户A和B进行加密通信的时候，A会向B发送自己的公钥，然后B利用公钥把对称加密所使用的密钥进行加密发送给A，A再用自己的私钥对密钥进行解密。这样双方接下来就能用密钥进行加密通信了。
+
+但假设这样的场景：
+
+A向B发送自己的公钥途中，公钥被黑客截取。然后黑客把自己的公钥发送给B，B误以为是A的公钥，结果用了黑客的公钥对自己的消息加密发送。黑客获取到了加密后的消息，可以用自己的私钥解密，就获取到了B发送消息的明文了。
+
+又因为黑客截取了A发送的公钥，因此可以用A的公钥把自己想发送的消息加密发送给A。
+
+这样一来，A会误以为黑客是B，B会误以为黑客是A，这就是所谓的中间人攻击。
+
+
+
+导致中间人攻击的原因在于：无法确认公钥到底是谁发出的。
+
+这也正是**认证**所解决的，下文会解释如何解决中间人攻击。
+
+
+
+### 完整性
 
 ##### 单向哈希函数
 
-把任意长的输入消息串变化成固定长的输出串且由输出串难以得到输入串的一种函数。
+单向哈希函数接受一个任意长度的输入，生成一串固定长度哈希值。一旦输入的值发送一丁点变化，输出的哈希值也会产生巨大的改变。因此可以用来验证数据的完整性。
 
-1. 一般用来生成信息的摘要从而验证数据的完整性
-2. 可以把用户密码的**摘要**存在数据库，防止存密码可能导致被脱库的风险。这种“加密”是无法逆向得到密码原文的。
+通信时使用的时候，可以同时把消息和消息经过哈希后的散列值发送给对方。对方只需要在接收到消息后，进行哈希获取散列值进行比对，就能知道消息是否完整。
 
-如常用的MD5，SHA-1，SHA-3
+可以把用户密码的**摘要**存在数据库，防止存密码可能导致被脱库的风险。这种“加密”是无法逆向得到密码原文的。
+
+常见哈希函数：MD5，SHA
 
 ##### 加盐
 
@@ -4162,27 +4552,65 @@ CSRF，也叫做跨站请求伪造（Cross-site request forgery ）
 
 加盐后的散列值，可以极大的降低由于用户数据被盗而带来的密码泄漏风险（短密码容易被彩虹表破解），即使通过彩虹表寻找到了散列后的数值所对应的原始内容，但是由于经过了加盐，插入的字符串扰乱了真正的密码，使得获得真实密码的概率大大降低。
 
-##### 消息认证码
 
-即带密钥的单向哈希函数。可用来验证完整性和验证。
 
-##### 非对称加密
+### 验证
 
-使用公钥进行加密，使用私钥进行解密。
+##### 消息认证码（MAC）
 
-常用的非对称加密算法：RSA/DSA
+消息认证码的生成很像上面介绍的单向哈希函数，不同的是消息认证码的输入是消息和一个对称密钥，生成的值就叫消息认证码（MAC）。
 
-##### 对称加密
+与单向哈希函数对比后，就能知道消息认证码可以看作是与密钥相关联的单项哈希函数。正是因为与密钥相关联，消息认证码不仅仅能做到保证消息的完整性，还能起到认证的作用。（注：消息认证码中使用的密钥并没有起到加密的作用，仅仅是一个输入数而已。而数字签名中使用的到的私钥起到的签名的作用。二者之间是不同的）
 
-加密和解密使用的相同的密钥。
 
-常用的对称加密算法：AES/DES。
-
-对称加密有不同的分组模式，比如CBC模式就被用在TLS协议中。使用此模式的时候必须要准备好初始向量（一个对称密钥）
 
 ##### 数字签名
 
-使用私钥进行签名， 使用公钥进行验证。
+使用私钥对消息进行加密（签名），使用公钥对消息进行解密（验证）。
+
+
+
+单向哈希函数，消息认证码和数字签名的区别在哪？
+
+1. 很明显，单向哈希函数只能验证消息的完整性。
+
+   问题简化成消息认证码和数字签名的区别。
+
+2. 二者都能做到验证消息的完整性和认证。
+
+   消息认证码是通过比对 消息和对称密钥的运算生成的MAC。
+
+   而数字签名是通过比对 私钥对消息的加密生成的签名。
+
+   （要注意的是消息认证码中对称密钥的作用并不是加密，而仅仅是一个输入的数）
+
+   二者的差别就在于一个用的是对称密钥，一个是非对称密钥。
+
+
+
+所以使用消息认证码的时候，B可以伪造出一个信息说是A发送的，对于第三方来说，由于A和B的密钥相同，所以无法证伪。
+
+而如果使用数字签名，A和B使用的密钥不同，就不会发生这种事了。
+
+
+
+##### 证书
+
+之前说过了，导致中间人的原因是无法确认公钥到底是谁的，我们所需要解决的问题就是公钥的**认证**问题。
+
+我们之前也说过数字签名可以进行消息的认证，而证书实际上使用的就是数字签名来认证。
+
+先解释一下证书的构成：
+
+证书 = 网站的公钥 + CA（Certifi*ca*te Authority，证书颁发机构）的私钥对网站公钥的签名
+
+
+
+当用户访问网站时，并不是直接把公钥发给用户，而是把证书发给用户。二者的最大差别就是证书上除了公钥，还有签名。因此当用户收到证书后，用CA的公钥对签名进行验证，就能知道这个公钥到底是不是网站的公钥了。
+
+
+
+
 
 
 
@@ -4474,7 +4902,7 @@ class Subscriber {
 
 ### 二叉树
 
-##### 二叉树的建立
+#### 二叉树的创建
 
 ```javascript
 class Node {
@@ -4532,6 +4960,8 @@ tree.insert(15)
 tree.insert(12)
 tree.insert(5)
 ```
+
+#### 树的遍历
 
 ##### 二叉树的递归遍历
 
@@ -4635,6 +5065,74 @@ function postOrder(node) {
     return res.reverse()
 }
 ```
+
+##### 深度优先遍历
+
+###### 递归的深度优先遍历
+
+``` javascript
+function DFS(node, nodeList = []) {
+    if (node !== null) {
+        nodeList.push(node)
+        let children = node.children
+        for (let i = 0; i < children.length; i++) {
+            DFS(children[i], nodeList)
+        }
+    }
+    return nodeList
+}
+```
+
+###### 递归的深度优先遍历
+
+``` javascript
+function DFS(node) {
+    let nodes = []
+    let stack = []
+    stack.push(node)
+
+    while(stack.length) {
+        let item = stack.pop()
+        let children = item.children
+        nodes.push(item)
+        // node = [] stack = [parent]
+        // node = [parent] stack = [child3,child2,child1]
+        // node = [parent, child1] stack = [child3,child2,child1-2,child1-1]
+        // node = [parent, child1, child1-1] stack = [child3,child2,child1-2]
+        for (let i = children.length - 1; i >= 0; i--) {
+            stack.push(children[i])
+        }
+    }
+    return nodes
+}
+```
+
+##### 广度优先遍历
+
+``` javascript
+function BFS(node) {
+    let nodes = []
+    let stack = []
+    stack.push(node)
+    while(stack.length) {
+        let item = stack.shift()
+        let children = item.children
+        nodes.push(item)
+        // 队列，先进先出
+        // nodes = [] stack = [parent]
+        // nodes = [parent] stack = [child1,child2,child3]
+        // nodes = [parent, child1] stack = [child2,child3,child1-1,child1-2]
+        // nodes = [parent,child1,child2] stack = [child3, ...]
+        for (let i = 0; i < children.length; i++) {
+            stack.push(children[i])
+        }
+    }
+
+    return nodes
+}
+```
+
+
 
 ### 链表
 
@@ -5422,6 +5920,72 @@ let y = 2
 let x = 1[y, x] = [x, y]
 ```
 
+##### forEach中的async
+
+``` javascript
+function handle(x) {
+	return new Promise((resolve, reject) => {
+		setTimeout(() => {
+			resolve(x)
+		}, 1000 * x)
+	})
+}
+
+async function test() {
+    const arr = [4, 2, 1]
+    arr.forEach(async item => {
+        const res = await handle(item)
+        console.log(res)
+    })
+}
+// 等价于
+async function test() {
+    const arr = [4, 2, 1]
+    async function A(item) {
+        const res = await handle(item)
+        console.log(res)
+    }
+    A(4)
+    A(2)
+    A(1)
+}
+```
+
+期望的结果
+
+``` js
+4 
+2 
+1
+结束
+```
+
+实际上的输出
+
+``` js
+结束
+1
+2
+4
+```
+
+**解决方案**
+
+``` js
+async function test() {
+	let arr = [4, 2, 1]
+    for (let i of arr) {
+        let res = await handle(i)
+        console.log(res);
+    }
+	console.log('结束')
+}
+```
+
+
+
+
+
 ##### 移动端300ms延迟
 
 以前的移动端网页，点击事件会有个300ms的延迟，Fastclick库就是为了解决这个问题的。
@@ -5431,3 +5995,4 @@ let x = 1[y, x] = [x, y]
 ``` html
 <meta name="viewport" content="width=device-width, initial-scale=1">
 ```
+
