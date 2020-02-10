@@ -3,11 +3,13 @@ sidebarDepth: 2
 ---
 # 前端博客
 
+[toc]
+
 
 
 ## HTML5
 
-script脚本的**执行**会阻塞HTML的解析
+JavaScript脚本的**执行**会阻塞HTML的解析
 
 ``` html
 <script>
@@ -23,7 +25,7 @@ script脚本的**执行**会阻塞HTML的解析
 ``` html
 <script src="./index.js"></script>
 <div>
-    // 加载完脚本，执行完脚本，才进行html的解析
+    <!-- 先加载脚本，再执行脚本，才进行html的解析 -->
 </div>
 ```
 
@@ -36,18 +38,26 @@ script脚本的**执行**会阻塞HTML的解析
 <script src="3.js"></script>
 ```
 
-按理来说，因为加载会阻塞接下来HTML的解析，所以加载也会是串行的。
+按理来说，因为加载会阻塞接下来HTML的解析，所以加载第一个脚本的时候还未解析到下一句HTML代码，因此加载按理来说是串行的。
 
-但实际上浏览器会进行**预解析**，提前把html中要引用到的资源放进任务队列中。
+但实际上现代浏览器会对资源进行**预解析**，提前把html中要引用到的资源放进请求队列中。
 
-### defer和async的区别
+### async和defer的区别
 
-共同点：script资源的加载和html的解析是同步的，不会阻塞html的解析。
+``` html
+<script async></script>
+<script defer></script>
+```
 
-不同点：
+**共同点**
 
-- async属性。脚本下载完之后会停止html的解析，开始脚本的执行，等脚本执行完后再继续html的解析。
-- defer属性。等整个html文档解析完（DOMContentLoaded事件发生），脚本才开始执行。
+加上`async`或`defer`属性的脚本的**加载 **不会阻塞HTML的解析。
+
+**不同点**
+
+- async属性。脚本加载完后会立刻开始脚本的执行，并停止对HTML的解析，待脚本执行完再继续HTML的解析。
+- defer属性。等整个HTML文档都解析完（DOMContentLoaded事件发生），脚本才开始执行。
+- 具体过程可见下图
 
 ![defer and async](https://segmentfault.com/img/bVWhRl?w=801&h=814)
 
@@ -64,14 +74,18 @@ script脚本的**执行**会阻塞HTML的解析
 
 ### href和src的区别
 
-href： 用于在当前文档和指定资源间确定联系
+**href**
+
+用于在当前文档和指定资源间确定联系
 
 ``` html
 <a href="http://www.baidu.com"></a>
 <link type="text/css" rel="stylesheet" href="common.css">
 ```
 
-src：下载资源并替换当前内容
+**src**
+
+下载资源并替换当前内容
 
 ``` html
 <img src="img/girl.jpg">
@@ -137,11 +151,54 @@ location.href = 'https://messiahhh.github.io/blog'
 
 
 
+注意：background 和 opacity不是继承属性噢。
+
+
+
 ##### 属性的权重
 
 !important > 内联样式 > ID选择器 > class选择器 > 标签选择器 > 通配符（*） > 浏览器默认样式 > 继承样式
 
-### CSS动画
+##### 盒模型
+
+现代浏览器默认的`box-sizing: content-box`
+
+意味着当我们设置`width`的时候，实际上在设置盒模型的`content`的长度。此时盒子的实际长度等于`content(width) + padding + border `
+
+
+
+我们可以通过设置`box-sizing: border-box`
+
+此时我们的`width`等于`content + padding + border`
+
+
+
+##### border-radius
+
+圆角，可用于画圆形
+
+``` css
+.app {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+```
+
+
+
+##### transition
+
+``` css
+.app {
+    transition-property: width;
+    transition-duration: 3s;
+    transition-timing-function: ease-in;
+    transition-delay: 1s;
+}
+```
+
+
 
 ##### animation
 
@@ -157,27 +214,37 @@ location.href = 'https://messiahhh.github.io/blog'
 }
 
 .app {
-    // 动画名
+    <!-- 动画名 -->
     animation-name: anime;
-    // 动画持续时间
+    <!-- 动画持续时间 -->
     animation-duration: 3s;
-    // 动画曲线
+    <!-- 动画曲线--> 
     animation-timing-function: ease-in-out;
-    // 延迟
+    <!-- 延迟 --> 
     animation-delay: 1s;
-    // 动画播放次数
+    <!-- 动画播放次数--> 
     animation-iteration-count: 2;
-    // 动画是否在下一周期逆向地播放
+    <!-- 动画是否在下一周期逆向地播放--> 
     animation-direction: alternate;
-    // 动画是在运行还是暂停
+    <!-- 动画是在运行还是暂停--> 
     animation-play-state: paused;
-    // 动画的结束状态
+    <!-- 动画的结束状态--> 
     animation-fill-mode: forwards;
 }
 
 ```
 
 
+
+##### 画三角形
+
+``` css
+.container::after {
+    content: '';
+    border: 10px solid transparent;
+    border-bottom-color: pink;
+}
+```
 
 ### 布局
 
@@ -499,6 +566,8 @@ location.href = 'https://messiahhh.github.io/blog'
 
 BFC，也就是Block Formatting Contexts （块级格式化上下文)
 
+明确地，它是一个独立的盒子，并且这个独立的盒子内部布局不受外界影响。
+
 **何时会触发BFC**：
 
 - 根元素`<html>`
@@ -511,16 +580,25 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 
 一：清除浮动
 
-``` css
-.outer {
-	// 使用overflow: auto;使outer元素成为BFC（触发outer元素的BFC）
-    overflow: auto;
-}
-.inner {
-    width: 200px;
-    height: 200px;
-    float: left;
-}
+``` html
+<style>
+    .outer {
+        // 使用overflow: auto;使outer元素成为BFC（触发outer元素的BFC）
+        overflow: auto;
+    }
+    .inner {
+        width: 200px;
+        height: 200px;
+        float: left;
+    }
+</style>
+<body>
+    <div class='outer'>
+        <div class='inner'>
+            
+        </div>
+    </div>
+</body>
 ```
 
 二：外边距合并：同属一个BFC的相邻元素会发生外边距（margin）重叠。
@@ -606,7 +684,9 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 </div>
 ```
 
-### inline-block的间隙问题
+### 常见问题
+
+#### inline-block的间隙问题
 
 两个display：inline-block元素放到一起会产生一段空白。
 
@@ -639,7 +719,7 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 
 2. 父元素设置font-size: 0; 子元素重新设置正确的font-size
 
-### display: none，visibility: hidden, opacity: 0 的区别
+#### display: none，visibility: hidden, opacity: 0 的区别
 
 三个样式的作用都是使目标元素不可见，不过三个元素之间也是有区别的
 
@@ -677,9 +757,7 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 
 如果希望子元素不被父元素的透明度影响，我们可以使用`background: rgba`代替`opacity: 0`
 
-
-
-### 文本溢出
+#### 文本溢出
 
 ##### 单行文本
 
@@ -5297,6 +5375,31 @@ Base会将三个字节转化成四个字节，可以编码后的文本会比之�
 ##### 雪碧图
 
 合并HTTP请求，使用background-position来选择使用的图片。
+
+
+
+##### setTimeout/setInterval和requestAnimationFrame
+
+###### setTimeout/setInterval
+
+`setTimeout(fn, n)`会在指定的时间n毫秒后，将指定的回调函数fn放进任务队列中，因此并不是n秒后就会执行回调函数。
+
+`setTimeout(fn, 0)` 即使传参为0ms，最短其实为4 ms。
+
+缺点: 一般显示器刷新频率为60HZ，即16.6ms刷新一次屏幕。setTimeout可能会掉帧。
+
+###### requestAnimationFrame
+
+``` javascript
+function myAnimation() {
+    // do something
+    requestAnimationFrame(myAnimation)
+}
+
+requestAnimationFrame(myAnimation)
+```
+
+**它能保证回调函数在屏幕每一次的刷新间隔中只被执行一次**
 
 
 
