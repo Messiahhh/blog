@@ -3988,6 +3988,83 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
 
 
 
+##### Vue的坑
+
+准确来说是`Object.defineProperty`的坑。
+
+也是为什么Vue3.0要用`proxy`改写。
+
+###### Vue 不能检测对象属性的添加或删除
+
+```js
+var vm = new Vue({
+  data: {
+    a: 1
+  }
+})
+// `vm.a` 现在是响应式的
+
+vm.b = 2
+// `vm.b` 不是响应式的
+```
+
+对于已经创建的实例，Vue 不能动态添加根级别的响应式属性。但是，可以使用 `Vue.set(object, key, value)` 方法向嵌套对象添加响应式属性。例如，对于：
+
+```js
+var vm = new Vue({
+  data: {
+    userProfile: {
+      name: 'Anika'
+    }
+  }
+})
+```
+
+你可以添加一个新的 `age` 属性到嵌套的 `userProfile` 对象：
+
+```js
+Vue.set(vm.userProfile, 'age', 27)
+```
+
+你还可以使用 `vm.$set` 实例方法，它只是全局 `Vue.set` 的别名：
+
+```js
+vm.$set(vm.userProfile, 'age', 27)
+```
+
+###### 使用数组的方法
+
+虽然数组也是对象，`Object.defineProperty`却不支持数组。
+
+为了解决这种情况，Vue重写了数组的很多方法，如`push`，`pop`，`shift`，`unshift`，`splice`，`sort`，`reverse`。所以这些方法也将会触发视图更新。
+
+
+
+尽管如此，由于 JavaScript 的限制，Vue 不能检测以下变动的数组：
+
+1. 当你利用索引直接设置一个项时，例如：`vm.items[indexOfItem] = newValue`
+2. 当你修改数组的长度时，例如：`vm.items.length = newLength`
+
+为了解决第一类问题，以下两种方式都可以实现和 `vm.items[indexOfItem] = newValue` 相同的效果，同时也将触发状态更新
+
+```js
+// Vue.set
+Vue.set(example1.items, indexOfItem, newValue)
+
+// Array.prototype.splice
+example1.items.splice(indexOfItem, 1, newValue)
+```
+
+为了解决第二类问题，你可以使用 `splice`：
+
+```
+example1.items.splice(newLength)
+```
+
+
+
+
+
 ## Vue和React的对比
 
 共同点：
