@@ -3238,6 +3238,44 @@ class ThemedButton extends React.Component {
 }
 ```
 
+##### Fragment
+
+``` js
+function App () {
+    return (
+        <table>
+            <tr>
+                <Todos />
+            </tr>
+        </table>
+    )
+}
+
+function Todos() {
+    return (
+        <React.Fragment>
+            <td>111</td>
+            <td>222</td>
+            <td>333</td>
+        </React.Fragment>
+    )
+}
+```
+
+###### 短语法
+
+``` js
+function Todos() {
+    return (
+        <>
+            <td>111</td>
+            <td>222</td>
+            <td>333</td>
+        </>
+    )
+}
+```
+
 
 
 
@@ -3359,6 +3397,54 @@ function App(props) {
 }
 ```
 
+##### useReducer
+
+简化版本如下
+
+```js
+function useReducer(reducer, initialState) {
+  const [state, setState] = useState(initialState);
+
+  function dispatch(action) {
+    const nextState = reducer(state, action);
+    setState(nextState);
+  }
+
+  return [state, dispatch];
+}
+```
+
+我们可以这样使用
+
+``` js
+function Todos() {
+  const [todos, dispatch] = useReducer(todosReducer, []);
+
+  function handleAddClick(text) {
+    dispatch({ type: 'add', text });
+  }
+
+  // ...
+}
+
+function todosReducer(state, action) {
+  switch (action.type) {
+    case 'add':
+      return [...state, {
+        text: action.text,
+        completed: false
+      }];
+    // ... other actions ...
+    default:
+      return state;
+  }
+}
+```
+
+
+
+
+
 ### 状态逻辑复用
 
 通常有三种方式
@@ -3366,8 +3452,6 @@ function App(props) {
 1. 高阶组件（HOC）
 2. Render props
 3. Hook
-
-
 
 
 
@@ -4188,6 +4272,8 @@ example1.items.splice(newLength)
 
 ## Vue和React的对比
 
+> 本节待完善
+
 共同点：
 
 1. 都使用了Virtual DOM
@@ -4205,6 +4291,12 @@ example1.items.splice(newLength)
    2. 在Vue应用中，组件的依赖是在渲染过程中自动追踪的，所以系统能精确知晓哪个组件确实需要被重渲染。
 
 2. React中，一切都是JavaScript，html用jsx表示，css也可以纳入js中处理。
+
+
+
+### TypeScript
+
+
 
 
 
