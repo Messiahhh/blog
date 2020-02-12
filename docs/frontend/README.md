@@ -3359,6 +3359,127 @@ function App(props) {
 }
 ```
 
+### 状态逻辑复用
+
+通常有三种方式
+
+1. 高阶组件（HOC）
+2. Render props
+3. Hook
+
+
+
+
+
+##### 高阶组件
+
+``` js
+function App () {
+    const MouseWithCat = withMouse(Cat)
+    return (
+        <MouseWithCat />
+    )
+}
+
+function Cat (props) {
+    let {x, y} = props.mouse
+    x += 20
+    y += 20
+    return (
+        <img src='https://messiahhh.github.io/blog/logo.png' style={{position: 'absolute', left: x , top: y, width: '40px', height: '40px'}}/>
+    )
+}
+
+function withMouse(WrappedComponent) {
+    return function () {
+        let [point, setPoint] = useState({
+            x: 0,
+            y: 0,
+        })
+
+        const move = (e) => {
+            setPoint({
+                x: e.clientX,
+                y: e.clientY
+            })
+        }
+
+        return (
+            <div style={{height: '100vh'}} onMouseMove={move}>
+                鼠标的位置：{ point.x } , { point.y }
+                <WrappedComponent mouse={point} />
+            </div>
+        )
+    }
+}
+```
+
+##### Render Props
+
+``` js
+function App () {
+    return (
+        <Mouse render={point =>
+            <Cat mouse={point} />
+        }/>
+    )
+}
+
+function Cat (props) {
+    let {x, y} = props.mouse
+    x += 20
+    y += 20
+    return (
+        <img src='https://messiahhh.github.io/blog/logo.png' style={{position: 'absolute', left: x , top: y, width: '40px', height: '40px'}}/>
+    )
+}
+
+
+function Mouse(props) {
+    let [point, setPoint] = useState({
+        x: 0,
+        y: 0,
+    })
+
+    const move = (e) => {
+        setPoint({
+            x: e.clientX,
+            y: e.clientY
+        })
+    }
+
+    return (
+        <div style={{height: '100vh'}} onMouseMove={move}>
+            鼠标的位置：{ point.x } , { point.y }
+            {props.render(point)}
+        </div>
+    )
+}
+```
+
+##### Hook
+
+```js
+function useFriendStatus(friendID) {
+  const [isOnline, setIsOnline] = useState(null);
+
+  useEffect(() => {
+    function handleStatusChange(status) {
+      setIsOnline(status.isOnline);
+    }
+
+    ChatAPI.subscribeToFriendStatus(friendID, handleStatusChange);
+    return () => {
+      ChatAPI.unsubscribeFromFriendStatus(friendID, handleStatusChange);
+    };
+  });
+
+  return isOnline;
+}
+```
+
+
+
 
 
 ### Redux
@@ -4439,6 +4560,92 @@ secret
 
 
 ## 计算机网络相关
+
+### 状态码
+
+**301 moved permanently：永久性重定向**
+
+``` javascript
+if (req.url === '/login') {
+    console.log(111)
+    res.writeHead(301, {'Location': 'localhost:3000/redirect'})
+	res.end()
+}
+else if (req.url === '/redirect') {
+    console.log(222)
+    res.end('hello world')
+}
+```
+
+当我们多次访问`/login`,会输出
+
+``` js
+111
+222
+222
+222
+...
+```
+
+第一次
+
+``` http
+Request URL: http://localhost:3000/login
+Request Method: GET
+Status Code: 301 Moved Permanently
+```
+
+第二次
+
+``` http
+Request URL: http://localhost:3000/login
+Request Method: GET
+Status Code: 301 Moved Permanently (from disk cache)
+```
+
+
+
+
+
+**302 found：临时性重定向**
+
+``` javascript
+if (req.url === '/login') {
+    console.log(111)
+    res.writeHead(302, {'Location': 'localhost:3000/redirect'})
+	res.end()
+}
+else if (req.url === '/redirect') {
+    console.log(222)
+    res.end('hello world')
+}
+```
+
+当我们多次访问`/login`,会输出
+
+``` js
+111
+222
+111
+222
+...
+```
+
+多次访问的HTTP报文如下。
+
+``` http
+Request URL: http://localhost:3000/ddd
+Request Method: GET
+Status Code: 302 Found
+```
+
+
+
+
+
+**304 Not Modidied：用于浏览器缓存。**
+
+
 
 ### HTTP协议1.0，1.1和2.0的区别
 
