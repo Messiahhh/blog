@@ -1912,7 +1912,7 @@ ES6 的有些数据结构原生具备 Iterator 接口（比如数组），即不
 
 ###### 解构赋值
 
-```
+```js
 对数组和 Set 结构进行解构赋值时，会默认调用Symbol.iterator方法。
 
 let set = new Set().add('a').add('b').add('c');
@@ -1926,7 +1926,7 @@ let [first, ...rest] = set;
 
 ###### 扩展运算符
 
-```
+```js
 扩展运算符（...）也会调用默认的 Iterator 接口。
 
 // 例一
@@ -1945,7 +1945,7 @@ let arr = ['b', 'c'];
 
 下面是一个类似数组的对象，`Array.from`将它转为真正的数组。
 
-```
+```js
 let arrayLike = {
     '0': 'a',
     '1': 'b',
