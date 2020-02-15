@@ -834,7 +834,7 @@ Array.from(set)
 
 [...set]
 
-// 类数组对象 (arguments和Nodelist)
+// 只能转化类数组对象 (arguments和Nodelist)
 Array.prototype.slice.call(arguments)
 ```
 
@@ -897,7 +897,7 @@ function unique(arr) {
 
 ##### 数组扁平化
 
-###### flat(Infinity)
+**flat(Infinity)**
 
 ``` javascript
 var arr = [1, 2, [3, [4, 5]]]
@@ -905,29 +905,71 @@ var arr = [1, 2, [3, [4, 5]]]
 arr.flat(Infinity)
 ```
 
-###### replace + split
+**JSON.parse + 正则 + JSON.stringify**
 
 ``` javascript
 var arr = [1, 2, [3, [4, 5]]]
 var str = JSON.stringify(arr)
-arr = str.replace(/(\[|\])/g, "").split(",")
+// "[1,2,[3,[4,5]]]"
+var newStr = str.replace(/(\[|\])/g, "")
+// "1,2,3,4,5"
+arr = `[${newStr}]`
+// "[1,2,3,4,5]"
+JSON.parse(arr)
+// [1,2,3,4,5]
 ```
 
-###### 递归
+**递归**
 
 ``` javascript
-var arr = [1, 2, [3, [4, 5]]]
-let result = []
-
-function fn(arr) {
-    arr.forEach(i => {
-        if (Array.isArray(i)) fn(i)
-        else {
-            result.push(i)
-        }
-    })
+function flatter(arr) {
+	let newArr = []
+	arr.forEach(item => {
+		if (Array.isArray(item)) {
+			// newArr.push(...flatter(item))
+			newArr = newArr.concat(flatter(item))
+		}
+		else {
+			newArr.push(item)
+		}
+	})
+	return newArr
 }
 ```
+
+**Reduce + 递归**
+
+``` js
+var arr = [1, 2, [3, [4, 5]]]
+function flatter(arr) {
+	return arr.reduce((prev, next) => {
+		return prev.concat(Array.isArray(next) ? flatter(next) : next)
+	}, [])
+}
+```
+
+**[].concat(...arr)**
+
+``` js
+var arr = [1, [2, [3, 4]]];
+console.log([].concat(...arr)); // [1, 2, [3, 4]]
+// 该操作可以拍平一层
+
+var arr = [1, [2, [3, 4]]];
+
+function flatten(arr) {
+
+    while (arr.some(item => Array.isArray(item))) {
+        arr = [].concat(...arr);
+    }
+
+    return arr;
+}
+
+console.log(flatten(arr))
+```
+
+
 
 ##### reduce 实现 map
 
@@ -967,9 +1009,24 @@ function shuffle(arr) {
 
 ##### new操作符
 
-1. 首先创建一个空的对象，空对象的__proto__属性指向构造函数的原型对象
+1. 首先创建一个空的对象，空对象的`__proto__`属性指向构造函数的原型对象
+
+   ``` js
+   const obj = {
+       __proto__: fn.prototype
+   }
+   ```
+
 2. 把上面创建的空对象赋值构造函数内部的this，用构造函数内部的方法修改空对象
-3. 如果构造函数返回一个非基本类型的值，则返回这个值，否则上面创建的对象
+
+3. 如果构造函数返回一个非基本类型的值a，则返回这个值a，否则返回上面创建的对象obj
+
+``` js
+function A() {
+    return [123]
+}
+new A() // [123]
+```
 
 
 
@@ -985,7 +1042,17 @@ function _new(fn, ...arg) {
 
 
 
-##### 实现instanceof
+##### instanceof
+
+``` js
+({}) instanceof Object; // true
+[] instanceof Array; // true
+[] instanceof Object; // true
+```
+
+
+
+###### 实现一个instanceof
 
 ``` javascript
 function myInstanceof(a, b) {
@@ -1231,6 +1298,41 @@ Function.prototype.apply = function (context, args) {
     return result
 }
 ```
+
+##### 递归
+
+递归是很常见的，有的时候递归的写法会有微妙的差别。拿多维数组的扁平化举例。
+
+``` js
+// 外部函数获取内部函数的返回值
+function flatter(arr) {
+	let newArr = []
+	arr.forEach(item => {
+		if (Array.isArray(item)) {
+			// newArr.push(...flatter(item))
+			newArr = newArr.concat(flatter(item))
+		}
+		else {
+			newArr.push(item)
+		}
+	})
+	return newArr
+}
+
+// 将值当作递归函数的参数
+function flatter(arr, newArr = []) {
+	arr.forEach(item => {
+		if (Array.isArray(item)) {
+			flatter(item, newArr)
+		} else {
+			newArr.push(item)
+		}
+	})
+	return newArr
+}
+```
+
+
 
 ### Proxy
 
