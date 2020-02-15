@@ -7,8 +7,6 @@ sidebarDepth: 2
 
 
 
-
-
 ## HTML5
 
 JavaScript脚本的**执行**会阻塞HTML的解析
@@ -4520,7 +4518,7 @@ CommonJS我们即使只想使用库中的一个函数，也会加载全部的代
 
 ##### 事件传播
 
-```text
+```html
 <body>
     <div class="outer">
         <div class="inner"></div>
@@ -5003,19 +5001,19 @@ XSS的本质是一种“HTML注入”，用户的输入数据被当成HTML代码
 
      - 只允许加载本站资源
 
-       ```
+       ```http
        Content-Security-Policy: default-src ‘self’
        ```
 
      - 图片只允许加载 HTTPS 协议
 
-       ```
+       ```http
        Content-Security-Policy: img-src https://*
        ```
 
      - 允许加载任何来源框架
 
-       ```
+       ```http
        Content-Security-Policy: child-src 'none'
        ```
 
@@ -5327,7 +5325,7 @@ Node事件循环一共有六个阶段，每个阶段中都有一个宏队列，�
 
 1. 通过jsonp跨域
 
-   ```
+   ```html
    <script>
    	function doSomething(json) {
        	//do something
@@ -5688,7 +5686,7 @@ function DFS(node, nodeList = []) {
 }
 ```
 
-###### 递归的深度优先遍历
+###### 非递归的深度优先遍历
 
 ``` javascript
 function DFS(node) {
@@ -6312,7 +6310,7 @@ module.exports = {
 
    比较容易混淆，所以容易会认为请求是串行的，因为
 
-   ```
+   ```html
    	<script type="text/javascript" src="./test.js"></script>
        <script type="text/javascript" src="./test2.js"></script>
    ```
