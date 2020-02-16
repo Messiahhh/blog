@@ -808,6 +808,8 @@ s = null;
 
 ### 数组
 
+
+
 ##### 判断数组
 
 ``` javascript
@@ -824,6 +826,8 @@ Object.prototype.toString.call(arr) === "[object Array]"
 Array.isArray(arr)
 ```
 
+
+
 ##### 转化为数组
 
 ``` javascript
@@ -837,6 +841,8 @@ Array.from(set)
 // 只能转化类数组对象 (arguments和Nodelist)
 Array.prototype.slice.call(arguments)
 ```
+
+
 
 ##### 数组去重
 
@@ -894,6 +900,8 @@ function unique(arr) {
     return newArr
 }
 ```
+
+
 
 ##### 数组扁平化
 
@@ -1006,6 +1014,8 @@ function shuffle(arr) {
 
 
 ### 对象
+
+
 
 ##### new操作符
 
@@ -1281,8 +1291,8 @@ Function.prototype.bind = function (context, ...args) {
 
 ``` javascript
 Function.prototype.call = function (context, ...args) {
-    // context为null时，为window
-    let context = context || window
+    // context为null时，context设置为window
+    context = context || window
     context.fn = this
     let result = context.fn(...args)
     delete context.fn
@@ -1291,7 +1301,7 @@ Function.prototype.call = function (context, ...args) {
 
 // apply 只需要把参数修改即可
 Function.prototype.apply = function (context, args) {
-    let context = context || window
+    context = context || window
     context.fn = this
     let result = context.fn(...args)
     delete context.fn
@@ -2868,7 +2878,7 @@ const element = (
 );
 ```
 
-```react
+```js
 const element = React.createElement(
   'h1',
   {className: 'greeting'},
