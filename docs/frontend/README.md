@@ -1107,46 +1107,83 @@ let target = source.concat()
 ##### 深拷贝
 
 ```javascript
-// 一:
-// 只能用于对象内部没有方法时
+// 一:只能用于对象内部没有方法时
 JSON.parse(JSON.stringify(obj))
 
-// 二:
-// 1.判断属性是对象还是函数
-// 2.数组或是对象
-// 3.判断是否为对象的isObject
-// 4.WeakMap 实现 循环引用的检测
-
-function deepClone(source, hash = new WeakMap()) {
-    let target
-    if (hash.has(source)) {
-        return hash.get(source)
-    }
-    if (typeof source === 'object') {
-        target = Array.isArray(source) ? [] : {}
-        hash.set(source, target)
-        for (let key in source) {
-            if (source.hasOwnProperty(key)) {
-                target[key] = isObject(source[key]) ? deepClone(source[key], hash) : source[key]
-            }
-        }
-    }
-    else {
-        target = source
-    }
-    return target
+// 二: 递归，简陋版本
+// 属性值可以是数组或对象，此时进行递归
+// 属性值也可以函数
+function deepClone(source) {
+	let target = Array.isArray(source) ? [] : {}
+	if (typeof target === 'object') {
+		for (let [key, value] of Object.entries(source)) {
+			source[key] = deepClone(value)
+		}
+	} else {
+		target = value
+	}
+	return target
 }
 
-function isObject(obj) {
-    return (typeof obj === "object" || typeof obj === "function") && obj !== null
+// 但无法解决循环引用的问题
+// 例如
+let obj = {}
+obj.a = obj
+deepClone(obj)
+// 会一直递归执行deepClone，造成函数栈溢出
+
+
+// 复杂版本
+// 使用WeakMap解决循环引用的问题
+// 使用WeakMap而不是Map是因为其使用的弱引用。该引用不会被垃圾回收器记录。
+function deepClone(source, hash = new WeakMap()) {
+	let target
+	if (hash.has(source)) {
+		return hash.get(source)
+	}
+	if (typeof source === 'object') {
+		target = Array.isArray(source) ? [] : {}
+		hash.set(source, target)
+		for (let [key, value] of Object.entries(source)) {
+			target[key] = deepClone(value, hash)
+		}	
+	}
+	else {
+		target = source
+	}
+	
+
+	return target
 }
 var obj = {}
 obj.a = obj
-
 deepClone(obj)
 
-
 ```
+
+不过以上的深克隆只克隆了对象自身的属性，没有克隆原型链上的属性。若想要完全拷贝，可以这样做：
+
+``` js
+function completeDeepClone(source) {
+    function deepClone(source, hash = new WeakMap()) {
+        // ... 上面的代码
+    }
+    let ret = deepClone(source)
+    Object.setPrototypeOf(ret, Object.getPrototypeOf(source))
+    return ret
+}
+
+// 使用
+function Animal(name) {
+    this.name = name
+}
+Animal.prototype.master = 'akara'
+completeDeepClone(new Animal())
+```
+
+
+
+
 
 ##### 继承
 
