@@ -1655,154 +1655,360 @@ WeakSet 的成员只能是对象。其次，WeakSet 中的对象都是弱引用�
 
 
 
-### Promise实现
+### Promise的实现
 
-一个简单的Promise实现
+
+
+由于代码比较复杂，这里先给出一个最核心的实现，在此之上再加功能。
+
+##### 核心代码
+
+``` js
+class Promise {
+	constructor(executor) {
+        // Promise的状态
+		this.status = 'pending'
+        // Promise状态对应的值
+		this.value = undefined
+		this.onResolvedCallback = []
+		this.onRejectedCallback = []
+
+        // 将Promise的状态转化从pending转化为fulfilled
+		const resolve = (value) => {
+			if (this.status === 'pending') {
+                this.status = 'fulfilled'
+                this.value = value
+                this.onResolvedCallback.forEach(callback => callback())
+			}
+		}
+
+        // 将Promise的状态转化从pending转化为rejected
+		const reject = (reason) => {
+			if (this.status === 'pending') {
+				this.status = 'rejected'
+				this.value = reason
+				this.onRejectedCallback.forEach(callback => callback())
+			}
+		}
+        
+		try {
+            // 执行传入的函数
+			executor(resolve, reject)
+		} catch (error) {
+			reject(error)
+		}
+	}
+
+	then(onResolve, onReject) {
+        // then函数需要返回一个新的Promise
+		return new Promise((resolve, reject) => {
+            // 和事件不同。事件先触发再监听则不会触发回调函数
+            // 而Promise即使状态已经转化，也会触发回调
+			if (this.status === 'fulfilled') {
+                // 通过setTimeout实现异步。
+                // 与真实的实现不同，setTimeout的回调会放进macro task队列。
+                // 而真实的实现，then的回调会放进micro task队列。
+				setTimeout(() => {
+                    // onResolve的函数返回值会被新的Promise进行resolve
+                    // var b = a.then(data => {
+					//    return data * data
+					//	})
+                    // 此处若a的内部值为10，则b的内部值为100
+					resolve(onResolve(this.value))
+				})
+			}
+			else if (this.status === 'rejected') {
+				setTimeout(() => {
+                    // 注意这里也是resolve，不要误以为是 reject(onReject(this.value))
+					resolve(onReject(this.value))
+				})
+			}
+			else if (this.status === 'pending') {
+				this.onResolvedCallback.push(() => {
+					setTimeout(() => {
+						resolve(onResolve(this.value))
+					})
+				})
+
+				this.onRejectedCallback.push(() => {
+					setTimeout(() => {
+						resolve(onReject(this.value))
+					})
+				})
+			}
+		})
+	}
+}
+```
+
+好，核心功能实现了，再一点点加功能。
+
+一：我们有的时候会`resolve`一个`Promise`，例如
+
+``` js
+var p1 = new Promise((resolve, reject) => {
+    setTimeout(() => {
+        resolve(1)
+    }, 2000)
+})
+var p2 = new Promise((resolve, reject) => {
+    resolve(p1)
+})
+
+// 或者
+
+var p1 = new Promise((resolve, reject) => {
+    setTimeout(() => {
+        resolve(1)
+    }, 2000)
+})
+
+var p2 = a.then(data => {
+    return p1
+})
+```
+
+我们希望p2的状态以及内部值和p1保持一致。那么我们稍微修改一下代码。
+
+``` js
+const resolve = (value) => {
+			if (this.status === 'pending') {
+                // 加了这里的代码
+                // 如果resolve的参数是Promise，状态与其保持一直
+				if (value instanceof Promise) {
+					value.then((data) => {
+						resolve(data)
+					}, (reason) => {
+						reject(reason)
+					})
+				} else {
+					this.status = 'fulfilled'
+					this.value = value
+					this.onResolvedCallback.forEach(callback => callback())
+				}
+			}
+		}
+```
+
+二 异常的捕获
+
+``` js
+var p1 = new Promise((resolve, reject) => {
+    reject(new Error())
+})
+var p2 = p1.then((data) => {
+    
+}, (reason) => {
+    
+})
+```
+
+当这里p1状态为rejected时，可能有人会误以为p2也是rejected，然而实际是fulfilled。
+
+只有当`onFulfilled` 或 `onRejected`抛出了异常`e`, 则`p2`应当以`e`为`reason`转化成`rejected`。
+
+所以我们需要对可能的异常进行捕获。
+
+``` js
+setTimeout(() => {
+    try {
+        resolve(onResolve(this.value))
+    } catch (e) {
+        reject(e)
+    }
+})
+```
+
+三
+
+1. 如果 `onFulfilled` 不是一个函数且`promise1`已经fulfilled，则`promise2`必须以`promise1`的值fulfilled.
+
+2. 如果 `OnReject` 不是一个函数且`promise1`已经rejected, 则`promise2`必须以相同的reason被reject.
+
+``` js
+if (typeof onReject !== 'function') {
+    reject(this.value)
+} else {
+    resolve(onReject(this.value))
+}
+// ...
+if (typeof onResolve !== 'function') {
+    resolve(this.value)
+} else {
+    resolve(onResolve(this.value))	
+}
+```
+
+代替原先的
+
+``` js
+resolve(onReject(this.value))
+// ...
+resolve(onResolve(this.value))	
+```
+
+
+
+那么我们现在的代码如下
+
+##### 复杂版
+
+``` js
+class Promise {
+	constructor(executor) {
+		if (typeof executor !== 'function') {
+			throw new TypeError("Promise resolver undefined is not a function")
+		}
+		this.status = 'pending'
+		this.value = undefined
+		this.onResolvedCallback = []
+		this.onRejectedCallback = []
+
+		const resolve = (value) => {
+			if (this.status === 'pending') {
+				if (value instanceof Promise) {
+					value.then((data) => {
+						resolve(data)
+					}, (reason) => {
+						reject(reason)
+					})
+				} else {
+					this.status = 'fulfilled'
+					this.value = value
+					this.onResolvedCallback.forEach(callback => callback())
+				}
+			}
+		}
+
+		const reject = (reason) => {
+			if (this.status === 'pending') {
+				this.status = 'rejected'
+				this.value = reason
+				this.onRejectedCallback.forEach(callback => callback())
+			}
+		}
+		try {
+			executor(resolve, reject)
+		} catch (error) {
+			reject(error)
+		}
+	}
+
+	then(onResolve, onReject) {
+		return new Promise((resolve, reject) => {
+			if (this.status === 'fulfilled') {
+				setTimeout(() => {
+					if (typeof onResolve !== 'function') {
+						resolve(this.value)
+					} else {
+						try {
+							resolve(onResolve(this.value))
+						} catch (error) {
+							reject(error)
+						}
+							
+					}
+				})
+			}
+			else if (this.status === 'rejected') {
+				setTimeout(() => {
+					if (typeof onReject !== 'function') {
+						reject(this.value)
+					} else {
+						try {
+							resolve(onReject(this.value))
+						} catch (error) {
+							reject(error)
+						}
+						
+					}
+				})
+			}
+			else if (this.status === 'pending') {
+				this.onResolvedCallback.push(() => {
+					setTimeout(() => {
+						if (typeof onResolve !== 'function') {
+							resolve(this.value)
+						} else {
+							try {
+								resolve(onResolve(this.value))
+							} catch (error) {
+								reject(error)
+							}
+						}
+					})
+				})
+
+				this.onRejectedCallback.push(() => {
+					setTimeout(() => {
+						if (typeof onReject !== 'function') {
+							reject(this.value)
+						} else {
+							try {
+								resolve(onReject(this.value))
+							} catch (error) {
+								reject(error)
+							}
+						}
+					})
+				})
+			}
+		})
+	}
+}
+
+```
+
+##### 实现catch函数
+
+``` js
+catch(onReject) {
+    return this.then(null, onReject)
+}
+```
+
+##### 实现all函数
+
+``` js
+static all(promiseArr) {
+    return new Promise((resolve, reject) => {
+        let res = []
+        let length = promiseArr.length
+        let count = 0
+        promiseArr.forEach((promise, index) => {
+            promise.then(value => {
+                res[index] = value
+                count++
+                if (count === length) {
+                    resolve(res)
+                }
+            }, (reason) => {
+                reject(reason)
+            })
+        })
+    })
+}
+```
+
+##### 实现race函数
+
+``` js
+static race(promiseArr) {
+    return new Promise((resolve, reject) => {
+        promiseArr.forEach((promise) => {
+            promise.then(value => {
+                resolve(value)
+            }, reason => {
+                reject(reason)
+            })
+        })
+    })
+}
+```
+
+用代码测试一下
 
 ``` javascript
-class Promise {
-    constructor(executor) {
-        this.status = "pending"
-        this.value = undefined
-        this.onResolvedCallback = []
-        this.onRejectedCallback = []
-
-        const resolve = (value) => {
-            if (value instanceof Promise) {
-                value.then((data) => {
-                    resolve(data)
-                }, (reason) => {
-                    reject(reason)
-                })
-            }
-            else {
-                if (this.status === "pending") {
-                    this.status = "fulfilled"
-                    this.value = value
-                    this.onResolvedCallback.forEach(callback => {
-                        callback()
-                    })
-                }
-            }
-        }
-
-        const reject = (reason) => {
-            if (this.status === "pending") {
-                this.status = "rejected"
-                this.value = reason
-                this.onRejectedCallback.forEach(callback => {
-                    callback()
-                })
-            }
-        }
-
-        try {
-            executor(resolve, reject)
-        } catch (e) {
-            reject(e)
-        }
-
-    }
-
-    then(onResolve, onReject) {
-        let promise = new Promise((resolve, reject) => {
-            if (this.status === "pending") {
-                this.onResolvedCallback.push(() => {
-                    // setTimeout 模拟异步， 实际上then是放进微队列而setTimeout是放进宏队列
-                    setTimeout(() => {
-                        try {
-                            resolve(onResolve(this.value))
-                        } catch (e) {
-                            reject(e)
-                        }
-                    })
-                })
-                this.onRejectedCallback.push(() => {
-                    setTimeout(() => {
-                        try {
-                            resolve(onReject(this.reason))
-                        } catch (e) {
-                            reject(e)
-                        }
-                    })
-                })
-            }
-            else if (this.status === "fulfilled") {
-                setTimeout(() => {
-                    try {
-                        let x = onResolve(this.value)
-                        resolvePromise(promise, x, resolve, reject)
-                        // resolve(onResolve(this.value))
-                    } catch (e) {
-                        reject(e)
-                    }
-                })
-            }
-            else if (this.status === "rejected") {
-                setTimeout(() => {
-                    try {
-                        resolve(onReject(this.reason))
-                    } catch (e) {
-                        reject(e)
-                    }
-                })
-            }
-        })
-        return promise
-    }
-
-    catch(onReject) {
-        return this.then(null, onReject)
-    }
-
-    static all(promiseArr) {
-        return new Promise((resolve, reject) => {
-            let res = []
-            let length = promiseArr.length
-            let count = 0
-            promiseArr.forEach((promise, index) => {
-                promise.then(value => {
-                    res[index] = value
-                    count++
-                    if (count === length) {
-                        resolve(res)
-                    }
-                }, (reason) => {
-                    reject(reason)
-                })
-            })
-        })
-    }
-
-
-    static race(promiseArr) {
-        return new Promise((resolve, reject) => {
-            promiseArr.forEach((promise) => {
-                promise.then(value => {
-                    resolve(value)
-                }, reason => {
-                    reject(reason)
-                })
-            })
-        })
-    }
-}
-
-}
-
-function resolvePromise(promise, x, resolve, reject) {
-    if (x instanceof Promise) {
-        x.then((data) => {
-            resolvePromise(promise, data, resolve, reject)
-        }, (reason) => {
-            reject(x)
-        })
-    } else {
-        resolve(x)
-    }
-}
-
-
 // example
 
 let p1 = new Promise((resolve,reject)=>{
@@ -1829,6 +2035,12 @@ Promise.all([p1, p2, p3])
 .catch(console.error)
 
 ```
+
+
+
+
+
+
 
 ### Generator
 
@@ -6155,6 +6367,26 @@ function repeat(fn, times, wait) {
     return func
 }
 ```
+
+##### 实现sleep函数
+
+``` js
+function sleep(timer) {
+	return new Promise((resolve, reject) => {
+		setTimeout(() => {
+			resolve()
+		}, timer)
+	})
+}
+
+// 使用
+async function test () {
+	await sleep(1000)
+	console.log('awake')
+}
+```
+
+
 
 ##### 实现LazyMan
 
