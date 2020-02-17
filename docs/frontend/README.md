@@ -3218,7 +3218,7 @@ const element = {
 
 React的组件分为**函数组件**和**class组件**
 
-**函数组件**没有内部的**状态**，也没有**事件**，也没有**生命周期**。
+**函数组件**没有内部的**状态**，也没有**生命周期**。
 
 ``` javascript
 // 函数组件
@@ -3232,7 +3232,7 @@ function Hello(props) {
 }
 ```
 
-**Class组件**则拥有**状态**，**事件**，**生命周期**
+**Class组件**则拥有**状态**，**生命周期**
 
 ``` js
 class Count extends React.Component {
@@ -3464,7 +3464,7 @@ this.setState((state, props) => {
 
 一句话描述，在**合成事件**和**组件的生命周期**中`setState`是异步的；在**原生事件**和**定时器**中`setState`是同步的。
 
-React内部维护了一个标识`isBatchingUpdates`，当这个值为`true`表示把state缓存进队列，最后进行批量更行；当这个值为`false`表示直接进行更新。
+React内部维护了一个标识`isBatchingUpdates`，当这个值为`true`表示把setState缓存进队列，最后进行批量更行；当这个值为`false`表示直接进行更新。
 
 **合成事件**和**组件的生命周期**中，会把`isBatchingUpdates`设置为true
 
@@ -5977,7 +5977,9 @@ window.on('message', function (e) {
 
 ##### nginx反向代理
 
+同源策略是浏览器的策略。
 
+向同源的nginx服务器发送请求，nginx再将请求转发给不同源的服务端。
 
 
 
