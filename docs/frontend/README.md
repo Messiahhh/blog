@@ -1967,6 +1967,18 @@ catch(onReject) {
 }
 ```
 
+##### 实现finally函数
+
+``` js
+finally(cb) {
+	let P = this.constructor
+	return this.then(
+		value => P.resolve(cb()).then(() => value),
+		reason => P.resolve(cb()).then(() => {throw reaon})
+	)
+}
+```
+
 ##### 实现all函数
 
 ``` js
@@ -2044,7 +2056,10 @@ Promise.all([p1, p2, p3])
 
 ### Generator
 
-Generator是种特殊的函数。
+Generator是种特殊的函数，也可以叫做遍历器生成函数，其特殊在
+
+- 在function后面有个星号
+- 函数内部使用了yield关键字
 
 ``` js
 function* A() {
@@ -2052,21 +2067,12 @@ function* A() {
 	yield 'b'
 	return 'c'
 }
-```
-
-和普通函数相比
-
-- 在function后面有个星号
-- 函数内部使用了yield关键字
-
-``` js
 var x = A()
-console.log(x)
 ```
 
-> Generator 函数的调用方法与普通函数一样，也是在函数名后面加上一对圆括号。不同的是，调用 Generator 函数后，该函数并不执行，返回的也不是函数运行结果，而是一个指向内部状态的指针对象，遍历器对象。
+> Generator 函数的调用方法与普通函数一样，也是在函数名后面加上一对圆括号。不同的是，调用 Generator 函数后，该函数并不执行，返回的也不是函数运行结果，而是一个指向内部状态的指针对象：遍历器对象。
 
-遍历器对象部署了next方法，调用next方法会返回对象，对象具有两个属性。
+**遍历器对象**部署了next方法，调用next方法会返回对象，对象具有两个属性。
 
 ```js
 x.next()
@@ -2081,9 +2087,29 @@ x.next()
 
 相当于在外面改变了函数内部的行为。
 
+``` js
+function* A() {
+    let a = yield 1
+    console.log(a)
+}
+var x = A()
+x.next()
+x.next() // console.log(undefined)
 
+// Compare
 
-#### Iterator/遍历器
+function* A() {
+    let a = yield 1
+    console.log(a)
+}
+var x = A()
+x.next()
+x.next(111) // console.log(111)
+```
+
+##### Iterator
+
+> 本节引用于阮一峰文章
 
 JavaScript 原有的表示“集合”的数据结构，主要是数组（`Array`）和对象（`Object`），ES6 又添加了`Map`和`Set`。这样就有了四种数据集合，用户还可以组合使用它们，定义自己的数据结构，比如数组的成员是`Map`，`Map`的成员是对象。这样就需要一种统一的接口机制，来处理所有不同的数据结构。
 
@@ -2223,6 +2249,8 @@ let arr2 = Array.from(arrayLike); // ['a', 'b', 'c']
 
 一个数据结构只要部署了`Symbol.iterator`属性，就被视为具有 iterator 接口，就可以用`for...of`循环遍历它的成员。也就是说，`for...of`循环内部调用的是数据结构的`Symbol.iterator`方法。
 
+
+
 ### AJAX
 
 ``` javascript
@@ -2245,6 +2273,9 @@ xhr.setRequestHeader()
 // 超时控制
 xhr.timeout =
 xhr.ontimeout = function () {}
+// 中止请求
+xhr.abort()
+// 发送请求
 xhr.send()
 ```
 
@@ -2277,21 +2308,6 @@ const Ajax = ({
         else {
             header = 'application/json'
             data = JSON.stringify(data)
-        }
-        xhr.setRequestHeader('Content-type', header)
-        xhr.send(data)
-    }
-}
-
-Ajax.get = (url, callback) => {
-    return Ajax({
-        url
-    }, callback)
-}
-
-Ajax.get('http://localhost:3000/getData', (res) => {
-    console.log(res)
-})
 ```
 
 ##### Promise封装
@@ -2544,20 +2560,28 @@ fetch(url, options).then(function(response) {
 
 ##### XHR（AJAX）和Fetch的区别
 
-1. AJAX同源默认携带Cookie，不同源则默认不会携带Cookie。如果使用CORS进行跨域的AJAX请求时，若想带上Cookie，则应该同时在客户端和服务端进行设置
+1. AJAX和Fetch发送同源请求时都默认携带Cookie，跨域请求则都默认不携带Cookie。
 
-   1. 客户端
+   当我们使用CORS来进行跨域的时候，若想使其携带Cookie。
 
-      ``` javascript
-      var xhr = new XMLHttpRequest()
-      xhr.withCredentials = true
-      ```
+   服务端设置
 
-   2. 服务端，设置响应头部
+   ``` http
+   Access-Control-Allow-Credentials: true
+   ```
 
-      ``` http
-      Access-Control-Allow-Credentials: true
-      ```
+   若想要使我们的Ajax或Fetch携带Cookie，只需如此。
+
+   ``` javascript
+   // Ajax
+   var xhr = new XMLHttpRequest()
+   xhr.withCredentials = true
+   
+   // Fetch
+   fetch(url, {
+       credentials: "include"
+   })
+   ```
 
    Fetch的credentials属性，默认值为same-origin，想要跨域发送Cookie则设置为include
 
@@ -2565,9 +2589,31 @@ fetch(url, options).then(function(response) {
    - `same-origin`: 只有当URL与响应脚本同源才发送 cookies、 HTTP Basic authentication 等验证信息.(浏览器默认值,在旧版本浏览器，例如safari 11依旧是omit，safari 12已更改)
    - `include`: 不论是不是跨域的请求,总是发送请求资源域在本地的 cookies、 HTTP Basic authentication 等验证信息.
 
-   这一点来看ajax和fetch是相同的。
+2. ajax原生支持abort，fetch需要使用AbortController才能实现abort
 
-2. fetch不支持abort，也不支持超时控制（timeout）
+   ``` js
+   // ajax
+   xhr.abort()
+   
+   // fetch
+   let controller = new AbortController()
+   let signal = controller.signal
+   
+   fetch(url, {
+       signal
+   })
+   
+   controller.abort()
+   
+   ```
+
+3. fetch不支持超时控制timeout
+
+   ``` js
+   // ajax的超时控制
+   xhr.timeout = 2000
+   xhr.ontimeout = () => {}
+   ```
 
    我们如何实现**fetch的超时控制**
 
@@ -2582,7 +2628,7 @@ fetch(url, options).then(function(response) {
    .catch(reason => {}) // 请求失败
    ```
 
-3. fetch无法检测请求的进度(onprogress)
+4. fetch无法检测请求的进度(onprogress)
 
 ### axios
 
@@ -2622,8 +2668,9 @@ const server = http.createServer((req, res) => {
         res.statusCode = 200
         // 单独设置响应头部
         res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        // Set-Cookie
         res.setHeader('Set-Cookie', 'name=akara; secure')
-
+		
         // 设置响应实体
         res.write("hello world")
         res.write("!!!")
@@ -2860,7 +2907,7 @@ const bluebird = require('bluebird')
 const mysql = require('mysql')
 // mysql配置文件
 let config = require('./config')
-const conn = bluebird.promisifyAll(config)
+const conn = bluebird.promisifyAll(mysql.createConnection(config))
 conn.connect()
 
 // 使用
@@ -2885,10 +2932,18 @@ app.use(async (ctx, next) => {
 
 // response
 app.use(ctx => {
+  ctx.status = 200
+  ctx.set('Content-type', 'text/plain; charset=utf-8')
   ctx.body = 'Hello Koa';
 });
 
 app.listen(3000);
+
+// 一些其他的方法
+ctx.redirect('/home')
+// 相当于
+// res.status = 302
+// res.setHeader('Location', '/home')
 ```
 
 ##### 核心实现
@@ -5674,7 +5729,7 @@ Node事件循环一共有六个阶段，每个阶段中都有一个宏队列，�
 
 
 
-## 跨域
+## 跨域解决方案
 
 同源：协议，域名，端口号相同
 
@@ -5682,80 +5737,106 @@ Node事件循环一共有六个阶段，每个阶段中都有一个宏队列，�
 
 
 
-##### 跨域解决方案
 
-1. 通过jsonp跨域
 
-   ```html
-   <script>
-   	function doSomething(json) {
-       	//do something
-   	}
-   </script>
+##### 通过jsonp跨域
 
-   <script src="http://api.example.com/data?callback=doSomething"></script>
-   ```
+客户端
 
-   缺点：仅支持GET请求，安全性低
+```html
+<script>
+	function doSomething(json) {
+    	//do something
+	}
+</script>
 
-2. document.domain
+<script src="http://api.example.com/data?callback=doSomething&parma=a"></script>
+```
 
-   只适用于一级域名相同，二级域名不同的情况。
+服务端
 
-   如a.example.com和b.example.com。此时两个网站都设置 `document.domain =  "example.com"`
+``` js
+ctx.body = `doSomething(${myJson})` // 传参
+```
 
-3. window.name
-
-   只要在同一个窗口，前一个网页设置了window.name，后一个网页就能获取值。
-
-   使用时，先设置iframe的src为目标网页，目标网页中设置window.name，再修改iframe的src为一个与本页面同源的网页，从而获取到window.name。
-
-4. location.hash
-
-   和window.name 类似，这个在iframe内部的页面修改location.hash，在父页面监听hash的改变。
-
-5. CORS
-
-   只需要后端在响应头设置`Access-Control-Allow-Origin: *`， * 为任意Origin，也可以指定Origin
-
-   使用CORS时默认不发送Cookie，想要发送Cookie需要:
-
-   1. 设置`Access-Control-Allow-Credentials: true`
-   2. 此时`Access-Control-Allow-Origin`不能设置为 * ，必须指定Origin
-
-   浏览器把请求分为简单请求与非简单请求
-
-   简单请求必须满足以下两大条件
-
-   1. 请求方法为 HEAD / GET / POST
-   2. HTTP头部不超过以下几种
-      1. Accept
-      2. Accept-Language
-      3. Content-Language
-      4. Last-Event-ID
-      5. Content-Type：只限于三个值`application/x-www-form-urlencoded`、`multipart/form-data`、`text/plain`
-
-   不满足的就为非简单请求。
-
-   非简单请求的CORS请求，会在正式通信之前，增加一次HTTP查询请求，称为"预检"请求。
-
-   这个请求的请求方法为`OPTIONS` ，预检请求的头部还会包括以下几个字段
-
-   `Origin`
-
-   `Access-Control-Request-Method` 用来表示非简单请求的请求方法
-
-   `Access-Control-Request-Headers`  用来表示非简单请求的额外头部，例如自定义头部
+缺点：**仅支持GET请求**，安全性低
 
 
 
-6. postMessage 跨文档通信
+##### document.domain
 
-   postMessage 和 onmessage
+只适用于一级域名相同，二级域名不同的情况。
 
-7. nginx反向代理
+如a.example.com和b.example.com。此时两个网站都设置 `document.domain =  "example.com"`
 
-8. Node中间件代理
+
+
+##### window.name
+
+只要在同一个窗口，前一个网页设置了window.name，后一个网页就能获取值。
+
+使用时，先设置iframe的src为目标网页，目标网页中设置window.name，再修改iframe的src为一个与本页面同源的网页，从而获取到window.name。
+
+
+
+##### location.hash
+
+和window.name 类似，这个在iframe内部的页面修改location.hash，在父页面监听hash的改变。
+
+
+
+##### CORS
+
+CORS（Cross-Origin ResourceSharing）跨域资源共享
+
+只需要后端在响应头设置`Access-Control-Allow-Origin: *`， * 为任意Origin，也可以指定Origin
+
+使用CORS时默认不发送Cookie，想要发送Cookie需要:
+
+1. 设置`Access-Control-Allow-Credentials: true`
+2. 此时`Access-Control-Allow-Origin`不能设置为 * ，必须指定Origin
+
+浏览器把请求分为简单请求与非简单请求
+
+简单请求必须满足以下两大条件
+
+1. 请求方法为 HEAD / GET / POST
+2. HTTP头部不超过以下几种
+   1. Accept
+   2. Accept-Language
+   3. Content-Language
+   4. Last-Event-ID
+   5. Content-Type：只限于三个值`application/x-www-form-urlencoded`、`multipart/form-data`、`text/plain`
+
+不满足的就为非简单请求。
+
+非简单请求的CORS请求，会在正式通信之前，增加一次HTTP查询请求，称为"预检"请求。
+
+这个请求的请求方法为`OPTIONS` ，预检请求的头部还会包括以下几个字段
+
+`Origin` 
+
+`Access-Control-Request-Method` 用来表示非简单请求的请求方法
+
+`Access-Control-Request-Headers`  用来表示非简单请求的额外头部，例如自定义头部
+
+
+
+
+
+#####  postMessage 
+
+跨文档通信
+
+postMessage 和 onmessage
+
+
+
+##### nginx反向代理
+
+
+
+##### Node中间件代理
 
 
 
