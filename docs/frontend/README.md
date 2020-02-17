@@ -5,6 +5,10 @@ sidebarDepth: 2
 
 [toc]
 
+> 卑微的请求读者大大点个:star2:啦，满足我小小的虚荣心:heart: 非常感谢！
+>
+> 点击右上角就可以去本文档的仓库啦
+
 
 
 ## HTML5
@@ -5156,6 +5160,66 @@ Status Code: 302 Found
 
 **304 Not Modidied：用于浏览器缓存。**
 
+### HTTP头部
+
+一些常用的请求/响应/通用头部
+
+##### 请求头部
+
+``` http
+cookie: ""
+host: ""
+```
+
+
+
+###### host 与 虚拟主机
+
+host字段是HTTP1.1新增的头部，主要用来实现虚拟主机
+
+一台物理主机上当然可以在不同端口上部署多个服务端。一台主机也可以给多个不同的域名以供访问。
+
+那么可以通过nginx来实现虚拟主机，配置类似如下。
+
+``` nginx
+server
+{
+    listen 80
+    server_name www.aaa.com;
+    # 可以在这进行代理
+    location / {
+        proxy_pass localhost:3000
+    }    
+}
+server
+{
+    listen 80
+    server_name www.bbb.com;
+    location / {
+        proxy_pass localhost:8080
+    }
+}
+```
+
+无论是`www.aaa.com`还是`www.bbb.com`，都能访问我们的服务器。
+
+根据域名/host的不同，代理向不同的服务端。
+
+
+
+##### 响应头部
+
+``` http
+Set-Cookie: ""
+Location: '/'
+```
+
+
+
+##### 通用头部
+
+
+
 
 
 ### HTTP协议1.0，1.1和2.0的区别
@@ -5739,7 +5803,7 @@ Node事件循环一共有六个阶段，每个阶段中都有一个宏队列，�
 
 
 
-##### 通过jsonp跨域
+##### JSONP
 
 客户端
 
@@ -5765,23 +5829,96 @@ ctx.body = `doSomething(${myJson})` // 传参
 
 ##### document.domain
 
-只适用于一级域名相同，二级域名不同的情况。
+Cookie 是服务器写入浏览器的一小段信息，只有同源的网页才能共享。但是，两个网页一级域名相同，只是二级域名不同，浏览器允许通过设置`document.domain`共享 Cookie。
 
-如a.example.com和b.example.com。此时两个网站都设置 `document.domain =  "example.com"`
+如a.example.com和b.example.com。
+
+此时两个网站都设置 `document.domain =  "example.com"`， 那么两个网页就可以共享Cookie了。
+
+``` js
+// a.example.com
+document.cookie = 'aaa'
+
+// b.example.com 
+console.log(document.cookie) // 'aaa'
+```
+
+
 
 
 
 ##### window.name
 
-只要在同一个窗口，前一个网页设置了window.name，后一个网页就能获取值。
+这个方法主要用于**父窗口和iframe窗口的通信**。
 
-使用时，先设置iframe的src为目标网页，目标网页中设置window.name，再修改iframe的src为一个与本页面同源的网页，从而获取到window.name。
+如果父窗口和iframe窗口是不同源的，则通常无法进行通信。
+
+``` html
+<html>
+    <body>
+        <!-- 我是父窗口 -->
+        <iframe src='xxx.com'>
+            <!-- 我是子窗口 -->
+        </iframe>
+    </body>
+</html>
+```
+
+
+
+`window.name`特点：无论是否同源，只要在同一个窗口里，前一个网页设置了这个属性，后一个网页可以读取它。
+
+例如，我们在a.com页面下设置
+
+``` js
+window.name = '123'
+location.href = 'b.com'
+```
+
+然后在b.com也能获取到`window.name`的值。
+
+
+
+实现跨域：
+
+使用时，先设置`iframe`的`src`为我们想要通信的目标页面。当目标页面的`window.name`修改时，将我们的`iframe`的`src`修改为一个和父窗口同源的页面。
+
+
+
+本质：
+
+iframe内的目标页面 <=> iframe内的一个和父窗口同源的页面 <=> 父窗口
 
 
 
 ##### location.hash
 
-和window.name 类似，这个在iframe内部的页面修改location.hash，在父页面监听hash的改变。
+这个方法也是主要用于**父窗口和iframe窗口的通信**。
+
+
+
+特点：如果只是改变片段标识符(fragment/hash)，页面不会重新刷新。
+
+
+
+实现跨域：
+
+父窗口修改`iframe`窗口的`src`
+
+``` js
+// 父窗口
+let src = `${originUrl}#${data}`
+document.querySelector('iframe').src = src
+```
+
+`iframe`窗口的页面不会刷新，但是能知道`hash`的变化
+
+``` js
+// iframe窗口
+window.onhashchange = function () {}
+```
+
+同理，`iframe`窗口也可以改变父窗口的`hash`来实现通信。
 
 
 
@@ -5826,9 +5963,15 @@ CORS（Cross-Origin ResourceSharing）跨域资源共享
 
 #####  postMessage 
 
-跨文档通信
+跨文档通信。比起`window.name`和`location.hash`，该方法更加方便。
 
-postMessage 和 onmessage
+``` js
+window.postMessage('message', url) 
+
+window.on('message', function (e) {
+    console.log(e.data)
+})
+```
 
 
 
@@ -5836,7 +5979,7 @@ postMessage 和 onmessage
 
 
 
-##### Node中间件代理
+
 
 
 
