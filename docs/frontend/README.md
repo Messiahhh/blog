@@ -2938,7 +2938,7 @@ app.use(async (ctx, next) => {
 app.use(ctx => {
   ctx.status = 200
   ctx.set('Content-type', 'text/plain; charset=utf-8')
-  ctx.body = 'Hello Koa';
+  ctx.body = 'Hello Koa'
 });
 
 app.listen(3000);
@@ -3553,10 +3553,24 @@ React的state成为组件/表单的唯一数据源，渲染表单的组件还控
 我们可以把用户输入的小写字符转化为大写
 
 ``` javascript
-handleChange = (e) => {
-    this.setState({
-        value: e.target.value.toUpperCase()
-    })
+class MyInput extends React.Component {
+    constructor(props) {
+        super(props)
+        this.state = {
+            value: ""
+        }
+    }
+    handlerChange = (e) => {
+        this.setState({
+            value: e.target.value.toUpperCase()
+        })
+    }
+
+    render() {
+        return (
+            <input value={this.state.value} onChange={handlerChange} />
+        )
+    }
 }
 ```
 
@@ -4305,7 +4319,7 @@ function User() {
 ##### $属性
 
 - `el`
-- `data`
+- `$data`
 - `computed`
 - `methods`
 - `template`
