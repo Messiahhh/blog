@@ -5764,13 +5764,26 @@ A向B发送自己的公钥途中，公钥被黑客截取。然后黑客把自己
 
 ## 事件循环
 
-##### 宏任务 和 微任务
+##### 宏/微任务，队列
 
-macroTask: setTimeout， setInterval，setImmediate(Node专有)， I/O 操作，定时器
+宏任务`macroTask`， 包括:  `setTimeout/setInterval`，`setImmediate`(Node专有)， I/O操作（包括读写文件/发送请求等）。宏任务放在宏队列中。
 
-microTask: promise.then等
+微任务`microTask`， 包括:  `promise.then`等。微任务放在微队列中。
 
-process.nextTick的任务放在NextTick队列里，类似于微队列，但在微队列前执行。
+
+
+除此之外，`process.nextTick`的回调函数是放进`nextTick`队列的。该队列类似微队列，但其执行总在微队列之前。
+
+``` js
+Promise.resolve('promise').then(v => console.log(v))
+process.nextTick(() => {
+    console.log('nextTick');
+})
+// nextTick
+// promise
+```
+
+
 
 
 
@@ -5782,24 +5795,63 @@ Node通过libuv来实现事件循环。
 
 ##### 浏览器事件循环
 
-执行宏队列中的第一个宏任务 => 执行微队列中的所有微任务 => 执行宏队列中的下一个宏任务 => 执行微队列中的所有微任务 ...
+浏览器内维持着**一个宏任务队列，一个微任务队列**。
+
+执行宏队列中的第一个宏任务 => 执行微队列中的所有微任务 => 执行宏队列中的下一个宏任务 => 执行微队列中的所有微任务...如此往复。我们最初的同步脚本可以看作最初的宏任务。
 
 ##### Node中的事件循环
 
-Node事件循环一共有六个阶段，每个阶段中都有一个宏队列，必须执行完一个阶段中宏队列内的全部宏任务，才回去执行所有微任务。
+Node事件循环一共有**六个阶段**，**每个阶段中都有一个宏队列**，**总共只有一个微队列**
 
-六个阶段：
+在高版本Node（v11以后），Node的行为与浏览器表现一直，即执行完一个宏任务就执行所有的微任务。
 
-1. Timer: SetTimeoute和SetInterval的任务放进这个阶段的宏队列执行。
+在旧版本Node（v11以前）：必须执行完一个阶段中宏队列内的全部宏任务，才回去执行所有微任务。
+
+Node事件循环的六个阶段：
+
+1. Timer: `SetTimeoute`和`SetInterval`的回调放进该阶段的队列。
 2. pending callback: 执行一些系统操作的回调，例如TCP的错误。
-3. idle, prepare: 内部调用。
-4. poll: 大部分回调在这里调用。
-5. check: SetImmediate的任务放进这个阶段的宏队列执行。
-6. close callback: 一些结束时的回调，例如Socket.on("close")
+3. idle, prepare: 处理一些内部调用。
+4. poll: **大部分回调在这里调用。**
+5. check: `SetImmediate`的任务放进这个阶段的宏队列执行。
+6. close callback: 一些结束时的回调，例如`Socket.on("close")`
 
 
 
-注：高版本的Node和浏览器的行为更加统一。
+##### 高低版本Node的差异
+
+高低版本的Node有着显著的差异，如以下代码，在高低版本的Node下的结果就会不同。
+
+``` js
+setImmediate(function(){
+    console.log(1);
+    process.nextTick(function(){
+        console.log(4)
+    }) 
+})
+process.nextTick(function(){
+    console.log(2)
+    setImmediate(function(){
+        console.log(3);
+    })
+})
+```
+
+1. 当我们遇到`setImmediate`后，将其回调函数放进`check`阶段的宏队列中。
+2. 当我们遇到`process.nextTick`后，将其回调函数放进`nextTick`队列中。因为此时同步代码（或者说最初的宏任务）执行完毕，那么执行`nextTick`队列中的任务。
+3. **输出2**， 遇到`setImmediate`后，将其回调函数放进`check`阶段的宏队列中。
+4. 开始执行`check`队列中的宏任务。
+5. 执行`check`第一个宏任务，**输出1**，将`nextTick`的回调放进队列里。
+
+以上五步，无论版本如何都是一致的，接下来就是高低版本Node的不同。
+
+**低版本Node**
+
+因为低版本Node是执**行完一个阶段中的全部宏任务后，再执行微队列的全部任务**。所以**先输出3，再输出4。**
+
+**高版本Node**
+
+因为高版本Node是**执行完一个宏任务，就执行微队列的全部任务**。所以**先输出4，再输出3。**
 
 
 
