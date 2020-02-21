@@ -7022,13 +7022,11 @@ module.exports = {
 
 ##### 腾讯 微信事业群一面
 
-第一次面试，很快的凉凉。总结一下自己失败的原因：一方面自己过于紧张，导致个别没那么难的问题没能答好，事后仔细想想觉得自己能答上来；另一方面，面试官确实问到了一些我不太熟悉的地方，主要还是自己的基础不够牢固，得好好反思。
+第一次面试，失败原因总结：过于紧张，基础不扎实。
 
-不过这次面试不进流程，而且是寒假实习面试，所以就算挂掉了问题也不大（安慰自己）
+1. 自我介绍。
 
-1. 自我介绍。颤抖的声音介绍自己...
-
-2. 讲一讲Vue的源码。我自信满满的从Vue实例的构建开始一步步讲起，结果还没讲一半就被叫停，说要我讲一下Vue源码的架构和结构。突然有点蒙，不知道该怎么回答比较好。
+2. 讲一讲Vue的源码。我直接从Vue实例的创建开始，打算一步步的解释，面试官打断说让我讲一下Vue的架构（应该是指Observer, Compiler, Watch这三部分吧？）
 
 3. 浏览器的渲染原理。
 
@@ -7043,9 +7041,7 @@ module.exports = {
 
    [详细的构建过程](https://segmentfault.com/a/1190000018730884)
 
-4. 问了我Script标签对浏览器的阻塞问题。
-
-   [参考](https://www.zcfy.cc/article/building-the-dom-faster-speculative-parsing-async-defer-and-preload-x2605-mozilla-hacks-8211-the-web-developer-blog)
+4. Script标签对浏览器的阻塞问题。[参考](https://www.zcfy.cc/article/building-the-dom-faster-speculative-parsing-async-defer-and-preload-x2605-mozilla-hacks-8211-the-web-developer-blog)
 
    Script脚本的执行会阻塞html的解析，外链script的下载也会阻塞。
 
@@ -7054,21 +7050,25 @@ module.exports = {
    比较容易混淆，所以容易会认为请求是串行的，因为
 
    ```html
-   	<script type="text/javascript" src="./test.js"></script>
+	<script type="text/javascript" src="./test.js"></script>
        <script type="text/javascript" src="./test2.js"></script>
    ```
-
+   
    可能会认为下面html的文档的解析要等到上面script执行完才会开始，因为会阻塞。
 
    但其实请求是并行的。
 
    因为html解析成dom的时候会先进行预解析。
 
-5. md5。
+5. 前端常见加密，比如MD5。
 
-6. 闭包。面试官问：闭包会造成什么？ 我脱口而出：内存泄漏。被钓鱼了，根本就不会造成内存泄漏。
+   当初面的时候很紧张，没答好。
 
-7. 性能优化手段
+6. 问：闭包会造成什么？ 
+
+   结果我脱口而出，会造成内存泄漏...但实际上闭包会造成内存泄漏这种说法是由于以前IE浏览器的BUG。现在很多人都说闭包会造成内存泄漏，实在是以讹传讹，瞎写代码才会（逃
+
+7. 性能优化手段。
 
 ##### 腾讯 imWeb 一面。
 
@@ -7103,8 +7103,6 @@ module.exports = {
        }
    </style>
    ```
-
-   
 
 4. 问我平时写不写HTML标签/CSS，这问题有点懵。然后面试官解释说，有的地方写项目代码分工明确，有的人只写CSS，有的人只写JS。
 
