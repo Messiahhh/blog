@@ -4607,7 +4607,7 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
             2. 首先定义 oldStartIdx、newStartIdx、oldEndIdx 以及 newEndIdx 分别是新老两个 children 的两边的索引，同时 oldStartVnode、newStartVnode、oldEndVnode 以及 newEndVnode 分别指向这几个索引对应的VNode 节点。
             3. while循环，循环中oldStartIdx和oldEndIdx不断靠拢，newStartIdx和newEndIdx也不断靠拢。
             4. 比较，oldStartVnode和newStartVnode，oldEndVnode和newEndVnode   ，  oldStartVnode和newEndVnode  ， oldEndVnode和newStartVnode。如果两个是sameVnode则进行patchVnode, 不是就进行下一个的比较
-            5. 如果以上四次比较都不是Vnode，那么找oldCh有没有和newStartVnode是sameVnode的节点
+            5. 如果以上四次比较都不是sameVnode，那么找oldCh有没有和newStartVnode是sameVnode的节点
                1.  如果设置了key，直接通过newStartVnode的key查看有没有key相同的Vnode
                2. 如果没有key，则通过循环，一个个的调用sameVnode函数比较。（体现了**key能够提高diff算法的效率**）
                3. 如果找不到相同的Vnode，则新建一个Vnode
@@ -5301,7 +5301,7 @@ HTTP = HTTP + TLS/SSL
 
 注：SYN / ACK / FIN 为TCP报文头部的一个标识。seq为报文的序列号（Sequence number），ack为报文的确认序号（并不是之前那个标识，而是Acknowledgement Number）。
 
-SYN = 1，seq = x 对应的是 ACK = 1，seq = x + 1
+SYN = 1，seq = x 对应的是 ACK = 1，ack = x + 1
 
 ###### 为什么不两次握手
 
