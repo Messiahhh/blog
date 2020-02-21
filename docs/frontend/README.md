@@ -6553,9 +6553,42 @@ function insertSort(arr) {
 
 ## 编程题
 
+##### n项之和
+
+给定数组，取出 n 个数，使其相加和为 sum
+
+``` js
+function getArr(arr, n, m, temp) {
+    if (temp.length === n) {
+        let sum = temp.reduce((a, b) => a + b)
+        if (sum === m) {
+            return temp
+        } else {
+            return
+        }
+    }
+    
+    for (let i = 0; i < arr.length; i++) {
+        temp.push(arr.shift())
+        let ret = getArr(arr, n, m, temp)
+        if (ret) {
+            return ret
+        } else {
+            arr.push(temp.pop())
+        }
+    }
+}
+
+
+let myArr = [1, 2, 3, 4]
+getArr(myArr, 2, 7, [])
+```
+
+
+
 ##### 两数之和
 
-(给定无序、不重复的数组 data，取出 n 个数，使其相加和为 sum)
+> 用上面那个就行，以下代码仅供参考
 
 ```javascript
 // 使用Map而不是两个循环，空间换时间
@@ -6573,7 +6606,13 @@ function twoSum(arr, target) {
 }
 
 twoSum([1, 2, 3, 4], 7)
+
+
 ```
+
+
+
+
 
 ##### 实现累加器(柯里化)
 
@@ -6999,6 +7038,81 @@ module.exports = {
 6. 闭包。面试官问：闭包会造成什么？ 我脱口而出：内存泄漏。被钓鱼了，根本就不会造成内存泄漏。
 
 7. 性能优化手段
+
+##### 腾讯 imWeb 一面。
+
+> 先把问的内容记录一下，明天起床了把不会的搜一搜。
+
+1. 介绍一下自己，是如何学习前端的？
+
+   大概讲了一下自己是如何入门的，看过哪些书之类的。
+
+2. 面试官说你既然看过高程，讲一讲你觉得印象深刻的地方？
+
+   我随便说了两个，原型链和this相关的东西。然后面试官问我原型链的基础，这个还是挺简单的。
+
+   1. 实现**私有的方法/属性**，我回答了两种，一个是提前约定好，比如`_`开头的变量；或者用闭包实现。
+
+   2. ES5实现继承的方法，构造继承，原型链继承，组合继承，寄生组合继承。
+   3. this的原理，call，apply，bind的区别。
+
+3. 问我平时写不写HTML标签/CSS，这问题有点懵。然后面试官解释说，有的地方写项目代码分工明确，有的人只写CSS，有的人只写JS。
+
+   问前端语义化标签，什么时候你会用到这些标签，语义化标签的好处/作用？
+
+   这个不太清楚怎么回答，我说了个对搜索引擎友好？晚点查一查。
+
+4. 怎么用正则判断当前域名是否为qq.com，或者xxx.qq.com。
+
+   我说我正则掌握的不行，然后用split来做...
+
+   正则的写法应该如下
+
+   ``` js
+   /^https?:\/\/.+\.?qq\.com/.test(location.href)
+   ```
+
+5. 响应状态码，200(from disk cache)，200（from memory cache），304的区别。
+
+   强制缓存和协商缓存。
+
+6. try...catch...中如果异步代码出错怎么办？如：
+
+   ``` js
+   try {
+       throw new Error('111')
+   } catch (e) {
+       console.log(1)
+   }
+   // 捕捉到异常，输出1
+   
+   try {
+       setTimeout(() => {
+           throw new Error('222')
+       })
+   } catch (e) {
+       console.log(2)
+   }
+   // 未能捕捉到异常，不输出2
+   ```
+
+   怎么办？
+
+7. 为什么移动端以前有300ms的问题，原理？fastclick的原理答不上来。
+
+8. XSS的原理，如何防御XSS？为什么换成实体字符就好了？
+
+   虽然我大概了解一些，但总感觉答的不是很好。
+
+9. 找出数组中n项，n项的和为m。
+
+   解答过程我写在编程题一节。
+
+   
+
+
+
+
 
 
 
