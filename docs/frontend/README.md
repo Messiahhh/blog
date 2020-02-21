@@ -5739,6 +5739,37 @@ A向B发送自己的公钥途中，公钥被黑客截取。然后黑客把自己
    }
    ```
 
+   不过对于异步代码，使用try...catch是无法捕捉其内部发生的错误，比如：
+
+   ``` js
+   try {
+       setTimeout(() => {
+           throw new Error('222')
+       })
+   } catch (e) {
+       console.log(2)
+   }
+   // 未能捕捉到异常，不输出2
+   ```
+
+   我们可以通过async/await和promise来解决此问题。
+
+   当await后面的promise状态为reject时，会抛出错误。所以我们可以搭配async/await和promise来进行异步的错误捕捉。
+
+   ``` js
+   async function A() {
+       try {
+           await new Promise((resolve, reject) => {
+               setTimeout(() => {
+                   reject(new Error('222'))
+               })
+           })
+       } catch (e) {
+           console.log(e)
+       }
+   }
+   ```
+
 2. window.onerror
 
   ``` javascript
@@ -7056,13 +7087,32 @@ module.exports = {
    2. ES5实现继承的方法，构造继承，原型链继承，组合继承，寄生组合继承。
    3. this的原理，call，apply，bind的区别。
 
-3. 问我平时写不写HTML标签/CSS，这问题有点懵。然后面试官解释说，有的地方写项目代码分工明确，有的人只写CSS，有的人只写JS。
+3. 垂直居中。说了几种方法。
+
+   为什么下面的margin可以居中？不太清楚...一般也不会这个其实。
+
+   margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个双飞燕布局，不太清楚其他地方。
+
+   ``` html
+   <style>
+       .outer {
+           display: flex;
+       }
+       .inner {
+           margin: auto;
+       }
+   </style>
+   ```
+
+   
+
+4. 问我平时写不写HTML标签/CSS，这问题有点懵。然后面试官解释说，有的地方写项目代码分工明确，有的人只写CSS，有的人只写JS。
 
    问前端语义化标签，什么时候你会用到这些标签，语义化标签的好处/作用？
 
    这个不太清楚怎么回答，我说了个对搜索引擎友好？晚点查一查。
 
-4. 怎么用正则判断当前域名是否为qq.com，或者xxx.qq.com。
+5. 怎么用正则判断当前域名是否为qq.com，或者xxx.qq.com。
 
    我说我正则掌握的不行，然后用split来做...
 
@@ -7072,11 +7122,11 @@ module.exports = {
    /^https?:\/\/.+\.?qq\.com/.test(location.href)
    ```
 
-5. 响应状态码，200(from disk cache)，200（from memory cache），304的区别。
+6. 响应状态码，200(from disk cache)，200（from memory cache），304的区别。
 
    强制缓存和协商缓存。
 
-6. try...catch...中如果异步代码出错怎么办？如：
+7. try...catch...中如果异步代码出错怎么办？如：
 
    ``` js
    try {
@@ -7098,17 +7148,33 @@ module.exports = {
 
    怎么办？
 
-7. 为什么移动端以前有300ms的问题，原理？fastclick的原理答不上来。
+   ``` js
+   async function A() {
+       try {
+           await new Promise((resolve, reject) => {
+               setTimeout(() => {
+                   reject(new Error('222'))
+               })
+           })
+       } catch (e) {
+           console.log(e)
+       }
+   }
+   ```
 
-8. XSS的原理，如何防御XSS？为什么换成实体字符就好了？
+   当await后面的promise状态为reject时，会抛出错误。所以我们可以搭配async/await和promise来进行异步的错误捕捉。
+
+8. 为什么移动端以前有300ms的问题，原理？fastclick的原理答不上来。
+
+9. XSS的原理，如何防御XSS？为什么换成实体字符就好了？
 
    虽然我大概了解一些，但总感觉答的不是很好。
 
-9. 找出数组中n项，n项的和为m。
+10. 找出数组中n项，n项的和为m。
 
-   解答过程我写在编程题一节。
+    解答过程我写在编程题一节。
 
-   
+    
 
 
 
