@@ -4553,7 +4553,7 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
    3. generate，把AST转化为渲染函数，渲染函数用于生成虚拟DOM
 3. Watcher 是Observer和Compiler之间通信的桥梁
    1. 自身实例化的时候，调用getter函数，向deps添加watch
-   2. 当数据修改时，调用getter函数，调用deps.notify，执行watch的update函数
+   2. 当数据修改时，调用setter函数，调用deps.notify，执行watch的update函数
    3. 执行watch的update函数，重新生成虚拟DOM，并进行Diff对页面进行修改
 
 ##### 流水线的解释
@@ -4598,7 +4598,7 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
 
       2. 调用sameVnode对oldVnode和newVnode进行比较，只有当key， tag， isComment都相同，同时定义或同时未定义data， 或者两个都是input且type相同时才是sameVnode。那么就对两个VNode进行patchVnode操作
 
-         1. 如果新老VNode都是静态的，且key值相同，并且新的VNode标记了v-once或是clone，则只需替换ele和componentsinstance
+         1. 如果新老VNode都是静态的，且key值相同，并且新的VNode标记了v-once或是clone，则只需替换elm和componentsinstance
          2. 新老VNode都有children，则使用updateChildren对子节点进行diff
 
             1. 对于oldVnode的children，用oldCh表示。对于newVnode的children，用newCh表示
@@ -6311,11 +6311,11 @@ function postOrder(node) {
     while (stack.length > 0) {
         let node = stack.pop()
         res.push(node.data)
-        if (node.right) {
-            stack.push(node.right)
-        }
         if (node.left) {
             stack.push(node.left)
+        }
+        if (node.right) {
+            stack.push(node.right)
         }
     }
     return res.reverse()
@@ -7021,7 +7021,7 @@ module.exports = {
 - CSS优化
   - CSS3（transform, opacity）硬件加速
   - 频繁操作DOM时，可以先用`display: none`使其脱离文档流再进行DOM操作
-  - 对于复杂的动画效果，可以使用`display: position`使其脱离文档流
+  - 对于复杂的动画效果，可以使用`position: absolute`使其脱离文档流
 - JS优化
   - 函数防抖，函数节流
 
@@ -7031,7 +7031,7 @@ module.exports = {
 
 常规方法（使用offsetTop - scrollTop  或者 getBoundingClientRect()）
 
-``` javascript
+``` html
 <body>
     <div class="blank">
 		// 很长的元素，使图片开始不在视口里
@@ -7044,14 +7044,14 @@ module.exports = {
 
         window.onscroll = throttle(() => {
             // 方法一，使用offsetTop - scrollTop
-            if (image.offsetTop - document.documentElement.scrollTop <                                   document.documentElement.clientHeight)
+            if (image.offsetTop - document.documentElement.scrollTop <    document.documentElement.clientHeight)
             {
                 let url = image.dataset.url
                 image.style.backgroundImage = `url(${url})`
             }
 
             // 方法二，使用getBoundingClientRect
-            if (image.getBoundingClientRect().top <                                                       document.documentElement.clientHeight) {
+            if (image.getBoundingClientRect().top <       document.documentElement.clientHeight) {
                     let url = image.dataset.url
                     image.style.backgroundImage = `url(${url})`
                 }
