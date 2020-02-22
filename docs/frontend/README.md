@@ -264,6 +264,10 @@ location.href = 'https://messiahhh.github.io/blog'
 
 不独占一行；可以设置宽和高。
 
+
+
+inline和inline-block可以设置padding和margin，但无法通过像block一样使用`margin: 0 auto`做到水平居中。
+
 ##### 水平垂直居中
 
 一：absolute + margin-top
@@ -5349,25 +5353,81 @@ TCP 是全双工的，在断开连接时两端都需要发送 FIN 和 ACK。
 
 浏览器请求资源时
 
-1. 先判断有没有缓存，没缓存则向服务器发送请求。
+1. 先判断浏览器有没有缓存，若没缓存则向服务器请求资源
 
 2. 若有缓存，根据Cache-Control: max-age 或是 Expires 判断资源是否过期。
 
-   1. 如果没过期，则直接从缓存读取（强制缓存）
+   1. 如果资源没过期，则直接从缓存读取（强制缓存），此时在Network一栏可以看到资源对应的状态码为**200（from disk cache）或者是 200 （from memory cache）**
 
-   2. 如果过期了
+      比如，资源没过期的时候我们打开新的页面，资源会从硬盘缓存中读取（from disk cache）；如果我们此时又刷新页面，资源会从内存缓存中读取（from memory cache）
 
-      1. 上次资源的响应是否有Etag头部， 有的话发送请求，请求头为If-None-Match
+   2. 如果资源过期了
+
+      1. 查看上次资源的响应是否有Etag头部， 有的话发送请求，请求头为If-None-Match
 
       2. 没有Etag的话，看上次资源的响应是否有Last-Modified，有的话发送请求，请求头为If-Modified-Since。
 
-      3. 如果两个头部都没有，则向服务器发送请求。
+      3. 如果命中了缓存，或者说资源没有发生改变，服务器会发送状态码为**304（Not Modify）**的响应，告诉浏览器读取缓存中的资源。
 
-         如果1或2中了，服务器会根据请求头If-None-Match或If-Modified-Since来判断资源是否有改动。
+         如果未命中缓存，或者说资源发生了改变，服务器会发送状态码为**200（OK）**的响应，并把资源作为响应的内容发送给浏览器。
 
-         如果资源有改动，则发送新资源，响应的状态码为200
 
-         如果资源没有改动，则浏览器从缓存中读取资源，响应的状态码为304
+
+
+###### 实现强制缓存
+
+``` js
+const Koa = require("koa")
+const app = new Koa()
+const bluebird = require('bluebird')
+const fs = bluebird.promisifyAll(require('fs'))
+app.use(async ctx => {
+    if (ctx.url === '/') {
+        console.log(111);
+        const file = await fs.readFileAsync('./dist/index.html')
+        ctx.type = 'text/html'
+        ctx.body = file
+    }
+    if (ctx.url === '/image.png') {
+        console.log(222);
+        const file = await fs.readFileAsync('./dist/image.png')
+        ctx.set('Cache-Control', 'max-age=10')
+        ctx.type = 'image/png'
+        ctx.body = file
+    }
+})
+app.listen(3000)
+```
+
+
+
+###### 实现协商缓存
+
+``` js
+const getEtag = require('etag')
+app.use(async ctx => {
+    if (ctx.url === '/') {
+        const file = await fs.readFileAsync('./dist/index.html')
+        ctx.type = 'text/html'
+        ctx.body = file
+    }
+    if (ctx.url === '/image.png') {
+        const file = await fs.readFileAsync('./dist/image.png')
+        const hash = getEtag(file)
+        const etag = ctx.get('If-None-Match')
+        if (etag && etag == hash) {
+            ctx.status = 304
+            ctx.body = ''
+        } else {
+            if (!etag) ctx.set('ETag', hash)
+            ctx.type = 'image/png'
+            ctx.body = file
+        }
+    }
+})
+```
+
+
 
 
 
@@ -7020,7 +7080,7 @@ module.exports = {
 
 ## 面经
 
-##### 腾讯 微信事业群一面
+##### 腾讯 微信事业群（WXG）一面
 
 第一次面试，失败原因总结：过于紧张，基础不扎实。
 
@@ -7070,28 +7130,124 @@ module.exports = {
 
 7. 性能优化手段。
 
-##### 腾讯 imWeb 一面。
 
-> 先把问的内容记录一下，明天起床了把不会的搜一搜。
 
-1. 介绍一下自己，是如何学习前端的？
 
-   大概讲了一下自己是如何入门的，看过哪些书之类的。
 
-2. 面试官说你既然看过高程，讲一讲你觉得印象深刻的地方？
+##### 腾讯 云与智慧产业事业群（CSIG）ImWeb团队 一面
 
-   我随便说了两个，原型链和this相关的东西。然后面试官问我原型链的基础，这个还是挺简单的。
+1. 介绍一下自己，什么时候开始学习前端的，学习前端的方式，平时都看过哪些书？
 
-   1. 实现**私有的方法/属性**，我回答了两种，一个是提前约定好，比如`_`开头的变量；或者用闭包实现。
+   大概讲了一下自己的学习经历，看过什么书籍。
+
+2. 问高程上我觉得印象深刻的地方？
+
+   我随便说了两个，原型链和this，面试官随便问了点相关知识。
+
+   1. 实现**私有的方法/属性**，我只回答了两种，一个是提前约定好的私有变量，比如`_`开头的变量；或者用闭包实现。
+
+      不过答的时候说的有点混乱。
+
+      闭包：
+
+      ``` js
+      // 闭包一
+      class Person {
+          constructor() {
+              let value = 233
+              this.getValue = function() {
+                  return value
+              }
+          }
+      }
+      
+      // 闭包二
+      const Peroson = (function () {
+          let value = '111'
+          class Person {
+              getValue() {
+                  return value
+              }
+          }
+          return Person
+      })()
+      ```
+
+      也可以使用Symbol来实现
+
+      ``` js
+      const Person = (function () {
+          let s = Symbol()
+          class Person {
+              constructor() {
+                  this[s] = '111'
+              }
+              getValue() {
+                  return this[s]
+              }
+          }
+          return Person
+      })()
+      ```
 
    2. ES5实现继承的方法，构造继承，原型链继承，组合继承，寄生组合继承。
+
    3. this的原理，call，apply，bind的区别。
 
-3. 垂直居中。说了几种方法。
+3. 垂直居中的几种方法。
 
-   为什么下面的margin可以居中？不太清楚...一般也不会这个其实。
+   为什么下面的margin可以居中？不太清楚，只知道有这种技巧。
 
-   margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个双飞燕布局，不太清楚其他地方。
+   ``` css
+   .outer {
+       display: flex;
+   }
+   
+   .inner {
+       margin: auto;
+   }
+   ```
+
+   [网上搜到了一个讲这个的，还挺实用的](https://www.cnblogs.com/coco1s/p/10910588.html)
+
+   块级元素中，当margin-top和margin-bottom为auto时，他们的值为0，所以无法实现垂直居中。
+
+   而在flex内部，当我们设置`margin: auto`的时候，会将剩下的空闲空间（水平与垂直）分配给该元素。
+
+   因此，借由`flex`和`margin`，我们可以更加简单的时候某些功能，比如一个普通的导航栏
+
+   ``` html
+   <ul class="g-nav">
+       <li>导航A</li>
+       <li>导航B</li>
+       <li>导航C</li>
+       <li>导航D</li>
+       <li class="g-login">登陆</li>
+       <li>注册</li>
+   </ul>
+   <style>
+       .g-nav {
+           display: flex;
+           padding: 0;
+           margin: 0;
+           list-style: none;
+       }
+       .g-nav li {
+           padding: 0 20px;
+       }
+   
+       .g-login {
+           margin-left: auto;
+       }
+   
+   </style>
+   ```
+
+   
+
+   
+
+   margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个双飞燕/圣杯布局，不太清楚其他的应用场景。
 
    ``` html
    <style>
@@ -7112,17 +7268,30 @@ module.exports = {
 
 5. 怎么用正则判断当前域名是否为qq.com，或者xxx.qq.com。
 
-   我说我正则掌握的不行，然后用split来做...
+   我用的split做的...很繁琐，边界条件的检查也很麻烦，还是正则好。
 
-   正则的写法应该如下
+   正则的写法
 
    ``` js
-   /^https?:\/\/.+\.?qq\.com/.test(location.href)
+   function isUrl(url) {
+       return /^https?:\/\/(.+\.)?qq\.com/.test(url)
+   }
+   isUrl(location.href)
    ```
 
 6. 响应状态码，200(from disk cache)，200（from memory cache），304的区别。
 
-   强制缓存和协商缓存。
+   见本博客的Http缓存一节。
+
+   至于from disk cache 和 from memory cache的区别。
+
+   比如第一次打开新页面（有缓存），资源会从硬盘中读取；而如果在已经打开的页面刷新，资源会从内存中读取。
+
+   
+
+   Etag是什么？
+
+   通常就是一个资源的哈希值吧。
 
 7. try...catch...中如果异步代码出错怎么办？如：
 
@@ -7170,9 +7339,9 @@ module.exports = {
 
 10. 找出数组中n项，n项的和为m。
 
-    解答过程我写在编程题一节。
+   解答过程我写在编程题一节。
 
-    
+   
 
 
 
