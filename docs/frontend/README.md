@@ -5853,6 +5853,17 @@ A向B发送自己的公钥途中，公钥被黑客截取。然后黑客把自己
 
    可以获取所有已加载资源的加载时间，通过这种方式，可以间接的拿到没有加载的资源错误。
 
+
+
+### 浏览器白屏怎么办
+
+1. 看一下是不是断网了
+2. URL参数是否输入正确
+3. 看F12控制台
+4. 看后端是否报错
+
+
+
 ## 事件循环
 
 ##### 宏/微任务，队列
@@ -6699,6 +6710,44 @@ function twoSum(arr, target) {
 twoSum([1, 2, 3, 4], 7)
 
 
+```
+
+
+
+##### 无重复字符的最长子串
+
+给定一个字符串，找出其中不含有重复字符的 **最长子串** 的长度。
+
+1 暴力破解（效率很低）
+
+``` js
+function getLength(str) {
+    let length = 0
+    for (let i = 0; i < str.length; i++) {
+        for (let j = i + 1; j <= str.length; j++) {
+            if (isUnique(str, i, j)) {
+                length = Math.max(length, j - i)
+            }
+        }
+    }
+    return length
+}
+
+function isUnique(str, i, j) {
+    let set = new Set()
+    while (i < j) {
+        let char = str.charAt(i)
+        if (set.has(char)) {
+            return false
+        } else {
+            set.add(char)
+        }
+        i++
+    }
+    
+    return true
+}
+getLength('aaabcdd')
 ```
 
 
