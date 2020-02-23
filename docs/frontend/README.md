@@ -921,18 +921,16 @@ var arr = [1, 2, [3, [4, 5]]]
 arr.flat(Infinity)
 ```
 
-**JSON.parse + 正则 + JSON.stringify**
+**JSON.stringify + 正则 + JSON.parse**
 
 ``` javascript
 var arr = [1, 2, [3, [4, 5]]]
-var str = JSON.stringify(arr)
-// "[1,2,[3,[4,5]]]"
-var newStr = str.replace(/(\[|\])/g, "")
-// "1,2,3,4,5"
-arr = `[${newStr}]`
-// "[1,2,3,4,5]"
-JSON.parse(arr)
-// [1,2,3,4,5]
+
+function flat(arr) {
+    let str = JSON.stringify(arr).replace(/[\[|\]]/g, '')
+    str = `[${str}]`
+    return JSON.parse(str)
+}
 ```
 
 **递归**
@@ -1122,15 +1120,16 @@ JSON.parse(JSON.stringify(obj))
 // 属性值可以是数组或对象，此时进行递归
 // 属性值也可以函数
 function deepClone(source) {
-	let target = Array.isArray(source) ? [] : {}
-	if (typeof target === 'object') {
-		for (let [key, value] of Object.entries(source)) {
-			source[key] = deepClone(value)
-		}
-	} else {
-		target = value
-	}
-	return target
+    let target = null
+    if (typeof source === 'object' && source !== null) {
+        target = Array.isArray(source) ? [] : {}
+        for (let [key, value] of Object.entries(source)) {
+            target[key] = deepClone(value)
+        }
+    } else {
+        target = source
+    }
+    return target
 }
 
 // 但无法解决循环引用的问题
@@ -1159,7 +1158,6 @@ function deepClone(source, hash = new WeakMap()) {
 	else {
 		target = source
 	}
-	
 
 	return target
 }
