@@ -1243,7 +1243,7 @@ deepClone(obj)
 
 ```
 
-不过以上的深克隆只克隆了对象自身的属性，没有克隆原型链上的属性。若想要完全拷贝，可以这样做：
+不过以上的深克隆只克隆了对象自身的属性，丢失了原型链上的属性，为了不丢失，可以这么做
 
 ``` js
 function completeDeepClone(source) {
@@ -2407,6 +2407,16 @@ xhr.abort()
 // 发送请求
 xhr.send()
 ```
+
+| readyState | 描述                            |
+| ---------- | ------------------------------- |
+| 0          | XHR已经创建，但未调用open()方法 |
+| 1          | open()方法已经被调用            |
+| 2          | `send()` 方法已经被调用         |
+| 3          | 正在接收响应的内容              |
+| 4          | 成功接收到响应                  |
+
+
 
 ##### 回调函数封装
 
@@ -4127,7 +4137,7 @@ function useFriendStatus(friendID) {
 
 ### Redux
 
-**基本原理**
+##### 基本原理
 
 ``` javascript
 import { createStore } from 'redux'
@@ -4170,7 +4180,7 @@ store.subscribe(() => {
 })
 ```
 
-**createStore的简单实现**
+##### createStore的简单实现
 
 ``` javascript
 const createStore = (reducer) => {
@@ -4204,7 +4214,7 @@ const createStore = (reducer) => {
 
 
 
-**实战例子**
+##### 实战代码
 
 ```javascript
 // action.js
@@ -4288,7 +4298,7 @@ const App = ({
     )
 }
 
-// 本质是运用的高阶组件，根据输入的容器组件APP生成UI组件
+// 本质是运用的高阶组件，根据输入的UI组件APP生成容器组件
 // mapStateToProps 把状态树中的状态映射进组件的props
 const mapStateToProps = (state) => {
     return {
@@ -4332,6 +4342,35 @@ const App = () => {
     )
 }
 ```
+
+
+
+### UI组件和容器组件
+
+React-Redux中的Connect所返回的函数就是一个高阶组件，它会接收我们输入的UI组件，生成新的容器组件。
+
+``` js
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps,
+)(App)
+```
+
+那么，UI组件和容器组件有什么不同呢？
+
+##### UI组件
+
+- 只负责UI的呈现，没有任何业务逻辑
+- 没有State，参数由Props提供
+
+##### 容器组件
+
+- 不负责UI的呈现，负责处理业务逻辑
+- 带有内部状态
+
+
+
+回过头看上面的`mapStateToProps`和`mapDispatchToProps`，都是用来处理业务逻辑的。
 
 
 
@@ -4721,7 +4760,7 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
 
       1. 如果oldVnode不存在，不存在则直接根据newVnode新建节点
 
-      2. 调用sameVnode对oldVnode和newVnode进行比较，只有当key， tag， isComment都相同，同时定义或同时未定义data， 或者两个都是input且type相同时才是sameVnode。那么就对两个VNode进行patchVnode操作
+      2. 调用sameVnode对oldVnode和newVnode进行比较，只有当key， tag， isComment都相同，同时定义或同时未定义data， 或者两个都是input且type相同时才是sameVnode。那么就对两个VNode进行patchVnode操作。如果不是sameVode，则直接进行替换。
 
          1. 如果新老VNode都是静态的，且key值相同，并且新的VNode标记了v-once或是clone，则只需替换elm和componentsinstance
          2. 新老VNode都有children，则使用updateChildren对子节点进行diff
@@ -5145,13 +5184,25 @@ ul.addEventListener("click", (e) => {
 
 ##### Cookie
 
-​	浏览器发送HTTP请求时，先检查是否有相应的Cookie，如果有则将Cookie放在请求头中的Cookie字段中发送。
+
+
+浏览器发送HTTP请求时，先检查是否有相应的Cookie，如果有则将Cookie放在请求头中的Cookie字段中发送。
 
 1. expires: 设置Cookie的过期时间
 2. secure: 当secure为true时只能使用https
 3. httpOnly: 设置浏览器能否读取Cookie
 4. domain和path: 限制Cookie能被哪些URL访问
 5. SameSite
+
+
+
+Cookie和Storage的对比
+
+Cookie存放数据小，4KB左右；而Storage可以存放5MB左右。
+
+Cookie可以设置过期时间，SessionStorage会在会话关闭时清除，LocalStorage必须要手动清除。
+
+Cookie参与和服务器的通信，Storage则一般不用于。
 
 
 
@@ -5298,6 +5349,29 @@ Status Code: 302 Found
 
 
 **304 Not Modidied：用于浏览器缓存。**
+
+### HTTP请求方法
+
+| 方法   | 描述                                                         |
+| :----- | ------------------------------------------------------------ |
+| Get    | 通常用于请求资源                                             |
+| Post   | 通常用于向服务端发送消息                                     |
+| Delete | 通常用于删除资源                                             |
+| Put    | 通常用于上传资源                                             |
+| Option | 通常用于CORS的请求预检                                       |
+| Head   | 只请求资源的头部，该请求方法的一个使用场景是在下载一个大文件前先获取其大小再决定是否要下载, 以此可以节约带宽资源 |
+
+
+
+##### Get/Post的区别
+
+- Get请求的参数放在URL里，Post请求的参数放在实体里。
+- Get请求比起Post请求更加不安全，因为参数放在URL中，不能用来传递敏感信息。
+- Get请求的参数放在URL中，所以有长度限制；而Post请求没有限制。
+
+[更多区别](https://zhuanlan.zhihu.com/p/25028045)
+
+
 
 ### HTTP头部
 
@@ -5992,8 +6066,6 @@ A向B发送自己的公钥途中，公钥被黑客截取。然后黑客把自己
 一个广为流传的**错误观点**：闭包会造成内存泄漏。
 
 实际上这是十分错误的，之所以这种观点会流传至今，是因为早年的IE浏览器存在垃圾回收的BUG。内存泄漏指的是不再使用的变量没有被回收，可是闭包中的变量是我们需要用到的呀。每一个传播“闭包会造成内存泄漏”这种错误观念的同学都应该被打一顿...只要程序写错了才会造成内存泄漏。
-
-
 
 ##### 常见内存泄漏
 
@@ -7493,10 +7565,11 @@ module.exports = {
    </style>
    ```
    
-margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个双飞燕/圣杯布局，不太清楚其他的应用场景。
-   
 
-   
+margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个双飞燕/圣杯布局，不太清楚其他的应用场景。
+
+
+
 4. 问我平时写不写HTML标签/CSS，这问题有点懵。然后面试官解释说，有的地方写项目代码分工明确，有的人只写CSS，有的人只写JS。
 
    问前端语义化标签，什么时候你会用到这些标签，语义化标签的好处/作用？
