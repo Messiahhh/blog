@@ -6824,6 +6824,58 @@ function isUnique(str, i, j) {
 getLength('aaabcdd')
 ```
 
+2 **滑动窗口**
+
+``` js
+function getLength(str) {
+    let n = str.length
+    let set = new Set()
+    let [len, i, j] = [0, 0, 0]
+
+    while (i < n && j < n) {
+        if (set.has(str.charAt(j))) {
+            set.delete(str.charAt(i++))
+        } else {
+            set.add(str.charAt(j++))
+            len = Math.max(len, j - i)
+        }
+    }
+    return len
+}
+```
+
+##### 判断回文数
+
+回文，即正序和逆序相等的数，如12321，1221等。
+
+简单粗暴法，翻转字符串看是否相等
+
+``` js
+function isHuiWen(num) {
+    return num == num.toString().split('').reverse().join('')
+}
+```
+
+高级版
+
+``` js
+function isHuiWen(num) {
+    let revertNum = 0
+    while (num > revertNum) {
+        revertNum = num % 10 + revertNum * 10
+        num = Math.floor(num / 10)
+    }
+    
+    return num === revertNum || num === Math.floor(revertNum / 10)
+}
+
+isHuiWen(12321)
+// 1232 1
+// 123 12
+// 12 123
+// 12 === ~~(123 / 10)
+```
+
 
 
 
@@ -7447,15 +7499,21 @@ module.exports = {
 
 8. 为什么移动端以前有300ms的问题，原理？fastclick的原理答不上来。
 
+  移动端，当用户点击屏幕的时候，先后触发touchstart, touchmove, touchend, click。其中touchend和click的间隔为300秒，这是为了处理移动端的双击缩放。
+
+  fastclick原理。在touchend阶段，会调用e.preventDefault，然后使用document.createEvent创建一个事件，并在目标元素上触发。
+
 9. XSS的原理，如何防御XSS？为什么换成实体字符就好了？
 
    虽然我大概了解一些，但总感觉答的不是很好。
 
+   字符<会被当成标签，而实体字符只会当成纯粹的文本。
+
 10. 找出数组中n项，n项的和为m。
 
-   解答过程我写在编程题一节。
+  解答过程我写在编程题一节。
 
-   
+  
 
 
 
