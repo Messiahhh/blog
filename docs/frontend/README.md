@@ -568,6 +568,82 @@ inline和inline-block可以设置padding和margin，但无法通过像block一�
 
 1vh 等于 1 / 100 视口高
 
+### Flex
+
+
+
+##### 容器属性
+
+``` css
+.flex-container {
+    display: flex;
+    flex-direction: row;
+    /* 主轴的方向，默认row，从左往右 */
+    flex-wrap: nowrap;
+    /* 是否换行，默认不换行*/
+    justify-content: center;
+    /* 主轴上的布局，默认flex-start */
+    align-items: center;
+    /* 交叉轴上的布局，默认值flex-start */
+    align-content: center;
+    /* 多条轴线的布局 */
+}
+```
+
+##### 项目属性
+
+``` css
+.flex-items {
+    order: 2;
+    /* 项目的order， 越大的越后面*/
+    flex-grow: 1;
+    /* 扩张比例，默认0，不占剩余空间 */
+    flex-shrink: 0;
+    /* 缩小比例，默认1，自动缩小*/
+    flex-basis: 200px;
+    /* 主轴上的宽度 */
+    flex: 1 0 200px;
+    /* 上面三条的缩写 */
+    align-items: flex-end;
+    /* 修改项目的交叉轴布局*/
+}
+```
+
+##### Flex 搭配 margin
+
+给Flex容器内的项目设置margin为auto，则margin会自动占据剩下的所有未分配空间。
+
+``` html
+<!-- 实现一个导航栏 -->
+<ul class="g-nav">
+    <li>导航A</li>
+    <li>导航B</li>
+    <li>导航C</li>
+    <li>导航D</li>
+    <li class="g-login">登陆</li>
+    <li>注册</li>
+</ul>
+<style>
+    .g-nav {
+        display: flex;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+    .g-nav li {
+        padding: 0 20px;
+    }
+
+    .g-login {
+        margin-left: auto;
+    }
+</style>
+```
+
+
+
+
+
 
 
 ### BFC
@@ -7414,14 +7490,13 @@ module.exports = {
        .g-login {
            margin-left: auto;
        }
-   
    </style>
    ```
-
-   margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个双飞燕/圣杯布局，不太清楚其他的应用场景。
-
+   
+margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个双飞燕/圣杯布局，不太清楚其他的应用场景。
    
 
+   
 4. 问我平时写不写HTML标签/CSS，这问题有点懵。然后面试官解释说，有的地方写项目代码分工明确，有的人只写CSS，有的人只写JS。
 
    问前端语义化标签，什么时候你会用到这些标签，语义化标签的好处/作用？
