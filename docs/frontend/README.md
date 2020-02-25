@@ -7411,7 +7411,7 @@ module.exports = {
 
 ## 面经
 
-##### 腾讯 微信事业群（WXG）一面
+##### 腾讯 微信事业群（WXG）一面 
 
 第一次面试，失败原因总结：过于紧张，基础不扎实。
 
@@ -7465,7 +7465,9 @@ module.exports = {
 
 
 
-##### 腾讯 云与智慧产业事业群（CSIG）ImWeb团队 一面
+##### 腾讯 云与智慧产业事业群（CSIG）ImWeb团队 一面 
+
+一面过了，感谢面试官
 
 1. 介绍一下自己，什么时候开始学习前端的，学习前端的方式，平时都看过哪些书？
 
@@ -7671,11 +7673,184 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
 
   
 
+##### 腾讯 云与智慧产业事业群（CSIG）ImWeb团队 二面
 
+分享屏幕，写代码。
 
+1. 问我的前端是怎么学习的...问了挺多，各种细枝末节的东西。
 
+2. 创建一个 Person 类，其包含公有属性 name 和私有属性 age 以及公有方法 setAge ；创建一个 Teacher 类，使其继承 Person ，并包含私有属性 studentCount 和私有方法 setStudentCount 。
 
+   ``` js
+   const Person = (function () {
+       let s = Symbol('age')
+       class Person {
+           constructor(name) {
+               this.name = name
+           }
+       
+           setAge(newAge) {
+               this[s] = newAge
+           }
+   
+           getAge() {
+               return this[s]
+           }
+       }
+   
+       return Person
+   })()
+   
+   const Teacher = (function () {
+       let studentCount
+       const setStudentCount = (count) => {
+           studentCount = count
+       }
+       return class Teacher extends Person {
+           constructor(name) {
+               super(name)
+           }
+           set(count) {
+               setStudentCount(count)
+           }
+       }
+   })()
+   ```
 
+   
+
+3. 输入框输入值后，数组内找值， 返回匹配的字符串。类似百度输入框的效果。
+
+   ``` html
+   <!DOCTYPE html>
+   <html lang="en">
+   <head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>Document</title>
+       <style>
+   
+           body {
+               margin: 0;
+               position: relative;
+               height: 100vh;
+           }
+           
+   
+           .center {
+               box-sizing: border-box;
+               width: 400px;
+               padding: 4px 6px;
+               position: absolute;
+               top: 35%;
+               left: 50%;
+               transform: translateX(-50%);
+               display: flex;
+               flex-direction: column;
+           }
+           .input {
+               padding: 10px 4px;
+           }
+           .list div {
+               padding: 10px 6px;
+               border: 1px solid #ddd;
+           }
+   
+           .list div:hover {
+               background: grey;
+               cursor: pointer;
+           }
+   
+           .list div:not(:last-child) {
+               border-bottom: 1px solid #ddd;
+           }
+       </style>
+   </head>
+   <body>
+       <div class='center'>
+           <input type="text" class='input'>
+           <div class='list'>
+               
+           </div>
+       </div>
+      
+   <script>
+           
+           const dataList = ['航空母舰','航空吴六', '无关数据', '航x空', '航空飞行器']
+           const el = document.querySelector('.input')
+           const list = document.querySelector('.list')
+   
+   
+           function debounce(fn, wait) {
+               let timer
+               return function () {
+                   timer && clearTimeout(timer)
+                   timer = setTimeout(() => {
+                       fn.call(this)
+                   }, wait)
+               }
+           }
+           
+           function getData() {
+               list.innerHTML = ''
+               let value = el.value
+               let ret = []
+               for (let i of dataList) {
+                   if (i.includes(value)) {
+                       ret.push(i)
+                   }
+               }
+               
+               ret.forEach(item => {
+                   let el = document.createElement('div')
+                   el.innerText = item
+                   list.appendChild(el)
+               })
+           }
+   
+           el.addEventListener('input', debounce(getData, 1000))
+       </script>
+   </body>
+   </html>
+   
+   ```
+
+4. 请写一个函数，计算一篇英文文章中出现次数最多的单词及出现次数。
+
+   ``` js
+   function getWordAnd(str) {
+       let arr = str.split(/[,\.\s]/)
+       let map = new Map()
+       let ret = [[], 0]
+       arr.forEach(word => {
+           if (word !== '') {
+               if (map.has(word)) {
+                   let times = map.get(word)
+                   map.set(word, times + 1)
+               } else {
+                   map.set(word, 1)
+               }
+           }
+       })
+       for (let [i, j] of map) {
+           if (j > ret[1]) {
+               ret[0] = [i]
+               ret[1] = j
+           } else if (j === ret[1]) {
+               ret[0].push(i)
+           }
+       }
+       return ret
+   }
+   ```
+
+5. 问我有什么上线的项目，我说以前的现在都下线了...只有源码。简历是你自己写的吗，答我是fork的...博客呢？我用vuepress搭的，以前写过ghost的主题。（总是就是被吐槽项目经历太少
+
+6. 有什么想问的吗？
+
+   面试官觉得我哪里需要提高，面试官说我还行，不过项目经历太少了。然后我说所以我想去实习提高项目经历，被教训了一顿...真正的高手自己一个人随便写项目，根本不用实习。（唉，我太菜了
+
+希望能过吧，我一定好好写项目...
 
 
 
