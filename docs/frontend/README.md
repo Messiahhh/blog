@@ -7484,7 +7484,7 @@ module.exports = {
       闭包：
 
       ``` js
-      // 闭包一
+      // 闭包一，实例的私有属性
       class Person {
           constructor() {
               let value = 233
@@ -7494,8 +7494,8 @@ module.exports = {
           }
       }
       
-      // 闭包二
-      const Peroson = (function () {
+      // 闭包二，原型对象的私有属性
+      const Person = (function () {
           let value = '111'
           class Person {
               getValue() {
@@ -7506,7 +7506,7 @@ module.exports = {
       })()
       ```
 
-      也可以使用Symbol来实现
+      也可以使用Symbol来实现（比较推荐）
 
       ``` js
       const Person = (function () {
@@ -7717,7 +7717,39 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
    })()
    ```
 
+   以上是我面试的时候写出来的，但写的挺怪的，...回来想了想，可以改写如下代码。
+
+   ``` js
+   const [Person, Teacher] = (function () {
+       const s = Symbol('age')
+       const c = Symbol('studentCount')
+       const setStudentCount = Symbol('setCount')
+       class Person {
+           constructor(name, age) {
+               this.name = name
+               this[s] = age
+           }
    
+           setAge(age) {
+               this[s] = age
+           }
+       }
+       
+       class Teacher extends Person {
+           constructor(name, age, count) {
+               super(name, age)
+               this[c] = count
+           }
+           [setStudentCount](count) {
+               this[c] = count
+           }
+           set(count) {
+               this[setStudentCount](count)
+           }
+       }
+       return [Person, Teacher]
+   })()
+   ```
 
 3. 输入框输入值后，数组内找值， 返回匹配的字符串。类似百度输入框的效果。
 
