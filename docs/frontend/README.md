@@ -5,9 +5,9 @@ sidebarDepth: 2
 
 [toc]
 
-> 你的:star:就是对我的支持，感谢读者大大！​
+> 你的:star:就是对我的支持和鼓励，非常感激！
 >
-> 右上角直达本文档的仓库
+> 右上角跳转本项目的仓库
 
 
 
@@ -1157,6 +1157,59 @@ function myInstanceof(a, b) {
     }
 }
 ```
+
+##### 实现私有变量
+
+最简单的方式是提前约定好私有变量
+
+``` js
+class Person {
+    constructor(age) {
+        this._age = age
+    }
+}
+let p = new Person()
+// 还是可以获取p._age
+```
+
+比较好的方法是结合闭包 + Symbol。
+
+如题目：创建一个 Person 类，其包含公有属性 name 和私有属性 age 以及公有方法 setAge ；创建一个 Teacher 类，使其继承 Person ，并包含私有属性 studentCount 和私有方法 setStudentCount 。
+
+``` js
+// 这里写在一个立即执行函数里，分开写也是可以的
+const [Person, Teacher] = (function () {
+    const _age = Symbol('age')
+    const _studentCount = Symbol('studentCount')
+    const _setStudentCount = Symbol('setStudentCount')
+    class Person {
+        constructor(name, age) {
+            this.name = name
+            this[_age] = age
+        }
+
+        setAge(age) {
+            this[_age] = age
+        }
+    }
+    
+    class Teacher extends Person {
+        constructor(name, age, count) {
+            super(name, age)
+            this[_studentCount] = count
+        }
+        [_setStudentCount](count) {
+            this[_studentCount] = count
+        }
+        set(count) {
+            this[_setStudentCount](count)
+        }
+    }
+    return [Person, Teacher]
+})()
+```
+
+
 
 
 
@@ -5542,6 +5595,18 @@ TCP 是全双工的，在断开连接时两端都需要发送 FIN 和 ACK。
 
 如果没有**TIME-WAIT**状态，若报文因为网络问题没有送达，则服务端不会正常关闭。
 
+
+
+##### UDP
+
+TCP是面向连接的传输层协议，而UDP是面向无连接的传输层协议。
+
+TCP通过三次握手/四次挥手来保障传输，不过因此速度比UDP慢。
+
+UDP通常用于DNS，或者是一些直播流的传输。
+
+
+
 ### HTTP缓存
 
 ##### HTTP缓存分为强制缓存和协商缓存。
@@ -5712,6 +5777,40 @@ CDN（Content Delivery Network，内容分发网络）是构建在现有互联�
 [加速原理](https://fecommunity.github.io/front-end-interview/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/8.CDN.html)
 
 > 当用户访问使用CDN服务的网站时，本地DNS服务器通过CNAME方式将最终域名请求重定向到CDN服务。CDN通过一组预先定义好的策略(如内容类型、地理区域、网络负载状况等)，将当时能够最快响应用户的CDN节点IP地址提供给用户，使用户可以以最快的速度获得网站内容
+
+
+
+##### DNS
+
+[相关链接](http://www.sunhao.win/articles/netwrok-dns.html)
+
+DNS查询过程
+
+1. 浏览器是否有缓存
+2. 操作系统是否有缓存
+3. 本地Hosts文件是否有缓存
+4. 本地DNS服务器是否有缓存
+5. 向根域名服务器查询，若知道对应IP则返回IP，不知道则告诉本地DNS服务器要去哪个顶级域名服务器查询
+
+
+
+**递归**
+
+本地 <=> 本地DNS服务器 <=> 权威DNS服务器
+
+**迭代**
+
+本地DNS服务器  <=> 根域名服务器，若查不到则进行下一步
+
+​                             <=> 顶级域名服务器，若查不到则进行下一步
+
+​                             <=> 二级域名服务器...
+
+**解析记录**
+
+1. A记录，解析域名到IP
+2. CNAME记录，解析域名到域名
+3. 其他各种记录
 
 
 
@@ -7768,7 +7867,7 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
    })()
    ```
 
-   以上是我面试的时候写出来的，但写的挺怪的，...回来想了想，可以改写如下代码。
+   以上是我面试的时候写出来的，但写的挺怪的...回来想了想，可以改写如下代码。
 
    ``` js
    const [Person, Teacher] = (function () {
