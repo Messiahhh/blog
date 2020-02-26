@@ -5125,10 +5125,12 @@ CommonJS我们即使只想使用库中的一个函数，也会加载全部的代
 
 ### 浏览器渲染机制
 
-1. 浏览器解析HTML，生成DOM树。解析CSS，生成样式树。
-2. 浏览器将DOM树和样式树结合，生成渲染树。
-3. 布局：浏览器获取每个渲染对象的位置和尺寸。
-4. 绘制：将计算好的像素点绘制到屏幕。
+1. 浏览器先对得到的HTML进行解码，之后进行资源的预处理，将以后要发送的请求提前加进请求队列中。
+2. 浏览器将HTML转化为一个个的标记（标记化），之后通过标记来构建DOM树；CSS同理，先进行标记化，再进行CSS样式树的构建。
+3. 浏览器将DOM树和CSS样式树结合，生成渲染树。
+4. 布局：浏览器根据渲染树，获取每个渲染对象在屏幕上的位置和尺寸。
+5. 绘制：将计算好的像素点绘制到屏幕。
+6. 渲染层合成：多个绘制后的渲染层按照恰当的重叠顺序进行合并，而后生成位图，最终通过显卡展示到屏幕上。
 
 ##### 回流/重排
 
@@ -5456,9 +5458,9 @@ Status Code: 302 Found
 | 方法   | 描述                                                         |
 | :----- | ------------------------------------------------------------ |
 | Get    | 通常用于请求资源                                             |
-| Post   | 通常用于向服务端发送消息                                     |
+| Post   | 通常用于向服务端发送资源                                     |
 | Delete | 通常用于删除资源                                             |
-| Put    | 通常用于上传资源                                             |
+| Put    | 通常用于资源的更新，若资源不存在则新建一个                   |
 | Option | 通常用于CORS的请求预检                                       |
 | Head   | 只请求资源的头部，该请求方法的一个使用场景是在下载一个大文件前先获取其大小再决定是否要下载, 以此可以节约带宽资源 |
 
@@ -5471,6 +5473,28 @@ Status Code: 302 Found
 - Get请求的参数放在URL中，所以有长度限制；而Post请求没有限制。
 
 [更多区别](https://zhuanlan.zhihu.com/p/25028045)
+
+
+
+##### RESTful API
+
+应该尽量将API部署在专用域名之下。
+
+``` js
+https://api.example.com
+```
+
+如果确定API很简单，不会有进一步扩展，可以考虑放在主域名下。
+
+``` js
+https://example.org/api/
+```
+
+在RESTful架构中，每个网址代表一种资源（resource），所以网址中不能有动词，只能有名词。
+
+对于资源的具体操作类型，由HTTP动词表示。
+
+如Get, Post, Put, Delete等
 
 
 
@@ -5814,7 +5838,7 @@ app.use(async ctx => {
 
 20. 绘制：将计算好的像素绘制到屏幕
 
-21. 合成层合并
+21. 渲染层/合成层合并
 
 
 
@@ -7042,7 +7066,7 @@ function insertSort(arr) {
 给定数组，取出 n 个数，使其相加和为 sum
 
 ``` js
-function getArr(arr, n, m, temp) {
+function getArr(arr, n, m, temp = []) {
     if (temp.length === n) {
         let sum = temp.reduce((a, b) => a + b)
         if (sum === m) {
@@ -7072,7 +7096,7 @@ getArr(myArr, 2, 7, [])
 
 ##### 两数之和
 
-> 用上面那个就行，以下代码仅供参考
+
 
 ```javascript
 // 使用Map而不是两个循环，空间换时间
@@ -7199,6 +7223,23 @@ var addTwoNumbers = function(l1, l2) {
     }
     return res.next
 };
+
+// test
+class ListNode {
+    constructor(val) {
+        this.val = val
+        this.next = null
+    }
+}
+const l1 = new ListNode(2)
+l1.next = new ListNode(4)
+l1.next.next = new ListNode(3)
+
+const l2 = new ListNode(5)
+l2.next = new ListNode(6)
+l2.next.next = new ListNode(4)
+
+addTwoNumbers(l1, l2) // 7 => 0 => 8
 ```
 
 
@@ -7327,13 +7368,9 @@ function repeat(fn, times, wait) {
 ##### 实现sleep函数
 
 ``` js
-function sleep(timer) {
-	return new Promise((resolve, reject) => {
-		setTimeout(() => {
-			resolve()
-		}, timer)
-	})
-}
+const sleep = (wait) => new Promise((resolve, reject) => {
+    setTimeout(resolve, wait)
+}) 
 
 // 使用
 async function test () {
@@ -7459,9 +7496,7 @@ function HardMan(name) {
 
 5L装满 -> 6L瓶子
 
-5L再装满 -> 6L瓶子， 6L倒掉
-
-5L再装满 -> 6L瓶子
+5L再装满 -> 6L瓶子， 6L倒掉，5L瓶子的水 -> 6L瓶子
 
 5L再装满 -> 6L瓶子
 
