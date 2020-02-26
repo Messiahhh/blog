@@ -2431,6 +2431,27 @@ let arr2 = Array.from(arrayLike); // ['a', 'b', 'c']
 
 一个数据结构只要部署了`Symbol.iterator`属性，就被视为具有 iterator 接口，就可以用`for...of`循环遍历它的成员。也就是说，`for...of`循环内部调用的是数据结构的`Symbol.iterator`方法。
 
+``` js
+let str = 'abcde'
+for (let i of str) console.log(i)
+
+let arr = [1, 2, 3, 4, 5]
+for (let i of arr) console.log(i)
+
+let map = new Map()
+map.set('name', 'akara')
+map.set('age', 20)
+for (let i of map) console.log(i)
+
+let set = new Set([1, 2, 3])
+for (let i of set) console.log(i)
+
+```
+
+
+
+
+
 
 
 ### AJAX
@@ -5237,8 +5258,6 @@ ul.addEventListener("click", (e) => {
 
 ##### Cookie
 
-
-
 浏览器发送HTTP请求时，先检查是否有相应的Cookie，如果有则将Cookie放在请求头中的Cookie字段中发送。
 
 1. expires: 设置Cookie的过期时间
@@ -5246,6 +5265,35 @@ ul.addEventListener("click", (e) => {
 3. httpOnly: 设置浏览器能否读取Cookie
 4. domain和path: 限制Cookie能被哪些URL访问
 5. SameSite
+
+**封装Cookie**
+
+``` js
+const cookieUtil = {
+    setItem(name, value, days) {
+        let date = new Date()
+        date.setDate(date.getDate() + days)
+        document.cookie = `${name}=${value};expires=${date}`
+    },
+
+    getItem(name) {
+        let arr = document.cookie.split(';')
+        let ret 
+        arr.forEach(item => {
+            let tempArr = item.split('=')
+            if (tempArr[0] === name) {
+                ret = tempArr[1]
+            }
+        })
+        return ret
+    },
+
+    removeItem(name) {
+        this.setItem(name, null, -1)
+    }
+}
+
+```
 
 
 
@@ -5770,17 +5818,9 @@ app.use(async ctx => {
 
 
 
-### CDN
-
-CDN（Content Delivery Network，内容分发网络）是构建在现有互联网基础之上的一层智能虚拟网络，通过在网络各处部署节点服务器，实现将源站内容分发至所有CDN节点，使用户可以就近获得所需的内容。CDN服务缩短了用户查看内容的访问延迟，提高了用户访问网站的响应速度与网站的可用性，解决了网络带宽小、用户访问量大、网点分布不均等问题。
-
-[加速原理](https://fecommunity.github.io/front-end-interview/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/8.CDN.html)
-
-> 当用户访问使用CDN服务的网站时，本地DNS服务器通过CNAME方式将最终域名请求重定向到CDN服务。CDN通过一组预先定义好的策略(如内容类型、地理区域、网络负载状况等)，将当时能够最快响应用户的CDN节点IP地址提供给用户，使用户可以以最快的速度获得网站内容
 
 
-
-##### DNS
+### DNS
 
 [相关链接](http://www.sunhao.win/articles/netwrok-dns.html)
 
@@ -5791,6 +5831,7 @@ DNS查询过程
 3. 本地Hosts文件是否有缓存
 4. 本地DNS服务器是否有缓存
 5. 向根域名服务器查询，若知道对应IP则返回IP，不知道则告诉本地DNS服务器要去哪个顶级域名服务器查询
+6. 迭代，直到找到对应的ip
 
 
 
@@ -5811,6 +5852,18 @@ DNS查询过程
 1. A记录，解析域名到IP
 2. CNAME记录，解析域名到域名
 3. 其他各种记录
+
+
+
+### CDN
+
+CDN（Content Delivery Network，内容分发网络）是构建在现有互联网基础之上的一层智能虚拟网络，通过在网络各处部署节点服务器，实现将源站内容分发至所有CDN节点，使用户可以就近获得所需的内容。CDN服务缩短了用户查看内容的访问延迟，提高了用户访问网站的响应速度与网站的可用性，解决了网络带宽小、用户访问量大、网点分布不均等问题。
+
+[加速原理](https://fecommunity.github.io/front-end-interview/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/8.CDN.html)
+
+> 当用户访问使用CDN服务的网站时，本地DNS服务器通过CNAME方式将最终域名请求重定向到CDN服务。CDN通过一组预先定义好的策略(如内容类型、地理区域、网络负载状况等)，将当时能够最快响应用户的CDN节点IP地址提供给用户，使用户可以以最快的速度获得网站内容
+
+![CDN流程图](https://fecommunity.github.io/front-end-interview/img/cdncache.png)
 
 
 
@@ -5903,7 +5956,7 @@ CSRF，也叫做跨站请求伪造（Cross-site request forgery ）
 
    Lax模式：相对宽松，只能在 `get 方法提交表单`况或者`a 标签发送 get 请求`的情况下可以携带 Cookie，其他情况均不能。
 
-   None模式：默认模式，请求自动带上Cookie。
+   None模式：默认模式，请求自动带上Cookie。（chrome 80后可能默认模式会改为Lax）
 
 4. CSRF Token
 
