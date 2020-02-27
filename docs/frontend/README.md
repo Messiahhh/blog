@@ -102,6 +102,10 @@ JavaScript脚本的**执行**会阻塞HTML的解析
 1. link是XHTML提供的标签，不仅可以加载CSS。@import是CSS提供的语法规则，只能加载CSS
 2. 加载页面时，`link`标签引入的 CSS 被同时加载；`@import`引入的 CSS 将在页面加载完毕后被加载。
 
+### Doctype
+
+Doctype声明位于文档中的最前面，处于html标签之前。告知浏览器的解析器，用什么文档类型规范来解析这个文档
+
 ### 前端重定向
 
 content内可设置时间，此处为2s后重定向
@@ -1536,9 +1540,37 @@ function flatter(arr, newArr = []) {
 | {n}  | 匹配n次。                                              |
 | \|   | 指明两项之间的一个选择                                 |
 
-##### 题目
+##### 正则题目
 
-**判断域名是否为qq.com，或者其子域名**
+###### 匹配URL参数
+
+``` js
+// 正则
+function getUrlParams(name) {
+    const reg = new RegExp(`(^|&)${name}=([^&]*)($|&)`)
+    const match = location.search.substr(1).match(reg)
+    if (match) {
+        return match[2]
+    }
+} 
+
+// split
+function getUrlParams(name) {
+    const arr = location.search.substr(1).split('&')
+    let obj = {}
+    arr.forEach(item => {
+        let tempArr = item.split('=')
+        obj[tempArr[0]] = tempArr[1]
+    })
+    return obj[name]
+}
+```
+
+
+
+###### 域名判断
+
+判断当前域名是否为qq.com，或者其子域名
 
 ``` js
 function isMatch(url) {
@@ -1548,7 +1580,9 @@ isMatch('http://a.qq.com') // true
 isMatch('https://qq.com') // true
 ```
 
-**将`aaa-bbb-ccc`转换为驼峰`aaaBbbCcc`**
+###### 驼峰化
+
+将`aaa-bbb-ccc`转换为驼峰`aaaBbbCcc`
 
 ``` js
 function toCamel(str) {
@@ -8397,3 +8431,8 @@ async function test() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 ```
 
+
+
+##### 二维码登录流程
+
+[流程](https://mp.weixin.qq.com/s/xVk2hGnBRRCgtL9tYWWarw)
