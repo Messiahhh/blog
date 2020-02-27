@@ -8383,6 +8383,80 @@ requestAnimationFrame(myAnimation)
 
 
 
+## Mysql
+
+> 有待龟速更新
+
+增
+
+``` sql
+INSERT INTO user VALUES(null, 'akara', 'root')
+```
+
+删
+
+``` sql
+DELETE FROM user WHERE user_id = '111'
+```
+
+改
+
+``` sql
+UPDATE user SET user_name = 'admin' WHERE user_id = '111'
+```
+
+查
+
+``` sql
+SELECT user_name, user_psw FROM user WHERE user_id = '111'
+```
+
+
+
+**Node中使用Mysql**
+
+``` js
+const mysql = require('mysql')
+const bluebird = require('bluebird') // 非必须
+const config = {
+    host: 'localhost',
+    user: 'user', // 数据库用户名
+    password: 'password', // 数据库密码
+    database: 'node', // 选中的数据库
+}
+let conn = mysql.createConnection(config)
+conn = bluebird.promisifyAll(conn) // 非必须
+
+conn.connect() // 好像不加这个也能用，建议加上
+
+async function A() {
+    let data = await conn.queryAsync('SELECT * FROM user')
+    // do something
+}
+```
+
+**联表查询**
+
+比如我们有两个表user和question，大概结构如下
+
+| user_id | user_name | user_psw |
+| ------- | --------- | -------- |
+| 1       | akara     | 123456   |
+
+| q_id | q_title  | q_info   | user_id |
+| ---- | -------- | -------- | ------- |
+| 1    | 我是问题 | 我是描述 | 1       |
+
+通过**内联表查询**，可以获得每个问题的提问人。
+
+``` sql
+SELECT u.user_name, q.q_title, q.q_info FROM user as u, question as q WHERE u.user_id = q.user_id
+```
+
+
+
+
+
 ## 其他
 
 ##### 分号的问题
