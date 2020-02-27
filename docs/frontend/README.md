@@ -102,7 +102,7 @@ JavaScript脚本的**执行**会阻塞HTML的解析
 1. link是XHTML提供的标签，不仅可以加载CSS。@import是CSS提供的语法规则，只能加载CSS
 2. 加载页面时，`link`标签引入的 CSS 被同时加载；`@import`引入的 CSS 将在页面加载完毕后被加载。
 
-### Doctype
+### doctype
 
 Doctype声明位于文档中的最前面，处于html标签之前。告知浏览器的解析器，用什么文档类型规范来解析这个文档
 
@@ -3307,7 +3307,7 @@ Koa的实例app有三个公共的API
 
 Koa源码中使用到了Koa-compose， 用于将多个中间件函数组合为一个中间件函数
 
-##### Koa-compose
+##### koa-compose
 
 ``` javascript
 const compose = (middleware) => {
@@ -3342,7 +3342,7 @@ const compose = (middleware) => {
 }
 ```
 
-### Koa-router
+### koa-router
 
 ##### 使用
 
@@ -3404,6 +3404,33 @@ class Router {
     }
 }
 ```
+
+
+
+### koa-static
+
+用于处理静态资源的koa中间件
+
+``` js
+const static = require('koa-static')
+app.use(static('public'))
+```
+
+
+
+### koa-body
+
+处理请求的中间件，可以轻松获得请求的内容
+
+``` js
+const body = require('koa-body')
+app.use(body({multipart: true}))
+app.use((ctx) => {
+    console.log(ctx.request.body)
+})
+```
+
+
 
 
 
@@ -3685,7 +3712,7 @@ this.setState({
 
 由于setState是异步的，那么第二个setState中获取到的`this.state.count`为初始的0
 
-为了解决这个问题，setState的第二个参数可以设置为函数
+为了解决这个问题，setState的参数可以设置为函数
 
 ``` javascript
 this.setState({
@@ -3707,7 +3734,7 @@ this.setState((state, props) => {
 
 一句话描述，在**合成事件**和**组件的生命周期**中`setState`是异步的；在**原生事件**和**定时器**中`setState`是同步的。
 
-React内部维护了一个标识`isBatchingUpdates`，当这个值为`true`表示把setState缓存进队列，最后进行批量更行；当这个值为`false`表示直接进行更新。
+React内部维护了一个标识`isBatchingUpdates`，当这个值为`true`表示把setState缓存进队列，最后进行批量更新；当这个值为`false`表示直接进行更新。
 
 **合成事件**和**组件的生命周期**中，会把`isBatchingUpdates`设置为true
 
@@ -3790,6 +3817,8 @@ class App extends React.Component {
 ```
 
 **受控组件**
+
+通常表单内部拥有自己的状态，状态会被用户的输入改变。而React中，用户的输入会被劫持（个人理解），实际上的数据源完全由React提供。
 
 React的state成为组件/表单的唯一数据源，渲染表单的组件还控制着用户输入过程中表单发生的操作。被 React 以这种方式控制取值的表单输入元素就叫做“受控组件”。当然，与之对应的成为“非受控组件”。
 
@@ -3875,7 +3904,8 @@ class App extends React.Component {
 
 Context 设计目的是为了共享那些对于一个组件树而言是“全局”的数据，例如当前认证的用户、主题或首选语言。
 
-借用官方代码说明，偷个懒。
+> 借用官方代码说明，偷个懒。
+>
 
 ``` javascript
 // Context 可以让我们无须明确地传遍每一个组件，就能将值深入传递进组件树。
@@ -3965,7 +3995,7 @@ function Todos() {
 
 ### Hook
 
-Hook 是一个特殊的函数，它可以让你“钩入” React 的特性。它可以让你在不编写 class 的情况下使用 state 以及其他的 React 特性。
+Hook 是一个特殊的函数，它可以让你“钩入” React 的特性。它可以让你在不编写 class 的情况下使用 state 以及其他的 class组件的特性。
 
 ##### useState
 
@@ -6692,7 +6722,29 @@ class Subscriber {
 }
 ```
 
+##### MVC
 
+MVC (Model-View-Controller) 分为三部分
+
+- Model（数据模型）：数据
+- View（视图）：用户界面
+- Controller（控制器）：业务逻辑
+
+通信过程如下，所有通信都是单向的。
+
+1. View 传送指令到 Controller
+2. Controller 完成业务逻辑后，要求 Model 改变状态
+3. Model 将新的数据发送到 View，用户得到反馈
+
+![过程](https://www.ruanyifeng.com/blogimg/asset/2015/bg2015020105.png)
+
+##### MVVM
+
+MVVM（Model-View-ViewModel）也分为三部分，数据模型，视图，视图模型。
+
+与MVC的区别之一在于View和Model之间要借助ViewModel进行通信。
+
+![通信过程](https://www.ruanyifeng.com/blogimg/asset/2015/bg2015020110.png)
 
 
 
