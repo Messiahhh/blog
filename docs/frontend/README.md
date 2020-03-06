@@ -4680,10 +4680,26 @@ function User() {
 - `v-html`
 - `v-once`
 
-##### $属性
+
+
+##### v-if vs v-show
+
+> `v-if` 是“真正”的条件渲染，因为它会确保在切换过程中条件块内的事件监听器和子组件适当地被销毁和重建。
+>
+> `v-if` 也是**惰性的**：如果在初始渲染时条件为假，则什么也不做——直到条件第一次变为真时，才会开始渲染条件块。
+>
+> 相比之下，`v-show` 就简单得多——不管初始条件是什么，元素总是会被渲染，并且只是简单地基于 CSS 进行切换。
+>
+> 一般来说，`v-if` 有更高的切换开销，而 `v-show` 有更高的初始渲染开销。因此，如果需要非常频繁地切换，则使用 `v-show` 较好；如果在运行时条件很少改变，则使用 `v-if` 较好。
+
+
+
+
+
+##### options
 
 - `el`
-- `$data`
+- `data`
 - `computed`
 - `methods`
 - `template`
@@ -5205,7 +5221,7 @@ console.log(module.exports === exports) // false
 
 **在Node中引入模块，会发生什么？**
 
-在Node中，模块分为两类：一类是node提供的**核心模块**，一类是用于编写的**文件模块**
+在Node中，模块分为两类：一类是node提供的**核心模块**，一类是用户编写的**文件模块**
 
 - 路径分析
 
@@ -5223,13 +5239,15 @@ console.log(module.exports === exports) // false
 
 ##### UMD 
 
-UMD = IIFE + AMD + CommonJS 用来兼容多套模块系统
+**UMD = IIFE + AMD + CommonJS** 用来兼容多套模块系统
+
+
 
 
 
 ##### ES6模块
 
-想使用ES6模块的`import`和`export`，需要将文件名的后缀改为`.mjs`
+通常想使用ES6模块的`import`和`export`，需要将文件名的后缀改为`.mjs`
 
 并且使用`--experimental-modules`开启此特性
 
@@ -5237,11 +5255,68 @@ UMD = IIFE + AMD + CommonJS 用来兼容多套模块系统
 node --experimental-modules file.mjs
 ```
 
+而使用如`create-react-app`或`vue-cli`之类的工具所构建的项目中，我们可以直接使用ES6模块语法，十分便利。
 
 
-CommonJS是运行时加载，ES6模块是编译时加载。
 
-不过在ES6模块里，我们也可以使用import()来实现运行时加载
+**使用方法**
+
+``` js
+// a.js
+const name = 'akara'
+const getName = () => console.log(111)
+
+export { name, getName }
+
+// b.js
+import { name, getName } from './a.js'
+getName() 
+console.log(name)
+```
+
+
+
+**export default**
+
+``` js
+// c.js
+const name = 'akara'
+
+export default name
+// 等价于 export { name as default }
+
+
+// d.js
+import name from './c.js'
+// 等价于 import { default as name} from './c.js'
+console.log(name)
+```
+
+我们可以看到，`export`命令用于规定模块的对外接口，`import`命令用于输入其他模块提供的功能。
+
+``` js
+// as 的用法
+// m.js
+const name = 'akara'
+
+export {name as aaa}
+
+// n.js
+import {aaa as bbb} from './m.js'
+console.log(bbb)
+```
+
+
+
+
+
+commonjs中的require是运行时加载模块。
+
+ES6模块中的import是编译时加载模块。
+
+不过在ES6模块里，我们也可以使用`import()`来实现运行时加载模块，因此我们可以用来实现懒加载等功能。
+
+
 
 CommonJS我们即使只想使用库中的一个函数，也会加载全部的代码；ES6模块只会加载我们需要的那个函数。
 
