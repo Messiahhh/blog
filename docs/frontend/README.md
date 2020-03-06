@@ -909,6 +909,8 @@ typeof 123 === 'number'
 typeof '123' === 'string'
 typeof true === 'boolean'
 typeof Symbol() === 'symbol'
+typeof 123n === 'bigint' 
+// 一共七种基本类型，最后一种bigint为新增基本类型
 typeof {} === 'object'
 typeof function() {} === 'function'
 ```
@@ -1130,6 +1132,16 @@ function shuffle(arr) {
         [arr[i], arr[j]] = [arr[j], arr[i]]
     }
 }
+```
+
+
+
+##### 常用方法
+
+``` js
+var arr = [2, 7, 0, 6, 1, 4, 8, 3]
+arr.sort((a, b) => a - b) // 递增
+arr.sort((a, b) => b - a) // 递减
 ```
 
 
