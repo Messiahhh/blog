@@ -63,7 +63,7 @@ JavaScript脚本的**执行**会阻塞HTML的解析
 - defer属性。等整个HTML文档都解析完（DOMContentLoaded事件发生），脚本才开始执行。
 - 具体过程可见下图
 
-![defer and async](https://segmentfault.com/img/bVWhRl?w=801&h=814)
+![defer and async](https://image-static.segmentfault.com/215/179/2151798436-59da4801c6772_articlex)
 
 
 
@@ -5569,8 +5569,10 @@ https://example.org/api/
 ##### 请求头部
 
 ``` http
-cookie: ""
-host: ""
+cookie: ''
+host: ''
+If-None-Match: ''
+If-Modified-Since: ''
 ```
 
 
@@ -5612,13 +5614,26 @@ server
 ##### 响应头部
 
 ``` http
-Set-Cookie: ""
+Set-Cookie: ''
 Location: '/'
+ETag: ''
+Last-Modified: ''
+Cache-Control: 'max-age='
+expires: ''
+access-control-allow-origin: '*'
+access-control-allow-credentials: true
 ```
 
 
 
 ##### 通用头部
+
+``` http
+accept: ''
+accept-language: ''
+content-Type: ''
+content-length: ''
+```
 
 
 
