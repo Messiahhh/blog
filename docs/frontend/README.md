@@ -55,7 +55,7 @@ JavaScript脚本的**执行**会阻塞HTML的解析
 
 **共同点**
 
-加上`async`或`defer`属性的脚本的**加载 **不会阻塞HTML的解析。
+加上`async`或`defer`属性的脚本的**加载过程 **都不会阻塞HTML的解析。
 
 **不同点**
 
@@ -106,9 +106,9 @@ JavaScript脚本的**执行**会阻塞HTML的解析
 
 Doctype声明位于文档中的最前面，处于html标签之前。告知浏览器的解析器，用什么文档类型规范来解析这个文档
 
-### 前端重定向
+### 重定向
 
-content内可设置时间，此处为2s后重定向
+mata标签的`http-equiv="refresh"`属性用来告诉浏览器进行页面的跳转，`content`属性告知在多少秒后进行跳转，以及跳转的地址。此处为2s后重定向。
 
 ``` html
 <meta http-equiv="refresh" content='2;https://messiahhh.github.io/blog'>
@@ -117,10 +117,16 @@ content内可设置时间，此处为2s后重定向
 或者
 
 ``` javascript
+// js
 location.href = 'https://messiahhh.github.io/blog'
 ```
 
 或者响应状态码为301/302的重定向
+
+``` js
+res.statusCode = 301 // or 302
+res.setHeader('Location', 'https://messiahhh.github.io/blog')
+```
 
 
 
@@ -144,9 +150,38 @@ location.href = 'https://messiahhh.github.io/blog'
 
 `:first-child`和`:first-of-type` 不要混淆了
 
-`:first-child`: 指定只有当<p>元素是其父级的第一个子级的样式。
+`p:first-child`: 只有当一个p元素是其父元素的第一个子元素时，才应用对应的样式。
 
-`:first-of-type`: 选择每个p元素是其父级的第一个p元素
+``` html
+<style>
+	p:first-child {
+    	color: pink;
+    }
+</style>
+<div>
+    <p>111</p> <!-- 匹配 -->
+    <span>111</span>
+</div>
+<div>
+    <span>111</span>
+    <p>111</p> <!-- 不匹配 -->
+</div>
+```
+
+`p:first-of-type`: 选择父元素的第一个p元素，应用对应的样式
+
+``` html
+<style>
+	p:first-of-type {
+    	color: pink;
+    }
+</style>
+<div>
+    <span>111</span>
+    <p>111</p> <!-- 匹配 -->
+    <span>111</span>
+</div>
+```
 
 
 
@@ -154,8 +189,9 @@ location.href = 'https://messiahhh.github.io/blog'
 
 常见的继承属性：
 
-1. `font`系列，如`font-weight`， `font-style`， `color`
+1. `font`系列，如`font-weight`， `font-style`， `color`等
 2. `visibility`
+3. `line-height`
 
 
 
@@ -249,6 +285,7 @@ location.href = 'https://messiahhh.github.io/blog'
 ``` css
 .container::after {
     content: '';
+    position: absolute;
     border: 10px solid transparent;
     border-bottom-color: pink;
 }
@@ -310,6 +347,8 @@ inline和inline-block可以设置padding和margin，但无法通过像block一�
 }
 ```
 
+以上两种方法通常用于绝对定位元素的宽高为固定值时，若宽高不确定，则不可使用。
+
 三：absolute + transform
 
 ``` css
@@ -354,7 +393,7 @@ inline和inline-block可以设置padding和margin，但无法通过像block一�
 
 ##### 两栏布局
 
-一：float + margin-left 或者 float + overflow: auto
+一：`float + margin-left` 或者 `float + overflow: auto`
 
 ``` html
 <style>
@@ -392,11 +431,11 @@ inline和inline-block可以设置padding和margin，但无法通过像block一�
 
     .aside {
         flex: 0 0 25vw;
-        // or width: 25vw;
+        <!-- or width: 25vw; -->
     }
 
     .main {
-        flex: 1; // 等于flex: 1 1;
+        flex: 1; // 等于flex-grow: 1;
     }
 </style>
 <body>
@@ -562,13 +601,13 @@ inline和inline-block可以设置padding和margin，但无法通过像block一�
 
 **em和rem**
 
-1em等于父元素的字体大小（font-size）
+2em等于两倍**父元素**的字体大小
 
-1rem等于根元素（html）的字体大小。移动端的时候根据媒体查询动态改变根元素的字体大小即可。
+2rem等于两倍**根元素**的字体大小。移动端的时候根据媒体查询动态改变根元素的字体大小即可。
 
 
 
-1vw 等于 1 / 100 视口宽
+1vw 等于 1 / 100 视口（viewport）宽
 
 1vh 等于 1 / 100 视口高
 
@@ -608,7 +647,7 @@ inline和inline-block可以设置padding和margin，但无法通过像block一�
     /* 主轴上的宽度 */
     flex: 1 0 200px;
     /* 上面三条的缩写 */
-    align-items: flex-end;
+    align-self: flex-end;
     /* 修改项目的交叉轴布局*/
 }
 ```
@@ -648,8 +687,6 @@ inline和inline-block可以设置padding和margin，但无法通过像block一�
 
 
 
-
-
 ### BFC
 
 BFC，也就是Block Formatting Contexts （块级格式化上下文)
@@ -666,12 +703,12 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 
 **作用**
 
-一：清除浮动
+一：清除浮动（阻止高度塌陷）
 
 ``` html
 <style>
     .outer {
-        // 使用overflow: auto;使outer元素成为BFC（触发outer元素的BFC）
+        <!-- 使用overflow: auto;使outer元素成为BFC（触发outer元素的BFC）-->
         overflow: auto;
     }
     .inner {
