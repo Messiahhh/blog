@@ -1920,6 +1920,12 @@ WeakSet 的成员只能是对象。其次，WeakSet 中的对象都是弱引用�
 
 
 
+**弱引用**
+
+指的是不被在引用计数中被计数的引用。
+
+
+
 ### Promise的实现
 
 
@@ -2037,22 +2043,21 @@ var p2 = a.then(data => {
 
 ``` js
 const resolve = (value) => {
-			if (this.status === 'pending') {
-                // 加了这里的代码
-                // 如果resolve的参数是Promise，状态与其保持一直
-				if (value instanceof Promise) {
-					value.then((data) => {
-						resolve(data)
-					}, (reason) => {
-						reject(reason)
-					})
-				} else {
-					this.status = 'fulfilled'
-					this.value = value
-					this.onResolvedCallback.forEach(callback => callback())
-				}
-			}
-		}
+    if (this.status === 'pending') {
+        // 如果resolve的参数是Promise实例，则状态与其保持一致
+        if (value instanceof Promise) {
+            value.then((data) => {
+                resolve(data)
+            }, (reason) => {
+                reject(reason)
+            })
+        } else {
+            this.status = 'fulfilled'
+            this.value = value
+            this.onResolvedCallback.forEach(callback => callback())
+        }
+    }
+}
 ```
 
 二 异常的捕获
@@ -2569,7 +2574,7 @@ xhr.send()
 | ---------- | ------------------------------- |
 | 0          | XHR已经创建，但未调用open()方法 |
 | 1          | open()方法已经被调用            |
-| 2          | `send()` 方法已经被调用         |
+| 2          | send() 方法已经被调用           |
 | 3          | 正在接收响应的内容              |
 | 4          | 成功接收到响应                  |
 
@@ -3654,7 +3659,7 @@ React中的e为**合成事件**，因此无需担心浏览器的兼容性问题�
 
 2. 使用箭头函数
 
-   ``` javascript
+   ``` jsx
     <button onClick={(e) => this.handleClick(e)}>
        Click me
      </button>
@@ -3941,7 +3946,7 @@ class App extends React.Component {
 
 ###### 非父子组件通信
 
-可以实现`events`实现发布-订阅。也可以借助于Context。
+可以通过`events`实现发布-订阅。也可以借助于Context。
 
 
 
@@ -4196,6 +4201,14 @@ function todosReducer(state, action) {
   }
 }
 ```
+
+
+
+##### 其他Hook
+
+如react-redux提供的`useSelector`，`useDispatch`等
+
+如react-router提供的`useParams`等
 
 
 
