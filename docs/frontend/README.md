@@ -7344,7 +7344,117 @@ function insertSort(arr) {
 
 ## 编程题
 
-##### n项之和
+##### 两数之和
+
+给定一个整数数组 nums 和一个目标值 target，请你在该数组中找出和为目标值的那 两个 整数，并返回他们的**数组下标**。（leetcode.1 easy）
+
+```javascript
+// 使用Map而不是两个循环，空间换时间
+function twoSum(arr, target) {
+    const map = new Map()
+    for (let i = 0; i < arr.length; i++) {
+        let value = arr[i]
+        let diff = target - value
+        if (map.has(diff)) {
+            return [diff, value]
+        } else {
+            map.set(value, i)
+        }
+    }
+}
+
+twoSum([1, 2, 3, 4], 7)
+
+
+```
+
+
+
+##### 三数之和
+
+给你一个包含 n 个整数的数组 nums，判断 nums 中是否存在三个元素 a，b，c ，使得 a + b + c = 0 ？请你找出**所有满足条件且不重复的三元组**。(leetcode.15 medium)
+
+**注意：**答案中不可以包含重复的三元组。
+
+``` js
+function threeSum(arr, sum = 0) {
+    let res = []
+    let n = arr.length
+    arr.sort((a, b) => a - b) // 先排序
+    for (let i = 0; i < n; i++) {
+        if (arr[i] === arr[i - 1]) continue // 去重
+        // 两个指针不断向中间靠拢
+        let l = i + 1
+        let r = n - 1 
+        while(l < r) {
+            let m = arr[i] + arr[l] + arr[r]
+            if (m === sum) {
+                res.push([arr[i], arr[l], arr[r]])
+                while(l < r && arr[l] === arr[l + 1]) l++ // 去重
+                while(l < r && arr[r] === arr[r - 1]) r-- // 去重
+                l++
+                r--
+            }
+            if (m > sum) {
+                r--
+            }
+            if (m < sum) {
+                l++
+            }
+        }
+    }
+    return res
+}
+```
+
+
+
+##### 四数之和
+
+给定一个包含 n 个整数的数组 nums 和一个目标值 target，判断 nums 中是否存在四个元素 a，b，c 和 d ，使得 a + b + c + d 的值与 target 相等？找出**所有满足条件且不重复的四元组**。
+
+类似三数之和，外面多套一层循环即可，另外要注意重复的情况。
+
+``` js
+function fourSum(arr, sum) {
+    let res = []
+    let n = arr.length
+    arr.sort((a, b) => a - b) // 先排序
+    for (let j = 0; j < n - 3; j++) {
+        if (arr[j] === arr[j - 1]) continue // 去重
+        for (let i = j + 1; i < n - 2; i++) {
+            if (i > j + 1 && arr[i] === arr[i - 1]) continue // 去重，注意 i > j + 1
+            // 两个指针不断向中间靠拢
+            let l = i + 1
+            let r = n - 1 
+            while(l < r) {
+                let m = arr[j] + arr[i] + arr[l] + arr[r]
+                if (m === sum) {
+                    res.push([arr[j], arr[i], arr[l], arr[r]])
+                    while(l < r && arr[l] === arr[l + 1]) l++ // 去重
+                    while(l < r && arr[r] === arr[r - 1]) r-- // 去重
+                    l++
+                    r--
+                }
+                if (m > sum) {
+                    r--
+                }
+                if (m < sum) {
+                    l++
+                }
+            }
+        }       
+    }
+
+    return res
+}
+```
+
+
+
+
+
+##### n数之和
 
 给定数组，取出 n 个数，使其相加和为 sum
 
@@ -7376,30 +7486,6 @@ getArr(myArr, 2, 7, [])
 ```
 
 
-
-##### 两数之和
-
-
-
-```javascript
-// 使用Map而不是两个循环，空间换时间
-function twoSum(arr, target) {
-    const map = new Map()
-    for (let i = 0; i < arr.length; i++) {
-        let value = arr[i]
-        let diff = target - value
-        if (map.has(diff)) {
-            return [diff, value]
-        } else {
-            map.set(value, i)
-        }
-    }
-}
-
-twoSum([1, 2, 3, 4], 7)
-
-
-```
 
 
 
@@ -8669,11 +8755,11 @@ git rebase feature
 
 
 
-![](https://upload-images.jianshu.io/upload_images/305877-c4ddfcf679821e2f.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp)
+![git merge](https://upload-images.jianshu.io/upload_images/305877-c4ddfcf679821e2f.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp)
 
 
 
-![rebase](https://upload-images.jianshu.io/upload_images/305877-467ba180733adca1.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp)
+![git rebase](https://upload-images.jianshu.io/upload_images/305877-467ba180733adca1.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp)
 
 git merge 保存了完成的历史记录，而git rebase 则尽量简化了历史记录（重写了历史记录）。
 
