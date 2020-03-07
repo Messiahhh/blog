@@ -7364,8 +7364,6 @@ function twoSum(arr, target) {
 }
 
 twoSum([1, 2, 3, 4], 7)
-
-
 ```
 
 
@@ -7487,64 +7485,6 @@ getArr(myArr, 2, 7, [])
 
 
 
-
-
-##### 无重复字符的最长子串
-
-给定一个字符串，找出其中不含有重复字符的 **最长子串** 的长度。
-
-1 暴力破解（效率很低）
-
-``` js
-function getLength(str) {
-    let length = 0
-    for (let i = 0; i < str.length; i++) {
-        for (let j = i + 1; j <= str.length; j++) {
-            if (isUnique(str, i, j)) {
-                length = Math.max(length, j - i)
-            }
-        }
-    }
-    return length
-}
-
-function isUnique(str, i, j) {
-    let set = new Set()
-    while (i < j) {
-        let char = str.charAt(i)
-        if (set.has(char)) {
-            return false
-        } else {
-            set.add(char)
-        }
-        i++
-    }
-    
-    return true
-}
-getLength('aaabcdd')
-```
-
-2 **滑动窗口**
-
-``` js
-function getLength(str) {
-    let n = str.length
-    let set = new Set()
-    let [len, i, j] = [0, 0, 0]
-
-    while (i < n && j < n) {
-        if (set.has(str.charAt(j))) {
-            set.delete(str.charAt(i++))
-        } else {
-            set.add(str.charAt(j++))
-            len = Math.max(len, j - i)
-        }
-    }
-    return len
-}
-```
-
 ##### 两数相加
 
 给出两个 非空 的链表用来表示两个非负的整数。其中，它们各自的位数是按照 逆序 的方式存储的，并且它们的每个节点只能存储 一位 数字。
@@ -7609,6 +7549,64 @@ l2.next = new ListNode(6)
 l2.next.next = new ListNode(4)
 
 addTwoNumbers(l1, l2) // 7 => 0 => 8
+```
+
+
+
+##### 无重复字符的最长子串
+
+给定一个字符串，找出其中不含有重复字符的 **最长子串** 的长度。
+
+1 暴力破解（效率很低）
+
+``` js
+function getLength(str) {
+    let length = 0
+    for (let i = 0; i < str.length; i++) {
+        for (let j = i + 1; j <= str.length; j++) {
+            if (isUnique(str, i, j)) {
+                length = Math.max(length, j - i)
+            }
+        }
+    }
+    return length
+}
+
+function isUnique(str, i, j) {
+    let set = new Set()
+    while (i < j) {
+        let char = str.charAt(i)
+        if (set.has(char)) {
+            return false
+        } else {
+            set.add(char)
+        }
+        i++
+    }
+    
+    return true
+}
+getLength('aaabcdd')
+```
+
+2 **滑动窗口**
+
+``` js
+function getLength(str) {
+    let n = str.length
+    let set = new Set()
+    let [len, i, j] = [0, 0, 0]
+
+    while (i < n && j < n) {
+        if (set.has(str.charAt(j))) {
+            set.delete(str.charAt(i++))
+        } else {
+            set.add(str.charAt(j++))
+            len = Math.max(len, j - i)
+        }
+    }
+    return len
+}
 ```
 
 
