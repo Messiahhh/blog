@@ -7551,7 +7551,7 @@ function twoSum(arr, target) {
         let value = arr[i]
         let diff = target - value
         if (map.has(diff)) {
-            return [diff, value]
+            return [map.get(diff), i]
         } else {
             map.set(value, i)
         }
