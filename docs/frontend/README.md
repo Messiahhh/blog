@@ -3886,6 +3886,10 @@ React内部维护了一个标识`isBatchingUpdates`，当这个值为`true`表�
 
 
 
+当你调用 `setState()` 的时候，React 会把你提供的对象合并到当前的 state。
+
+
+
 ##### 条件渲染
 
 &&运算符
@@ -4131,9 +4135,27 @@ function Todos() {
 
 
 
+### Diff策略
+
+[参考](https://zhuanlan.zhihu.com/p/20346379)
+
+1. Web UI 中 DOM 节点跨层级的移动操作特别少，可以忽略不计。
+2. 拥有相同类的两个组件将会生成相似的树形结构，拥有不同类的两个组件将会生成不同的树形结构。
+3. 对于同一层级的一组子节点，它们可以通过唯一 id 进行区分。
 
 
 
+针对第一点策略，React只对新老树进行同层的比较（Vue也是如此）。
+
+> **tree diff**
+>
+> 基于策略一，React 对树的算法进行了简洁明了的优化，即对树进行分层比较，两棵树只会对同一层次的节点进行比较。
+>
+> 既然 DOM 节点跨层级的移动操作少到可以忽略不计，针对这一现象，React 通过 updateDepth 对 Virtual DOM 树进行层级控制，只会对相同颜色方框内的 DOM 节点进行比较，即同一个父节点下的所有子节点。当发现节点已经不存在，则该节点及其子节点会被完全删除掉，不会用于进一步的比较。这样只需要对树进行一次遍历，便能完成整个 DOM 树的比较。
+
+
+
+针对第二点策略，当React遇到不同类的两个组件，它会将旧组件删除，并增加新的组件。
 
 
 
@@ -5412,7 +5434,7 @@ CommonJS我们即使只想使用库中的一个函数，也会加载全部的代
 
 
 
-## Webpack 复习笔记
+## Webpack
 
 
 
@@ -8058,7 +8080,15 @@ function getDegree(m, n) {
 
 
 
+##### 概率题
 
+100人教室60人喜欢足球，70人喜欢篮球，问同时喜欢足球和篮球的人数。
+
+答：30到60人。最小值：60 + 70 - 100 = 30；最大值：交集，60。
+
+100人班级60%喜欢足球，70%喜欢篮球，80%喜欢排球，问即三种球都喜欢占比有多少？
+
+答：10到60人。最小值可以根据上一问的最小值来，已知同时喜欢足球和篮球的人数最少为30人，那么最小值：30 + 80 - 100 = 10人；而最大值还是三者的最大可能交集，60人。
 
 
 
@@ -9134,15 +9164,17 @@ async function test() {
 
 [ECMAScript 6 入门教程](https://es6.ruanyifeng.com/)
 
-[这才是真正的Git——Git内部原理揭秘！](https://zhuanlan.zhihu.com/p/96631135)
-
-[更快地构建 DOM](https://www.zcfy.cc/article/building-the-dom-faster-speculative-parsing-async-defer-and-preload-x2605-mozilla-hacks-8211-the-web-developer-blog)
-
-[探秘 flex 上下文中神奇的自动 margin](https://www.cnblogs.com/coco1s/p/10910588.html)
-
 [前端面试查漏补缺](https://juejin.im/post/5c73347cf265da2dd773e7dc)
 
 [前端工程师面试宝典](https://fecommunity.github.io/front-end-interview/)
+
+[React 源码剖析系列 － 不可思议的 react diff](https://zhuanlan.zhihu.com/p/20346379)
+
+[这才是真正的Git——Git内部原理揭秘！](https://zhuanlan.zhihu.com/p/96631135)
+
+[浏览器将标签转成 DOM 的过程](https://segmentfault.com/a/1190000018730884)
+
+[探秘 flex 上下文中神奇的自动 margin](https://www.cnblogs.com/coco1s/p/10910588.html)
 
 [神三元的博客](http://47.98.159.95/my_blog/)
 
