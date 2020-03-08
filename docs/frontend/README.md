@@ -5367,6 +5367,134 @@ CommonJS我们即使只想使用库中的一个函数，也会加载全部的代
 
 
 
+## Webpack 复习笔记
+
+
+
+```bash
+npm init
+
+// 安装webpack
+npm install webpack webpack-cli webpack-dev-server webpack-merge -D
+
+//安装Vue
+npm install vue vue-router vuex -S
+
+// 安装loader
+npm install vue-loader vue-template-compiler -D // 处理Vue单文件组件
+npm install style-loader css-loader -D // 处理css
+npm install postcss-loader autoprefixed -D // postcss， 用js来处理css，如自动增加前缀（autoprefixed）等功能
+npm install sass-loader node-sass -D // sass/scss，css预处理器
+npm install babel-loader @babel/core @babel/preset-env // babel 编译JS代码
+cnpm i eslint eslint-loader -D // eslint 代码检查
+// 安装插件
+npm install html-webpack-plugin clean-webpack-plugin optimize-css-assets-webpack-plugin uglifyjs-webpack-plugin -D
+```
+
+
+
+```javascript
+//webpack.config.js
+
+const webpack = require("webpack")
+const path = require("path")
+
+//使用Vue单文件组件时，需要vue-loader，同时需要vue-loader/lib/plugin里的插件
+const VueLoaderPlugin = require("vue-loader/lib/plugin")
+// 根据模板html，在dist目录下生成html
+const HtmlWebpackPlugin = require("html-webpack-plugin")
+//打包前先删除dist下文件
+const { CleanWebpackPlugin } = require("clean-webpack-plugin")
+//压缩CSS和混淆JS
+const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
+
+module.exports = {
+    entry: "./src/main.js",
+    output: {
+        // `path` is the folder where Webpack will place your bundles
+        path: path.resolve(__dirname, './dist'),
+        // `publicPath` is where Webpack will load your bundles from (optional)
+    	publicPath: 'dist/',
+        // `filename` provides a template for naming your bundles (remember to use `[name]`)
+        filename: "bundle.js",
+        // `chunkFilename` provides a template for naming code-split bundles (optional)
+      	chunkFilename: "[name].bundle.js"
+    },
+    devServer: {
+        contentBase: './dist',
+      	// 热更新
+        hot: true,
+    },
+    module: {
+        rules: [
+            {
+                test: /\.vue$/,
+                use: "vue-loader",
+            },
+            {
+                test: /\.m?js$/,
+                use: "babel-loader",
+            },
+            {
+                test: /\.scss$/,
+                use: [
+                    "vue-style-loader",
+                    { loader: "css-loader", options: { importLoaders: 1}},
+                    "postcss-loader",
+                    "sass-loader"
+                ],
+            },
+          	{
+                test: /\.(jpg|png|gif|svg)$/,
+                use: [
+                    {
+                        loader: "url-loader",
+                        options: {
+                            limit: 5000,
+                            name: "imgs/[name].[ext]"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    plugins: [
+        new VueLoaderPlugin()，
+
+        // 根据模板html，在dist目录下生成html
+      	new HtmlWebpackPlugin({
+            template: path.resolve(__dirname, "./index.html")
+        }),
+        new CleanWebpackPlugin({
+            cleanOnceBeforeBuildPatterns: [path.resolve(__dirname, "./dist/*")]
+        }),
+        new OptimizeCSSAssetsPlugin(),
+        new UglifyJsPlugin(),
+        //HRM 热更新
+        new webpack.NamedModulesPlugin(),
+        new webpack.HotModuleReplacementPlugin()
+    ]
+}
+
+```
+
+
+
+##### Loader和Plugin的区别
+
+> loader，它是一个转换器，将A文件进行编译成B文件，比如：将A.less转换为A.css，单纯的文件转换过程。
+>
+> plugin是一个扩展器，它丰富了webpack本身，针对是loader结束后，webpack打包的整个过程，它并不直接操作文件，而是基于事件机制工作，会监听webpack打包过程中的某些节点，执行广泛的任务
+
+
+
+因为 webpack 本身只能处理 JavaScript，如果要处理其他类型的文件，就需要使用 loader 进行转换。
+
+
+
+
+
 ## 浏览器相关
 
 ### 浏览器渲染机制
@@ -7372,7 +7500,7 @@ twoSum([1, 2, 3, 4], 7)
 
 给你一个包含 n 个整数的数组 nums，判断 nums 中是否存在三个元素 a，b，c ，使得 a + b + c = 0 ？请你找出**所有满足条件且不重复的三元组**。(leetcode.15 medium)
 
-**注意：**答案中不可以包含重复的三元组。
+**注意** 答案中不可以包含重复的三元组。
 
 ``` js
 function threeSum(arr, sum = 0) {
@@ -7889,129 +8017,6 @@ function getDegree(m, n) {
 
 
 
-## Webpack 复习笔记
-
-
-
-```bash
-npm init
-
-// 安装webpack
-npm install webpack webpack-cli webpack-dev-server webpack-merge -D
-
-//安装Vue
-npm install vue vue-router vuex -S
-
-// 安装loader
-npm install vue-loader vue-template-compiler -D // 处理Vue单文件组件
-npm install style-loader css-loader -D // 处理css
-npm install postcss-loader autoprefixed -D // postcss， 用js来处理css，如自动增加前缀（autoprefixed）等功能
-npm install sass-loader node-sass -D // sass/scss，css预处理器
-npm install babel-loader @babel/core @babel/preset-env // babel 编译JS代码
-cnpm i eslint eslint-loader -D // eslint 代码检查
-// 安装插件
-npm install html-webpack-plugin clean-webpack-plugin optimize-css-assets-webpack-plugin uglifyjs-webpack-plugin -D
-```
-
-
-
-```javascript
-//webpack.config.js
-
-const webpack = require("webpack")
-const path = require("path")
-
-//使用Vue单文件组件时，需要vue-loader，同时需要vue-loader/lib/plugin里的插件
-const VueLoaderPlugin = require("vue-loader/lib/plugin")
-// 根据模板html，在dist目录下生成html
-const HtmlWebpackPlugin = require("html-webpack-plugin")
-//打包前先删除dist下文件
-const { CleanWebpackPlugin } = require("clean-webpack-plugin")
-//压缩CSS和混淆JS
-const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
-const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
-
-module.exports = {
-    entry: "./src/main.js",
-    output: {
-        // `path` is the folder where Webpack will place your bundles
-        path: path.resolve(__dirname, './dist'),
-        // `publicPath` is where Webpack will load your bundles from (optional)
-    	publicPath: 'dist/',
-        // `filename` provides a template for naming your bundles (remember to use `[name]`)
-        filename: "bundle.js",
-        // `chunkFilename` provides a template for naming code-split bundles (optional)
-      	chunkFilename: "[name].bundle.js"
-    },
-    devServer: {
-        contentBase: './dist',
-      	// 热更新
-        hot: true,
-    },
-    module: {
-        rules: [
-            {
-                test: /\.vue$/,
-                use: "vue-loader",
-            },
-            {
-                test: /\.m?js$/,
-                use: "babel-loader",
-            },
-            {
-                test: /\.scss$/,
-                use: [
-                    "vue-style-loader",
-                    { loader: "css-loader", options: { importLoaders: 1}},
-                    "postcss-loader",
-                    "sass-loader"
-                ],
-            },
-          	{
-                test: /\.(jpg|png|gif|svg)$/,
-                use: [
-                    {
-                        loader: "url-loader",
-                        options: {
-                            limit: 5000,
-                            name: "imgs/[name].[ext]"
-                        }
-                    }
-                ]
-            }
-        ]
-    },
-    plugins: [
-        new VueLoaderPlugin()，
-
-        // 根据模板html，在dist目录下生成html
-      	new HtmlWebpackPlugin({
-            template: path.resolve(__dirname, "./index.html")
-        }),
-        new CleanWebpackPlugin({
-            cleanOnceBeforeBuildPatterns: [path.resolve(__dirname, "./dist/*")]
-        }),
-        new OptimizeCSSAssetsPlugin(),
-        new UglifyJsPlugin(),
-        //HRM 热更新
-        new webpack.NamedModulesPlugin(),
-        new webpack.HotModuleReplacementPlugin()
-    ]
-}
-
-```
-
-
-
-##### Loader和Plugin的区别
-
-> loader，它是一个转换器，将A文件进行编译成B文件，比如：将A.less转换为A.css，单纯的文件转换过程。
->
-> plugin是一个扩展器，它丰富了webpack本身，针对是loader结束后，webpack打包的整个过程，它并不直接操作文件，而是基于事件机制工作，会监听webpack打包过程中的某些节点，执行广泛的任务
-
-
-
-因为 webpack 本身只能处理 JavaScript，如果要处理其他类型的文件，就需要使用 loader 进行转换。
 
 
 
@@ -8760,6 +8765,43 @@ git rebase feature
 ![git rebase](https://upload-images.jianshu.io/upload_images/305877-467ba180733adca1.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp)
 
 git merge 保存了完成的历史记录，而git rebase 则尽量简化了历史记录（重写了历史记录）。
+
+
+
+
+
+## WebSocket
+
+``` js
+let ws = new WebSocket(url)
+ws.onopen = () => {}
+ws.onclose = () => {}
+ws.onerror = () => {}
+ws.onmessage = (e) => {}
+
+ws.send()
+```
+
+
+
+当正常情况下，若连接中断，我们需要重新进行连接。
+
+``` js
+ws.onclose = () => {
+    reconnect()
+}
+ws.onerror = () => {
+    reconnect()
+}
+```
+
+
+
+##### 心跳包
+
+正常情况下，连接中断会触发onclose方法。但如果是因为网络异常，或是信号不佳，则不会触发onclose方法。
+
+因此我们需要使用到心跳包。
 
 
 
