@@ -7574,7 +7574,7 @@ function threeSum(arr, sum = 0) {
     let res = []
     let n = arr.length
     arr.sort((a, b) => a - b) // 先排序
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < n - 2; i++) {
         if (arr[i] === arr[i - 1]) continue // 去重
         // 两个指针不断向中间靠拢
         let l = i + 1
@@ -7604,7 +7604,7 @@ function threeSum(arr, sum = 0) {
 
 ##### 四数之和
 
-给定一个包含 n 个整数的数组 nums 和一个目标值 target，判断 nums 中是否存在四个元素 a，b，c 和 d ，使得 a + b + c + d 的值与 target 相等？找出**所有满足条件且不重复的四元组**。
+给定一个包含 n 个整数的数组 nums 和一个目标值 target，判断 nums 中是否存在四个元素 a，b，c 和 d ，使得 a + b + c + d 的值与 target 相等？找出**所有满足条件且不重复的四元组**。(leetcode.18 medium)
 
 类似三数之和，外面多套一层循环即可，另外要注意重复的情况。
 
@@ -7682,7 +7682,7 @@ getArr(myArr, 2, 7, [])
 
 ##### 两数相加
 
-给出两个 非空 的链表用来表示两个非负的整数。其中，它们各自的位数是按照 逆序 的方式存储的，并且它们的每个节点只能存储 一位 数字。
+给出两个 非空 的链表用来表示两个非负的整数。其中，它们各自的位数是按照 逆序 的方式存储的，并且它们的每个节点只能存储 一位 数字。(leetcode.2 medium)
 
 如果，我们将这两个数相加起来，则会返回一个新的链表来表示它们的和。
 
@@ -7750,7 +7750,7 @@ addTwoNumbers(l1, l2) // 7 => 0 => 8
 
 ##### 无重复字符的最长子串
 
-给定一个字符串，找出其中不含有重复字符的 **最长子串** 的长度。
+给定一个字符串，找出其中不含有重复字符的 **最长子串** 的长度。(leetcode.3 medium)
 
 1 暴力破解（效率很低）
 
@@ -7808,7 +7808,7 @@ function getLength(str) {
 
 ##### 判断回文数
 
-回文，即正序和逆序相等的数，如12321，1221等。
+回文，即正序和逆序相等的数，如12321，1221等。(leetcode.9 easy)
 
 简单粗暴法，翻转字符串看是否相等
 
@@ -7822,6 +7822,9 @@ function isHuiWen(num) {
 
 ``` js
 function isHuiWen(num) {
+    // 数小于0，如-121则不为回文数。
+    // 1000这种末尾为0的也不会是回文数
+    if (num < 0 || (num % 10 === 0 && num !==0 )) return false 
     let revertNum = 0
     while (num > revertNum) {
         revertNum = num % 10 + revertNum * 10
