@@ -8744,6 +8744,291 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
 
 
 
+##### 今日头条 字节跳动
+
+1. 自我介绍，介绍完直接发个我五道题（太吓人了）
+
+2. 用CSS实现一个开关样式，hover时触发，滑块为正方形。
+
+   1. 1. 开关动作均有动画过度（滑块移位、背景色）
+
+   1. 1. 只用一个dom元素实现
+      2. 开关的高度是固定的，但宽度不固定，即宽度为未知父元素的100%，宽度始终大于高度
+
+   写出来了，但不够优雅...以下是修改后的代码
+
+   ``` html
+   <div class='contain'>
+       
+   </div>
+   <style>
+       .contain {
+           --padding: 4px;
+           --height: 40px;
+           position: relative;
+           width: 100px;
+           height: var(--height);
+           padding: var(--padding);
+           background: grey;
+           transition: all .3s;
+       }
+       
+       .contain:hover {
+           background: green;
+       }
+       
+       .contain::before {
+           content: '';
+           position: absolute;
+           z-index: 1;
+           right: calc(100% - 40px - var(--padding));
+           height: var(--height);
+           width: var(--height);
+           transition: all .3s;
+           background: #fff;
+       }
+       .contain:hover::before {
+           right: var(--padding);
+       }
+   </style>
+   ```
+
+3. ``` js
+   // 写出下面这段代码打印的结果
+   var result = [];
+   var a = 3;
+   var total = 0;
+   function foo(a) {
+     var i = 0;
+     for (; i < 3; i++) {
+       result[i] = function() {
+         total += i * a;
+         console.log(total);
+       }
+     }
+   }
+   
+   foo(1);
+   result[0]();
+   result[1]();
+   result[2]();
+   
+   // 3, 6, 9
+   // 因为i始终是3，差点上钩
+   ```
+
+4. ``` js
+   // 写出下面这段代码打印的结果
+   async function async1() {
+     console.log('async1 start');
+     await async2();
+     console.log('async1 end');
+   }
+   
+   async function async2() {
+     console.log('async2 start');
+     return new Promise((resolve, reject) => {
+       resolve();
+       console.log('async2 promise');
+     })
+   }
+   
+   console.log('script start');
+   
+   setTimeout(function() {
+     console.log('setTimeout');
+   }, 0);
+   
+   async1();
+   
+   new Promise(function(resolve) {
+     console.log('promise1');
+     resolve();
+   }).then(function() {
+     console.log('promise2');
+   }).then(function() {
+     console.log('promise3');
+   });
+   
+   console.log('script end');
+   
+   
+   // 答案
+   script start
+   async1 start
+   async2 start
+   async2 promise
+   promise1
+   script end
+   promise2
+   promise3
+   async1 end
+   setTimeout
+   
+   // 但我之前把async1 end写在promise2前面了，想了想才发现自己错在哪里。
+   
+   function A() {
+       return new Promise((r) => {
+           r()
+       })
+   }
+   console.log(A())
+   // Promise<resolved>
+   
+   async function A() {
+       return new Promise((r) => {
+           r()
+       })
+   }
+   console.log(A())
+   // promise<pending>
+   
+   // 可以看到async函数和普通函数最终返回的promise状态是不同的。
+   // 我们可以再做一个实验。
+   let p
+   function A() {
+       p = new Promise((r) => {
+           r()
+       })
+   
+       return p
+   }
+   let a = A()
+   console.log(a === p) // true
+   
+   let p
+   async function A() {
+       p = new Promise((r) => {
+           r()
+       })
+   
+       return p
+   }
+   let a = A()
+   console.log(a === p) // false
+   
+   // 个人观点：
+   async function A() {
+       return new Promise() {}
+   }
+   // 执行函数A返回的promise初始状态是pending，并且会生成一个微任务放进微任务队列，当执行该任务后状态才会改变
+   // 现在终于可以回答下面两个代码为什么输出顺序不同了
+   
+   async function A() {
+       await B()
+       console.log('a')
+   }
+   
+   function B() { // 此时不是async函数
+       return new Promise((r) => {
+           r()
+       })
+   }
+   A()
+   
+   new Promise((resolve) => {resolve()}).then(() => {
+       console.log('b')
+   })
+   
+   // a b
+   
+   // ------------ 分割线 -------------- 
+   
+   async function A() {
+       await B()
+       console.log('a')
+   }
+   
+   async function B() {
+       return new Promise((r) => {
+           r()
+       })
+   }
+   A()
+   
+   new Promise((resolve) => {resolve()}).then(() => {
+       console.log('b')
+   })
+   // b a
+   
+   ```
+
+5. ``` js
+   // 实现一个二进制加法，输入输出均为二进制字符串
+   function binaryAdd(num1: string, num2: string): string {
+     // TODO
+   }
+   //Example
+   binaryAdd('1010', '111') // '10001'
+   
+   // 其实就是两数相加，只是换成了二进制而已
+   
+   function binaryAdd(s1, s2) {
+       let carry = 0
+       let res = []
+       let arr1 = s1.split('').reverse()
+       let arr2 = s2.split('').reverse()
+       const maxLength = Math.max(arr1.length, arr2.length)
+       for (let i = 0; i < maxLength; i++) {
+           let char1 = arr1[i] || 0
+           let char2 = arr2[i] || 0
+           let sum = parseInt(char1) + parseInt(char2) + carry
+           const flag = sum >= 2
+           carry = flag ? 1 : 0
+           sum = sum % 2
+           res[i] = '' + sum
+       }
+       if (carry = 1) {
+           res.push('1')
+       }
+       
+       
+       return res.reverse().join('')
+   }
+   console.log(binaryAdd('1010', '111'))
+   ```
+
+6. ``` js
+   // 实现一个带并发限制的异步调度器Scheduler，保证同时运行的任务最多有两个。完善代码中Scheduler类，使得以下程序能正确输出
+   class Scheduler {
+     add(promiseCreator) {
+       // TODO
+     }
+     // TODO
+   }
+   const timeout = (time) => new Promise(resolve => {
+     setTimeout(resolve, time)
+   })
+   const scheduler = new Scheduler();
+   const addTask = (time, order) => {
+     scheduler.add(() => timeout(time))
+       .then(() => console.log(order))
+   }
+   
+   addTask(1000, '1')
+   addTask(500, '2')
+   addTask(300, '3')
+   addTask(400, '4')
+   // output: 2 3 1 4
+   // 一开始，1、2两个任务进入队列
+   // 500ms时，2完成，输出2，任务3进队
+   // 800ms时，3完成，输出3，任务4进队
+   // 1000ms时，1完成，输出1
+   // 1200ms时，4完成，输出4
+   
+   // 没做出来，将两个大概思路，面试官说这道是附加题，写法比较巧妙。
+   ```
+
+7. 浏览器/Node的事件循环
+
+8. 浏览器的渲染机制
+
+9. CSRF的原理和防御
+
+10. 有什么想问的吗
+
+
+
 ## 网站优化
 
 - 减少HTTP请求
