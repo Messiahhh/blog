@@ -33,8 +33,12 @@ module.exports = {
                 link: '/'
             },
             {
-                text: '文档',
+                text: '前端笔记',
                 link: '/frontend/'
+            },
+            {
+                text: '面经',
+                link: '/mianshi/'
             },
             {
                 text: '博客',
@@ -51,6 +55,9 @@ module.exports = {
         ],
         sidebar: {
             '/frontend/': [
+                '',
+            ],
+            '/mianshi/': [
                 '',
             ],
             '/gossip/': getSidebar('gossip'),
