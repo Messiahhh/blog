@@ -897,8 +897,8 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
    // 1200ms时，4完成，输出4
    
    // 没做出来，讲了个大概思路，面试官说这道是附加题，写法比较巧妙。
+   
    ```
-
 7. 浏览器/Node的事件循环
 
 8. 浏览器的渲染机制
@@ -906,3 +906,82 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
 9. CSRF的原理和防御
 
 10. 有什么想问的吗
+
+
+
+### 字节跳动 二面
+
+1. 自我介绍
+
+2. 把数字用千分位分割，如15000000分割为15,000,000
+
+   ``` js
+   function transform (num) {
+       let arr = []
+       while (num >= 1000) {
+           let value = num % 1000
+           num = num / 1000
+           if (value >= 100) {
+               value = '' + value
+           } else if (100 > value && value >= 10 ){
+               value = `0${value}`
+           } else {
+               value = `00${value}`
+           }
+           
+           arr.unshift(value)
+       }
+       num = '' + num
+       arr.unshift(num)
+       console.log(arr.join(','))
+   }
+   transform(15000000)
+   ```
+
+   问：除了用数字，还有什么方便的方法吗？
+
+3. HTTP2.0和1.1的对比，优点？缺点？
+
+4. 服务端推送的资源放在哪里？
+
+5. 浏览器缓存，你的JS资源是如何使用不同的缓存策略的呢？不太清楚，我说的用webpack进行代码分割，然后分别使用不同的策略
+
+   通常过期时间设置为多久？
+
+6. 之前有提到service worker，有了解吗（没，自己给自己挖坑...）
+
+7. Node有了解吗，一些Node的优缺点（密集型），Node是单进程还是多进程。
+
+   Koa，Egg有了解过吗。
+
+8. 算法题：
+
+   实现js方法，查找第一个缺失的正整数。 时间复杂度O(n) ，空间复杂度 O(1)
+
+   Example 1:
+
+   Input: [[1,2,0](https://marvel.bytedance.net/)] Output: 3 
+
+   Example 2:
+
+   Input: [[3,4,-1,1](https://marvel.bytedance.net/)] Output: 2 
+
+   Example 3:
+
+   Input: [[7,8,9,11,12](https://marvel.bytedance.net/)] Output: 1
+
+   假设传入的数组长度在10000以内。
+
+   提示：数学上最小正整数是1
+
+    
+
+   不会，哭了。
+
+9. 前端方向你希望往哪边发展？我说了webgl，因为比较花哨。
+
+10. 有什么想问的吗？
+
+    问自己的不足。
+
+    问：你们阿里的后端用的哪些（面试官惊了：同学你串台了，这里不是阿里...）
