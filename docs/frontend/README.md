@@ -1701,9 +1701,9 @@ function toCamel(str) {
 ###### 数字的千分位分割
 
 ``` js
-// 正则，注意使用到了?=先行断言
+// 正则，注意使用到了?=先行断言，?:为非捕获，可加可不加
 function format(num) {
-    const reg = /\d{1,3}(?=(\d{3})+$)/g
+    const reg = /\d{1,3}(?=(?:\d{3})+$)/g
     return num.toString().replace(reg, '$&,')
 }
 
