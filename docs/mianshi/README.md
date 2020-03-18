@@ -1012,25 +1012,29 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
 
 5. 项目通常如何部署，pm2，很久以前用过。
 
-6. HTML5有哪些新属性，Doctype的作用，Storage和cookie的对比，localStorage和sessionStorage的对比。
+6. Vue和React对比
 
-7. Flex有哪些属性
+7. Vuex的单向流动是如何实现的，我说熟悉Redux，扯到了redux的一些东西。
 
-8. ES5的继承
+8. HTML5有哪些新属性，Doctype的作用，Storage和cookie的对比，localStorage和sessionStorage的对比。
 
-9. 跨域的介绍
+9. Flex有哪些属性
 
-10. sameSite属性，最近默认值变成了strict
+10. ES5的继承
 
-11. linux用过吗，如何删某端口上的进程，ps aux | grep node查看node的进程。
+11. 跨域的介绍
 
-12. git有用过吗，git rebase知道吗
+12. sameSite属性，最近默认值变成了strict
 
-13. 一个有序，可重复的数组[1, 2, 3, 3, 3, 3, 4, 5, 5, 6]，找到5最后的位置，空间复杂度logn
+13. linux用过吗，如何删某端口上的进程，ps aux | grep node查看node的进程。
+
+14. git有用过吗，git rebase知道吗
+
+15. 一个有序，可重复的数组[1, 2, 3, 3, 3, 3, 4, 5, 5, 6]，找到5最后的位置，空间复杂度logn
 
     二分，不让用lastIndexOf
 
-14. 有什么想问的吗？ 问技术栈，美团主要用的vue，也有rn，小程序。
+16. 有什么想问的吗？ 问技术栈，美团主要用的vue，也有rn，小程序。
 
 
 
