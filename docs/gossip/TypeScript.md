@@ -1,6 +1,6 @@
 # TypeScript摘录
 
-**声明**：本文非原创，不用于任何商业用途，基本上是摘录（复制）自[TypeScript 入门教程](https://ts.xcatliu.com/)网站上的教程，纯粹用于个人学习。（傻瓜式学习方案，求不吐槽）
+**声明!!!**：本文非原创，不用于任何商业用途，大部分上是复制粘贴自[TypeScript 入门教程](https://ts.xcatliu.com/)网站上的教程，纯粹是为了方便用于个人学习。（所谓傻瓜式学习/囫囵吐槽式学习，求不吐槽）
 
 [toc]
 
@@ -394,5 +394,294 @@ function getName(n: NameOrResolver): Name {
         return n();
     }
 }
+```
+
+
+
+### 字符串字面量类型
+
+``` ts
+type EventNames = 'click' | 'scroll' | 'mousemove';
+function handleEvent(ele: Element, event: EventNames) {
+    // do something
+}
+
+handleEvent(document.getElementById('hello'), 'scroll');  // 没问题
+handleEvent(document.getElementById('world'), 'dbclick');
+```
+
+
+
+
+
+### 元组(tuple)
+
+TypeScript的数组和JavaScript的数组不同，只能包括一种类型的对象。而TypeScript加入的元组（有其他语言那味了...）则可以包括不同类型的对象。
+
+``` ts
+let tom: [string, number] = ['Tom', 25];
+```
+
+
+
+有一点值得注意，对于元组我们可以
+
+``` ts
+tom[0] = 'jack'
+// 也可以
+tom = ['jack', 20]
+```
+
+而不能只赋值一项
+
+``` ts
+tom = ['jack']
+```
+
+
+
+
+
+### 枚举(enum)
+
+枚举（Enum）类型用于取值被限定在一定范围内的场景，比如一周只能有七天，颜色限定为红绿蓝等。
+
+``` ts
+enum Days {Sun, Mon, Tue, Wed, Thu, Fri, Sat};
+```
+
+枚举成员会被赋值为从 `0` 开始递增的数字，同时也会对枚举值到枚举名进行反向映射：
+
+``` ts
+enum Days {Sun, Mon, Tue, Wed, Thu, Fri, Sat};
+
+console.log(Days["Sun"] === 0); // true
+console.log(Days["Mon"] === 1); // true
+console.log(Days["Tue"] === 2); // true
+console.log(Days["Sat"] === 6); // true
+
+console.log(Days[0] === "Sun"); // true
+console.log(Days[1] === "Mon"); // true
+console.log(Days[2] === "Tue"); // true
+console.log(Days[6] === "Sat"); // true
+```
+
+##### 手动赋值
+
+``` ts
+enum Days {Sun = 7, Mon = 1, Tue, Wed, Thu, Fri, Sat};
+
+console.log(Days["Sun"] === 7); // true
+console.log(Days["Mon"] === 1); // true
+console.log(Days["Tue"] === 2); // true
+console.log(Days["Sat"] === 6); // true
+```
+
+上面的例子中，未手动赋值的枚举项会接着上一个枚举项递增。
+
+
+
+
+
+### 类
+
+#### ES7 中类的用法
+
+ES7 中有一些关于类的提案，TypeScript 也实现了它们。
+
+##### 实例属性
+
+ES6 中实例的属性只能通过构造函数中的 `this.xxx` 来定义，ES7 提案中可以直接在类里面定义
+
+``` ts
+class Animal {
+    name = 'Jack';
+
+    constructor() {
+        // ...
+    }
+}
+
+let a = new Animal();
+console.log(a.name); // Jack
+```
+
+
+
+##### 静态属性
+
+ES7 提案中，可以使用 `static` 定义一个静态属性
+
+
+
+#### TypeScript 中类的用法
+
+##### public private 和 protected
+
+TypeScript 可以使用三种访问修饰符（Access Modifiers），分别是 `public`、`private` 和 `protected`。
+
+- `public` 修饰的属性或方法是公有的，可以在任何地方被访问到，默认所有的属性和方法都是 `public` 的
+- `private` 修饰的属性或方法是私有的，不能在声明它的类的外部访问
+- `protected` 修饰的属性或方法是受保护的，它和 `private` 类似，区别是它在子类中也是允许被访问的
+
+
+
+（我是在学Java？）
+
+
+
+##### 修饰符可以写在构造函数的参数中
+
+``` ts
+class Animal {
+    public name: string;
+    public constructor (name) {
+        this.name = name;
+    }
+}
+
+// 可以改写为以下代码
+
+class Animal {
+    // public name: string;
+    public constructor (public name) {
+        // this.name = name;
+    }
+}
+```
+
+##### readonly
+
+只读属性关键字，只允许出现在属性声明或索引签名或构造函数中。
+
+``` ts
+class Animal {
+    readonly name;
+    public constructor(name) {
+        this.name = name;
+    }
+}
+
+let a = new Animal('Jack');
+console.log(a.name); // Jack
+a.name = 'Tom';
+// 报错
+```
+
+
+
+注意如果 `readonly` 和其他访问修饰符同时存在的话，需要写在其后面。
+
+``` ts
+class Animal {
+    // public readonly name;
+    public constructor(public readonly name) {
+        // this.name = name;
+    }
+}
+```
+
+#### 抽象类
+
+`abstract` 用于定义抽象类和其中的抽象方法。
+
+什么是抽象类？
+
+首先，抽象类是不允许被实例化的；其次，抽象类中的抽象方法必须被子类实现。
+
+
+
+下面是一个正确使用抽象类的例子
+
+``` ts
+abstract class Animal {
+    public name;
+    public constructor(name) {
+        this.name = name;
+    }
+    public abstract sayHi();
+}
+
+class Cat extends Animal {
+    public sayHi() {
+        console.log(`Meow, My name is ${this.name}`);
+    }
+}
+
+let cat = new Cat('Tom');
+```
+
+
+
+##### 类的类型
+
+``` ts
+class Animal {
+    name: string;
+    constructor(name: string) {
+        this.name = name;
+    }
+    sayHi(): string {
+      return `My name is ${this.name}`;
+    }
+}
+
+let a: Animal = new Animal('Jack');
+console.log(a.sayHi()); // My name is Jack
+```
+
+
+
+### 类与接口
+
+[之前学习过]()，接口（Interfaces）可以用于对「对象的形状（Shape）」进行描述。
+
+这一章主要介绍接口的另一个用途，对类的一部分行为进行抽象。
+
+
+
+实现（implements）是面向对象中的一个重要概念。一般来讲，一个类只能继承自另一个类，有时候不同类之间可以有一些共有的特性，这时候就可以把特性提取成接口（interfaces），用 `implements` 关键字来实现。这个特性大大提高了面向对象的灵活性。
+
+
+
+一个类可以实现多个接口
+
+``` ts
+interface Alarm {
+    alert(): void;
+}
+
+interface Light {
+    lightOn(): void;
+    lightOff(): void;
+}
+
+class Car implements Alarm, Light {
+    alert() {
+        console.log('Car alert');
+    }
+    lightOn() {
+        console.log('Car light on');
+    }
+    lightOff() {
+        console.log('Car light off');
+    }
+}
+```
+
+
+
+### 泛型
+
+``` ts
+function createArray<T>(length: number, value: T): Array<T> {
+    let result: T[] = [];
+    for (let i = 0; i < length; i++) {
+        result[i] = value;
+    }
+    return result;
+}
+
+createArray<string>(3, 'x'); // ['x', 'x', 'x']
 ```
 
