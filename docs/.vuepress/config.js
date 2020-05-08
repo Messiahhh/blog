@@ -19,6 +19,9 @@ module.exports = {
     logo: '/assets/img/logo.jpg',
     title: 'Akara的小站',
     description: 'Fooly Cooly',
+    head: [
+        ['link', { rel: 'icon', href: '/favicon.ico' }]
+    ],
     markdown: {
         extractHeaders: [ 'h2', 'h3', 'h4', 'h5' ]
     },
@@ -45,8 +48,8 @@ module.exports = {
                 link: '/gossip/'
             },
             {
-                text: '杂文',
-                link: '/others/'
+                text: '随笔',
+                link: 'https://messiahhh.github.io/'
             },
             {
                 text: '简历',
