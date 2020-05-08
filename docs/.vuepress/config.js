@@ -64,7 +64,6 @@ module.exports = {
                 '',
             ],
             '/gossip/': getSidebar('gossip'),
-            '/others/': getSidebar('others')
         },
         lastUpdated: '上次更新时间',
         // 一些github的配置
