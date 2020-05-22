@@ -4,7 +4,7 @@ function getSidebar(dir) {
     const sidebar = files.map(file => {
         let fileName = file.split('.')[0]
         if (fileName.toUpperCase() === 'README') {
-            return ''
+            return ['', '写在开头']
         }
         else {
             return fileName
@@ -12,6 +12,7 @@ function getSidebar(dir) {
     })
     return sidebar
 }
+
 
 
 module.exports = {
@@ -63,10 +64,7 @@ module.exports = {
             '/mianshi/': [
                 '',
             ],
-            '/gossip/': [
-                '/',
-                ...getSidebar('gossip'),
-            ]
+            '/gossip/': getSidebar('gossip')
         },
         lastUpdated: '上次更新时间',
         // 一些github的配置

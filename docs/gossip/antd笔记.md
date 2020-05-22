@@ -50,3 +50,26 @@ module.exports = function override(config, env) {
 ### 使用 babel-plugin-import
 
 又来到了webpack的配置环节，通过该babel插件，实现按需加载组件代码和样式。
+
+
+
+### Antd源码阅读
+
+学习组件库的封装，顺便了解一些常用的工具库。
+
+
+
+##### classnames库
+
+```js
+var classNames = require('classnames');
+classNames('foo', 'bar'); // => 'foo bar'
+```
+
+##### omit.js库
+
+``` js
+var omit = require('omit.js');
+omit({ name: 'Benjy', age: 18 }, [ 'name' ]); // => { age: 18 }
+```
+
