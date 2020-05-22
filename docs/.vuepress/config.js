@@ -63,7 +63,10 @@ module.exports = {
             '/mianshi/': [
                 '',
             ],
-            '/gossip/': getSidebar('gossip'),
+            '/gossip/': [
+                '/',
+                ...getSidebar('gossip'),
+            ]
         },
         lastUpdated: '上次更新时间',
         // 一些github的配置
