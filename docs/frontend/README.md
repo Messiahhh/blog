@@ -4361,13 +4361,45 @@ function todosReducer(state, action) {
 }
 ```
 
+##### useImperativeHandle
+
+这个Hook通常和`forwardRef`一起使用，二者的搭配常见于各类组件库当中。
+
+`forwardRef`可以向外界暴露DOM元素，而`useImperativeHandle`可以限制我们只能访问哪些方法。
+
+比如以下代码，我们可以获取到输入框，却被限制了只能使用`focus`来控制焦点。
+
+``` js
+// forwardRef + useImperativeHandle
+function FancyInput(props, ref) {
+  const inputRef = useRef();
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current.focus();
+    }
+  }));
+  return <input ref={inputRef} ... />;
+}
+FancyInput = forwardRef(FancyInput);
+```
+
+以下是单独使用`forwardRef`时的代码结构
+
+``` js
+const FancyButton = React.forwardRef((props, ref) => (
+  <button ref={ref} className="FancyButton">
+    {props.children}
+  </button>
+));
+```
+
 
 
 ##### 其他Hook
 
 如react-redux提供的`useSelector`，`useDispatch`等
 
-如react-router提供的`useParams`等
+如react-router提供的`useParams`, `useRouteMatch`,  `useLocation`等
 
 
 
