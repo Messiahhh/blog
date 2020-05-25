@@ -5,9 +5,9 @@ sidebarDepth: 2
 
 [toc]
 
-> 你的:star:就是对我的支持和鼓励，非常感激！
+> 求:star: 谢谢
 >
-> 右上角跳转本项目的仓库
+> （下次一定，下次一定
 
 
 
@@ -3044,7 +3044,7 @@ axios({
 
 ## Node.js
 
-### Http模块
+### http模块
 
 ``` javascript
 const http = require('http')
@@ -3215,7 +3215,7 @@ const stream = fs.createWriteStream(`./image/${Math.floor(Math.random() * 10000)
 reader.pipe(stream)
 ```
 
-### Path模块
+### path模块
 
 ``` javascript
 const path = require('path')
@@ -3257,6 +3257,75 @@ const path4 = path.join(__dirname, '/static')
 const path5 = path.join(path.resolve('.'), '/static')
 ```
 
+### os模块
+
+获取操作系统相关信息。
+
+``` js
+const os = require('os')
+const homedir = os.homedir() // 获取用户目录
+```
+
+
+
+### process模块
+
+##### process.cwd()
+
+获取执行脚本时所在的目录
+
+
+
+##### process.argv
+
+获取执行脚本时命令行输入的参数
+
+``` js
+$node index.js abc
+[
+    'node',
+    'index.js',
+    'abc'
+]
+```
+
+
+
+##### process.stdout
+
+标准输出流
+
+``` js
+process.stdout.write('Hello world')
+```
+
+
+
+##### process.stdin
+
+标准输入流
+
+``` js
+process.stdin.on('data', (chunk) => {
+    process.stdout.write('Hello' + chunk)
+    process.exit()
+})
+```
+
+
+
+##### fork/exec/execFile/spawn
+
+> 待完善
+
+fork可用来执行node.
+
+spawn是基于流形式的。
+
+exec/execFile输入的格式不同。
+
+
+
 ### url模块
 
 ``` javascript
@@ -3280,7 +3349,7 @@ querystring.parse(str)
 // { foo: 'bar', abc: [ 'xyz', '123' ] }
 ```
 
-### Event模块
+### event模块
 
 > 实现原理见本文的设计模式-发布订阅章节
 
@@ -3295,11 +3364,17 @@ emitter.on('ev', function () {
 emitter.emit('ev')
 ```
 
-### Bluebird库
 
-可以将回调函数实现的异步改写成Promise的方式来写
 
-##### Bluebird + fs
+------
+
+以上是Node自带的核心库，下面介绍一些常用的第三方库。
+
+### bluebird库
+
+可以将回调函数实现的异步改写成Promise的方式来写的第三方库。
+
+##### bluebird + fs
 
 回调
 
@@ -3322,7 +3397,7 @@ fs.readFileAsync('index.html')
 })
 ```
 
-##### Bluebird + mysql
+##### bluebird + mysql
 
 回调
 
@@ -3351,6 +3426,127 @@ conn.connect()
 // 使用
 let data = await conn.queryAsync(`sql code here...`)
 ```
+
+
+
+### 命令行工具
+
+本节介绍如何使用node写命令行工具。
+
+
+
+平时我们通常是使用`node index.js`去执行js代码。
+
+如果我们在文件的开头加上`#!/usr/bin/env node`则可以指定代码默认的运行环境，如下代码:
+
+``` js
+#!/usr/bin/env node
+console.log('hello')
+```
+
+我们现在可以使用`./index.js`去执行该文件，默认的运行环境就是node。
+
+
+
+再进一步，我们在`package.json`中加上几行字段，如下:
+
+``` json
+"bin": {
+    "mycli": "index.js"
+},
+```
+
+之后在当前目录下执行`npm link`，执行完之后我们就可以通过`mycli`命令来执行代码。
+
+
+
+在此基础上，介绍一些常用的库。
+
+##### commander
+
+``` js
+// index.js
+const { program } = require('commander')
+// 或者
+// const { Commander } = require('commander')
+// const program = new Commander()
+program
+    .version('1.0.0')
+    .description('命令行工具')
+    .option('-t, --test', '测试命令');
+program.parse(process.argv)
+
+if (program.test) {
+    console.log('测试成功')
+}
+
+// bash
+$mycli -test 
+测试成功
+```
+
+
+
+
+
+##### readline
+
+``` js
+// 官网代码
+const readline = require('readline')
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+})
+
+rl.question('你好', (answer) => {
+    console.log('666');
+    rl.close()
+})
+```
+
+
+
+``` js
+// 官网代码
+const fs = require('fs');
+const readline = require('readline');
+
+async function processLineByLine() {
+  const fileStream = fs.createReadStream('log.txt');
+
+  const rl = readline.createInterface({
+    input: fileStream,
+    crlfDelay: Infinity
+  });
+  // 注意：我们使用 crlfDelay 选项将 input.txt 中的所有 CR LF 实例（'\r\n'）识别为单个换行符。
+
+  for await (const line of rl) {
+    // input.txt 中的每一行在这里将会被连续地用作 `line`。
+    console.log(`Line from file: ${line}`);
+  }
+}
+
+processLineByLine();
+```
+
+
+
+当我们写完一个包，可以通过以下两个命令发布包。
+
+> npm的镜像源好像必须是官方源
+>
+> npm config set registry https://registry.npmjs.org
+
+``` shell
+$npm login #登录npmjs
+$npm publish #发布包
+```
+
+
+
+
 
 ## Koa
 
@@ -8632,6 +8828,26 @@ let heartCheck = {
 
 
 
+## Linux相关
+
+本节不聊基础的，仅作为查漏补缺。
+
+
+
+``` shell
+ls -l | grep ^l # 获取当前目录下所有的符号链接
+```
+
+
+
+``` shell
+wc file.txt -l # 输出文件的行数
+```
+
+
+
+
+
 
 
 
@@ -8843,21 +9059,3 @@ async function test() {
 [神三元的博客](http://47.98.159.95/my_blog/)
 
 
-
-## 写在最后
-
-> 本博客的攥写初衷只是为了面试做准备，加深对自己过去所学的知识的印象与理解。随着文章越写越多，曾经一度挡在面前的难题也逐个消散，知识的积累逐渐由量变演变成质变，也终于可以说过去的所学也并非全是白费功夫了。
->
-> 尽管我不如他人聪慧，也没有他们那般的毅力，我只是个单纯的普通人。从很久以前开始，就走过许许多多的弯路，曾陷入人生低谷，情绪一度格外抑郁且消沉，长时间的怀疑自己，怀疑人生。但我也确确实实努力过那么一阵子，就如同人生的阵痛一般，我时而清醒，时而消沉，但是脚下的路也确实是自己走出来的。我不会去后悔，人生的路在自己的脚下，未来也在自己的手里。如今的我已经改变不少，认识到责任感的重要性之后，我仿佛突然成为了一名正常人。或许大部分人都是被责任感所推动前行的生物，而没有责任心的过去，人生惬意潇洒，不用对任何事情负责，但是也仿佛缺少了什么一般。从此以后，我能不能把这条路贯彻下去，这依旧是一个很大的问题...
->
-> 话题跑远了，我们还是回到正题。本博客的知识也许并没有研究的很深层，那也是因为我的水平不足所致。希望在未来的日子里自己也能够长期的更新。其实以前自己就搭过各种博客了，不过最后也没有去打理。希望这篇文章能够帮到读者，无论是新入门前端不知道该学什么，抑或是遇到了技术难题，或是准备前端面试的同学。当然，提到面试，目前还没有人要我，实在是十分的悲催。单纯就理论知识而言，我觉得我的基础还是可以的，可是实践项目上的缺失是我最大的缺点，平时也就写点各种小demo，实在是拿不出手。希望以后能够提高自己的项目经历，不然实在是贻笑大方，令人叹息。
->
-> 最近疫情格外严重，逐渐由国内扩散到全世界。不得不说早期的自己格外的乐观，回头来看可以说是十分的打脸。如今也算是见证历史，就怕开学后所面对的风险会倍增。就个人而言，如果就这样被感染而死，确实有点悲催。世上还有许许多多有意思的事情等待着我，况且我也尚未报答所有爱我的，我爱的人。不过就算这样死了，也没什么好说的，事到如今我也算看过各种风景，哪怕有遗憾，也是没有办法的事情了。
->
-> 其实疫情中发生了各种各样的事情，但我一直都没有发声。一方面是自己最近格外焦虑繁忙，而且自己的发声也没有人听得到。另一方面，现今社会的信息量太大，我们所看到的并非是全部的真实，除非了解全部真相，我觉得很难去进行发声。也正是因为信息量的巨大，导致现如今浑水摸鱼的人越来越多，很多时候甚至难以分辨出对方到底是不是反串黑。也许等我稳定下来之后，我才会有精力去把自己的各种所闻所想发布出来吧。
->
-> 可是我现在尚未稳定，我渴望一个机会，让自己能够真正的被认同，被承认。让自己的内心可以真正的达成宁静和谐，与自然天然合一。
->
-> 2020.3.7
->
-> Akara
