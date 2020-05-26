@@ -1,6 +1,6 @@
 # TypeScript摘录
 
-**声明!!!**：本文非原创，不用于任何商业用途，大部分上是复制粘贴自[TypeScript 入门教程](https://ts.xcatliu.com/)网站上的教程，纯粹是为了方便用于个人学习。（所谓傻瓜式学习/囫囵吐槽式学习，求不吐槽）
+**声明！！！**：本文非原创，不用于任何商业用途，大部分上是复制粘贴自[TypeScript 入门教程](https://ts.xcatliu.com/)网站上的教程，纯粹是为了方便用于个人学习。
 
 [toc]
 
@@ -687,6 +687,150 @@ createArray<string>(3, 'x'); // ['x', 'x', 'x']
 
 
 
+
+
+
+
+### keyof
+
+[参考博客](https://juejin.im/post/5cffb431f265da1b7401f466)
+
+``` typescript
+interface Point {
+    x: number;
+    y: number;
+}
+
+// type keys = "x" | "y"
+type keys = keyof Point;
+
+// ---------------- 分割线 ---------------
+const data = {
+  a: 3,
+  hello: 'world'
+}
+
+function get(o: object, name: string) {
+  return o[name]
+}
+
+// 可以用下面的函数代替
+function get<T extends object, K extends keyof T>(o: T, name: K): T[K] {
+  return o[name]
+}
+```
+
+
+
+### Utility Types
+
+一些TypeScript自带的实用的类型。
+
+
+
+##### `Partial<T>`
+
+``` typescript
+// example
+interface Todo {
+  title: string;
+  description: string;
+}
+
+function updateTodo(todo: Todo, fieldsToUpdate: Partial<Todo>) {
+  return { ...todo, ...fieldsToUpdate };
+}
+
+const todo1 = {
+  title: "organize desk",
+  description: "clear clutter"
+};
+
+const todo2 = updateTodo(todo1, {
+  description: "throw out trash"
+});
+
+// implement
+type Partial<T> = {
+    [P in keyof T]?: T[P]
+}
+```
+
+
+
+##### `Pick<T, K>`
+
+``` typescript
+// example
+interface Todo {
+  title: string;
+  description: string;
+  completed: boolean;
+}
+
+type TodoPreview = Pick<Todo, "title" | "completed">;
+
+const todo: TodoPreview = {
+  title: "Clean room",
+  completed: false
+};
+
+// implement
+type Pick<T, K extends keyof T> = {
+    [P in K]: T[P]
+}
+```
+
+
+
+##### `Exclude<T, U>`
+
+``` typescript
+// example
+type T0 = Exclude<"a" | "b" | "c", "a">; // "b" | "c"
+type T1 = Exclude<"a" | "b" | "c", "a" | "b">; // "c"
+type T2 = Exclude<string | number | (() => void), Function>; // string | number
+
+// implement
+// extends搭配 ?: 运算符使用
+type Exclude<T, U> = T extends U ? never : T;
+
+// 相当于: type A = 'a' 
+type A = Exclude<'x' | 'a', 'x' | 'y' | 'z'>
+```
+
+
+
+##### Omit<T, K>
+
+``` typescript
+// example
+interface Todo {
+  title: string;
+  description: string;
+  completed: boolean;
+}
+
+type TodoPreview = Omit<Todo, "description">;
+
+const todo: TodoPreview = {
+  title: "Clean room",
+  completed: false
+};
+
+// implement
+
+type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
+```
+
+
+
+
+
+
+
+
+
 ### 代码草稿
 
 > 用来打草稿
@@ -718,3 +862,4 @@ class Button extends React.Component {
 }
  
 ```
+
