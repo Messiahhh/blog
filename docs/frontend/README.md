@@ -5,9 +5,8 @@ sidebarDepth: 2
 
 [toc]
 
-> 求:star: 谢谢
+> 要秋招了，求Star...
 >
-> （下次一定，下次一定
 
 
 
