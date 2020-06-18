@@ -8829,19 +8829,38 @@ let heartCheck = {
 
 ## Linux相关
 
-本节不聊基础的，仅作为查漏补缺。
+> 呜呜呜，以前明明看过《Linux就是这个范》，感觉忘了好多。
+>
+> 还是得多做笔记才行。
 
 
+
+``` shell
+/etc/profile # 系统配置
+/etc/passwd # 用户信息（用户ID，组ID等）
+/etc/group # 用户组信息
+/etc/shadow # 用户密码（密文保存）
+/etc/sudoers # 可以给用户/用户组进行sudo的权限
+
+~/.bashrc # 用户配置
+~/.bash_history # 历史命令行
+~/.ssh # 存放 ssh配置/公私钥
+~/.ssh/authorized_keys # 放公钥，从而使用密钥登录服务器
+```
+
+
+
+一些命令
 
 ``` shell
 ls -l | grep ^l # 获取当前目录下所有的符号链接
-```
-
-
-
-``` shell
 wc file.txt -l # 输出文件的行数
+alias ..='cd ..' # 别名
+useradd akara # 新建用户akara
+passwd akara # root用户给普通用户修改密码
 ```
+
+
 
 
 
@@ -8855,7 +8874,7 @@ wc file.txt -l # 输出文件的行数
 
 > 主要是记一些API，记忆力下降容易忘
 
-``` mysql
+``` sql
 mysql -u root -p password # 连接数据库
 
 SHOW DATABASES; # 显示所有数据库
@@ -8927,7 +8946,7 @@ SELECT u.user_name, q.q_title, q.q_info FROM user as u, question as q WHERE u.us
 
 通常Mysql默认是自动提交模式（即变量autocommit为ON），也就是会自动进行commit操作。
 
-``` mysql
+``` sql
 show session variables like 'autocommit'; # 查询autocommit的值
 set autocommit=0 # 不会自动提交，此时为OFF
 set autocommit=1 # 自动提交，此时为ON
@@ -8939,7 +8958,7 @@ set autocommit=1 # 自动提交，此时为ON
 - COMMIT 提交事务
 - ROLLBACK 回滚事务
 
-``` mysql
+``` sql
 BEGIN;
 INSERT INTO user VALUES(NULL, 'A', 'a'); # 还未COMMIT，数据库无该数据
 INSERT INTO user VALUE(NULL, 'B', 'b'); # 还未COMMIT，数据库无该数据
@@ -9060,6 +9079,28 @@ unserialize($data); // 反序列化
 // 调用serialize函数时，先会查找类中是否有__sleep，如果有则调用后再序列化
 // 同理，调用unserialize时，查看是否有__wakeup，调用后才反序列化。
 ```
+
+
+
+**PHP连接数据库**
+
+``` php
+<?php
+    $link = mysqli_connect('localhost:3308', 'root', '');
+    mysqli_select_db($link, 'test');
+    $sql = "SELECT * FROM comments";
+    $result = mysqli_query($link, $sql);
+    if (mysqli_num_rows($result) > 0) {
+        while ($row = mysqli_fetch_assoc($result)) {
+
+        }
+    }
+
+    mysqli_close($link)
+?>
+```
+
+
 
 
 
