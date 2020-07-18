@@ -15,10 +15,11 @@ function getSidebar(dir) {
 
 
 
+
 module.exports = {
     base: '/blog/',
     logo: '/assets/img/logo.jpg',
-    title: 'Akara的小站',
+    title: 'Akara的博客',
     description: 'Fooly Cooly',
     head: [
         ['link', { rel: 'icon', href: '/favicon.ico' }]
@@ -37,7 +38,7 @@ module.exports = {
                 link: '/'
             },
             {
-                text: '前端笔记',
+                text: '前端博客',
                 link: '/frontend/'
             },
             {
@@ -45,7 +46,7 @@ module.exports = {
                 link: '/mianshi/'
             },
             {
-                text: '博客',
+                text: '杂记',
                 link: '/gossip/'
             },
             {
@@ -59,7 +60,31 @@ module.exports = {
         ],
         sidebar: {
             '/frontend/': [
-                '',
+                ['', 'HTML'],
+                'css',
+                'javascript',
+                'node',
+                'koa',
+                'react',
+                'vue',
+                'react-vs-vue',
+                'typescript',
+                '前端工程化',
+                'browser',
+                '网站优化',
+                '错误监控',
+                '计算机网络',
+                '设计模式',
+                '数据结构',
+                '排序',
+                '编程题',
+                '面试题',
+                'git',
+                'mysql',
+                'mongodb',
+                'linux',
+                'websocket',
+                'php',
             ],
             '/mianshi/': [
                 '',

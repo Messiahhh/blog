@@ -831,35 +831,5 @@ type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
 
 
 
-### 代码草稿
 
-> 用来打草稿
-
-``` typescript
-const test = <T extends unknown>(a: T): T[] => {
-    return [a]
-}
-
-function test2<T>(a: T): T[] {
-    return [a]
-}
-
-
-// class组件内的Ref
-class Button extends React.Component {
-    myRef: React.RefObject<HTMLButtonElement> // <button></button
-    // <HTMLDivElement> <div></div>
-    // <HTMLInputElement> <input />
-    constructor(props: any) {
-        super(props)
-        this.myRef = React.createRef()
-    }
-    render() {
-        return (
-            <button ref={this.myRef}>{this.props.children}</button>
-        )
-    }
-}
- 
-```
 
