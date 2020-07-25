@@ -1799,6 +1799,30 @@ const Ajax = ({
         else {
             header = 'application/json'
             data = JSON.stringify(data)
+        }
+        xhr.setRequestHeader('Content-type', header)
+        xhr.send(data)
+    }
+}
+
+Ajax.get = (url, callback) => {
+    return Ajax({
+        url
+    }, callback)
+}
+
+
+Ajax.post = function (url, data, callback) {
+    return Ajax({
+        method: 'post',
+        url,
+        data,
+    }, callback)
+}
+
+Ajax.get('http://localhost:3000/getData', (res) => {
+    console.log(res)
+})
 ```
 
 ##### Promise封装
