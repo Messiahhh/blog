@@ -1100,7 +1100,7 @@ m.delete(o) // true
 m.has(o) // false
 ```
 
-比如这里， Map实例m的一个键是对象o，键值微'content'。
+比如这里， Map实例m的一个键是对象o，键值为'content'。
 
 ##### WeakSet / WeakMap
 
