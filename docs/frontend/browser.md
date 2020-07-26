@@ -94,7 +94,7 @@ sidebarDepth: 4
 
 ①outer触发点击事件(捕获标志) -> ②inner触发点击事件(捕获标志) -> ③inner触发点击事件(冒泡标志) -> ④outer触发点击事件(冒泡标志)
 
-我们可以使用**event.stopPropagation**来组织事件的传播。
+我们可以使用**event.stopPropagation**来阻止事件的传播。
 
 ``` javascript
 let inner = document.querySelector('.inner')
