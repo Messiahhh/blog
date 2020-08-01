@@ -433,7 +433,7 @@ function deepClone(source, hash = new WeakMap()) {
 	if (hash.has(source)) {
 		return hash.get(source)
 	}
-	if (typeof source === 'object') {
+	if (typeof source === 'object' && source !== null) {
 		target = Array.isArray(source) ? [] : {}
 		hash.set(source, target)
 		for (let [key, value] of Object.entries(source)) {
