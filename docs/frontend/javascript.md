@@ -739,6 +739,20 @@ function getUrlParams(name) {
     }
 } 
 
+function getUrl(key) {
+    let map = {}
+    let ret 
+    const reg = /(?:^|&)(.*?)=(.*?)(?=&|$)/g
+    const search = 'name=akara&age=21&type=normal&sex=male'
+    while (ret !== null) {
+        ret = reg.exec(search)
+        if (ret) {
+            map[ret[1]] = ret[2]
+        }
+    }
+    return map[key]
+}
+
 // split
 function getUrlParams(name) {
     const arr = location.search.substr(1).split('&')
