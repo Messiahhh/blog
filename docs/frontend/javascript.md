@@ -732,10 +732,10 @@ var re = /\w+/;
 ``` js
 // 正则
 function getUrlParams(name) {
-    const reg = new RegExp(`(^|&)${name}=([^&]*)($|&)`)
+    const reg = new RegExp(`(?:^|&)${name}=([^&]*)(?:$|&)`)
     const match = location.search.substr(1).match(reg)
     if (match) {
-        return match[2]
+        return match[1]
     }
 } 
 
