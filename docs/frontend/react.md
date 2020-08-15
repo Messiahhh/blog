@@ -1370,3 +1370,22 @@ function User() {
     )
 }
 ```
+
+
+
+### create-react-app
+
+通常项目存在测试环境和正式环境，这两个环境所对应的后端域名也是不同的。
+
+我们可以通过设置环境变量，代码中通过`process.env.xxx`读取该环境变量，从而实现根据环境的不同设置不同的接口域名。
+
+
+
+有个注意的点是`create-react-app`创建的项目，会根据执行的命令自动设置环境变量`NODE_ENV`，比如当我们使用`npm start`时的环境变量的值为`development`，当我们使用`npm test`时环境变量的值为`test`，当我们使用`npm build`时环境变量的值为`production`。
+
+除了这个点，还有个重要的地方是`react-script`只会读取到以`REACT_APP_`开头的环境变量，比如你的`package.json`可以这样写
+
+``` js
+"start:dev": "cross-env REACT_APP_NODE_ENV=development react-scripts start", // cross-env 用来跨操作系统设置环境变量
+```
+

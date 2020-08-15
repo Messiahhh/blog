@@ -590,6 +590,54 @@ let data = await conn.queryAsync(`sql code here...`)
 
 
 
+### PM2库
+
+除了常见的`pm2 start index.js`，我们也可以使用配置文件。
+
+``` js
+// 比如取名为 ecosystem.config.js
+module.exports = {
+  apps: [{
+    script: './server/app.js',
+    watch: '.',
+    env_development: {
+      "REACT_APP_NODE_ENV": "development"
+    },
+    env_production: {
+      "REACT_APP_NODE_ENV": "production"
+    }
+  }]
+}
+```
+
+之后通过以下命令来启动服务
+
+``` shell
+pm2 start ecosystem.config.js --env development
+// or
+pm2 start ecosystem.config.js --env production
+```
+
+
+
+##### 常用命令
+
+``` js
+pm2 start app.js
+pm2 list
+pm2 delete [app-id]
+pm2 logs
+pm2 logs [app-name]
+pm2 monit
+// ...
+```
+
+
+
+
+
+
+
 ### 命令行工具
 
 本节介绍如何使用node写命令行工具。

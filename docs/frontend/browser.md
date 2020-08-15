@@ -242,3 +242,104 @@ secret
 ![JWT鉴权原理](https://pic3.zhimg.com/v2-f1556c71042566d4a6f69ee20c2870ae_r.jpg)
 
 
+
+### CORS与CSRF与sameSite
+
+> 一点小的思考
+
+案例：
+
+a.com（下文简称a域）用于提供网站静态资源，b.com（下文简称b域）用于提供API接口。
+
+访问b域的某个接口后，浏览器被种下值为`name=akara`的Cookie，此Cookie的Domain属性为b.com，表示该Cookie只能被发给b域。
+
+
+
+**CORS**
+
+因为浏览器的同源策略的限制，a域无法直接向b域发送请求。为解决跨域问题，最方便的方式是CORS（跨域资源共享）。
+
+通过设置`Access-Control-Allow-Origin`的响应头部，简单的请求就会被允许从a域送达b域，不过此时请求不会自动带上b域的Cookie。
+
+通过设置`Access-Control-Allow-Credentials`响应头部，Cookie才能被一起发过去。
+
+而对于复杂请求，在正式发送请求时需要发送一次请求方式为OPTION的报文，称之为预检（preflight）。
+
+预检请求会带上一下两个请求头部，头部的值为正式请求的方法和头部。
+
+``` http
+Access-Control-Request-Headers: content-type
+Access-Control-Request-Method: POST
+```
+
+而预检响应会带上四个响应头部
+
+``` http
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Origin: http://a.com
+Access-Control-Allow-Headers: content-type
+Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS
+```
+
+多出来的两个响应头也是需要后端进行设置的。
+
+在预检请求通过之后，正式请求才能被发给后端。
+
+
+
+**CSRF**
+
+现在假设a域是一个恶意的网站，b域是一个正常的网站。
+
+当我们访问过b域，可以得到b域的Cookie；此时当我们访问a域，在a域给b域发送请求，这个请求会带上b域的Cookie，因此b域收到请求后会执行某些危险操作。
+
+
+
+先停一下。
+
+因为我上文讲了CORS，那当读者看到这一段的时候，有可能误以为b域名也使用了CORS，然后就以为CORS会带来CSRF的安全问题。
+
+CSRF攻击成功的一大关键就是a域发送给b域的请求必须携带b域的Cookie，而CORS的`access-control-allow-credentials`确实可以让我们带上Cookie，但是注意到一个使用CORS的规定，我们无法同时设置以下两个头部
+
+``` 
+access-control-allow-origin: *
+access-control-allow-credentials: true
+```
+
+有权携带Cookie的域必须是特定的域，因此通过这个规定，CORS并不会带来CSRF的危险。
+
+
+
+回到我们的例子，实际上这里所说的请求并不是跨域AJAX请求，比如它可以是通过表单发送的请求，而通过表单发送的请求是不受同源策略所限制的，因此即使b域没有设置任何东西，a域也可以把带有b域的请求发送给b域，从而达到攻击的目的。
+
+
+
+**sameSite**
+
+我们以前有一些防御CSRF的手段，而chrome80版本之后也给cookie新增了一个属性，`sameSite`。
+
+`sameSite`有三个属性，`strict`，`lax`,  `none`。
+
+- `strict`表示非同站的请求不能带上Cookie，比如a域发给b域的任何请求都无法带上Cookie。
+- `none`则没有任何限制，a域发给b域的请求都可以带上Cookie，不过使用这个值的时候Cookie也必须带上secure属性，表示b域使用的HTTPS协议。
+- `lax`只允许部分第三方请求带上Cookie，比如AJAX和表单提交的POST请求都无法发给b域。
+
+
+
+现代浏览器设置的Cookie的samesite属性默认为`lax`，主要目的是帮我们抵御CSRF攻击。
+
+但是问题也随之而来，当我们使用CORS实现跨域发送带Cookie的请求，在以前应该是没有问题的，而现在因为`samesite`这个属性，跨域的请求无法带上Cookie。
+
+那我们应该如何处理这个问题呢？第一反应是设置Cookie的时候，将SameSite属性设置为None。但是很多公司内部的站点都是用的HTTP协议，特意去弄一个证书感觉有点麻烦。
+
+一种比较方便的方式是让两个站点是同站，比如a.qq.com与b.qq.com，因为是samesite，请求就可以带上Cookie了。
+
+
+
+**总结**
+
+- CORS可以让我们轻松处理跨域问题。
+- CSRF是普遍存在的问题。
+- 借助sameSite的防御CSRF。
+- CORS + Samesite 可能使得请求无法带上Cookie，我们可以让站点同站，比如a.qq.com和b.qq.com。
+
