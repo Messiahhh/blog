@@ -53,10 +53,10 @@ module.exports = {
                 text: '随笔',
                 link: 'https://messiahhh.github.io/'
             },
-            // {
-            //     text: '简历',
-            //     link: 'https://messiahhh.github.io/resume/'
-            // }
+            {
+                text: '简历',
+                link: 'https://messiahhh.github.io/resume/'
+            }
         ],
         sidebar: {
             '/frontend/': [
