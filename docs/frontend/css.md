@@ -170,7 +170,7 @@ sidebarDepth: 4
 **行内元素（inline）**：a, span, img, input 等
 
 不独占一行；不能设置宽和高
-
+（注：img标签可以设置宽高，但其display属性的值为inline而不是inline-block，不过它确实兼具二者的特性
 **inline-block** ：selection
 
 不独占一行；可以设置宽和高。
