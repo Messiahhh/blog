@@ -48,7 +48,7 @@ Node事件循环一共有**六个阶段**，**每个阶段中都有一个宏队�
 
 Node事件循环的六个阶段：
 
-1. Timer: `SetTimeoute`和`SetInterval`的回调放进该阶段的队列。
+1. Timer: `SetTimeout`和`SetInterval`的回调放进该阶段的队列。
 2. pending callback: 执行一些系统操作的回调，例如TCP的错误。
 3. idle, prepare: 处理一些内部调用。
 4. poll: **大部分回调在这里调用。**
