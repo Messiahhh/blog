@@ -795,6 +795,17 @@ isMatch('https://qq.com') // true
 
 
 
+###### 电话号码判断
+
+``` js
+const isPhone = (str) => {
+    const reg = /^1[34578]\d{9}$/g
+    return reg.test(str)
+}
+```
+
+
+
 ###### 驼峰化
 
 将`aaa-bbb-ccc`转换为驼峰`aaaBbbCcc`
@@ -818,6 +829,12 @@ function format(num) {
     const reg = /\d{1,3}(?=(?:\d{3})+$)/g
     return num.toString().replace(reg, '$&,')
 }
+
+// const format = (number) => {
+//     const str = number + ''
+//     return str.replace(/(?=(?!^)(\d{3})+$)/g, ',')
+//     // return str.replace(/\d{1,3}(?=(\d{3})+$)/, '$&,')
+// }
 
 // 也可以用toLocaleString轻松实现
 function format(num) {
@@ -843,6 +860,29 @@ function format (num) {
     num = '' + num
     arr.unshift(num)
     return arr.join(',')
+}
+```
+
+
+
+###### 替换元素
+
+把非P元素替换成P元素 `<div></div> => <p></p>`
+
+``` js
+const replaceP = (str) => {
+    return str.replace(/<(\/)?.*?>/g, '<$1p>')
+}
+```
+
+
+
+###### 文章出现最多的单词
+
+``` js
+const wordOfArticle = (str) => {
+    const reg = /(?=\b)(.+?)(?=\b)/g
+    console.log(str.match(reg))
 }
 ```
 
@@ -2186,14 +2226,14 @@ axios({
 function setClassProperty(target) {
    target.n = 'akara'
 }
-​
+
 @setClassProperty
 class People {
    
 }
-​
+
 console.log(People.n) // akara
-​
+
 // 2. 用于类方法
 function log(target, key, descriptor) {
    const fn = descriptor.value
@@ -2203,22 +2243,22 @@ function log(target, key, descriptor) {
   }
    return descriptor
 }
-​
+
 class People {
    constructor(name, age) {
        this.name = name
        this.age = age
   }
-​
+
    @log
    getName() {
        return this.name
   }
 }
-​
+
 const p = new People('akara', 20)
 console.log(p.getName())
-​
+
 // 3. 用于实例属性
 // 装饰实例属性的时候，descriptor有个属性为initializer
 // 通过修改这个函数的返回值，实例化时的属性值也不同
@@ -2230,12 +2270,12 @@ function test(target, key, descriptor) {
        return `${v}-${randomNumber}`
   }
 }
-​
+
 class People {
    @test
    name = 'akara'
 }
-​
+
 const p = new People()
 console.log(p.name)
 ```
