@@ -846,9 +846,13 @@ function toCamel(str) {
 ``` js
 // 正则，注意使用到了?=先行断言，?:为非捕获，可加可不加
 function format(num) {
-    const reg = /\d{1,3}(?=(?:\d{3})+$)/g
-    return num.toString().replace(reg, '$&,')
+    return num.toString().replace(/(?=(?<!^)(?:\d{3})+$)/g, ',')
 }
+
+// function format(num) {
+//     const reg = /\d{1,3}(?=(?:\d{3})+$)/g
+//     return num.toString().replace(reg, '$&,')
+// }
 
 // const format = (number) => {
 //     const str = number + ''
