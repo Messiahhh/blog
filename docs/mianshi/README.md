@@ -3,7 +3,7 @@ sidebar: auto
 sidebarDepth: 2
 ---
 
-# 面经
+# 实习面经
 
 ## 腾讯 WXG 一面 
 
@@ -1085,3 +1085,98 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
 ## 美团 HR 
 
 二面过了挺久，突然打个电话说我过了，不过offer被我拒了。
+
+
+
+# 校招面经
+
+
+
+## 字节跳动 一面
+
+1. 自我介绍，介绍项目。
+
+2. 几个小题目，看代码说结果
+
+3.  `[] == ![] `和`[] == []`的值（事后发现自己完全答反，万恶的隐式转换...）
+
+4. new 操作符原理
+
+5. 盒模型 `content-bod`和`border-box`
+
+6. `display:none;visibility: hidden;opacity:0`的区别
+
+7. 事件模型，看代码说结果
+
+8. 状态码301，302，304
+
+9. 知道`refer`头部吗，直接请求服务器时`refer`是多少，顺便聊了其在CSRF中的作用
+
+10. CSS动画，`transition`和`animation`
+
+11. koa和express的区别，以及koa中间键的原理
+
+12. vue的`v-model`的原理，实例是怎么拿到data属性的
+
+13. hash和history模式的区别，原理
+
+14. React的Fiber的原理，是否了解Hook的实现原理
+
+15. 聊了一下redux和react-redux
+
+16. 给定一个字符串，输出该字符串所有排列的可能。如输入“abc”，输出“abc,acb,bca,bac,cab,cba”。
+
+    ``` js
+    function fullpermutate(str) {  var result = [];  return result;}
+    ```
+
+15. 多行字符串转二维数组
+
+    ``` js
+    const str=`
+    1 21    3
+    
+      4 5  6
+     7   8 9
+    `
+    [
+        ['1', '12', '3'],
+        ['4', '5', '6'],
+        ['7', '8', '9'],
+    ]
+    ```
+
+16. 获得页面所有节点数
+
+17. 有什么问我的吗
+
+## 字节跳动 二面
+
+1. 聊了一下项目
+
+2. 算法题。判断堆栈的出栈顺序是否合理。
+
+   ``` js
+   validStack(inArr, outArr)
+   ```
+
+3. 两个同域的页面之间的通信。postMessage，storage（之前没了解过，原来这个可以监听的？）
+
+4. 如何统计用户的浏览时长，要考虑到用户会切换页面，缩放页面等。多个点进行上报时，如何区分这些数据来自于同一个会话？
+
+   https://yq.aliyun.com/articles/635301
+
+5. 实现一个sleep方法
+
+6. 函数防抖，函数节流
+
+7. HTTP和Websocket的联系
+
+8. 重排，重绘，合成层
+
+9. 了解过puppeteer吗
+
+   
+
+算法比较拉跨...
+
