@@ -672,13 +672,33 @@ function flatter(arr, newArr = []) {
 
 ### 正则表达式
 
-正则表达式中分组可以分为捕获分组和非捕获分组。非捕获分组是用(?:)来表示的。
+正则表达式中分组可以分为捕获分组和非捕获分组。
 
-而(?=)和(?!)所代表的分别是正向前瞻和负向前瞻，或者说是零宽断言，我觉得这个词更好理解。表明了它并不是字符，而是一个位置，类似^ $ \b等。
+捕获分组很简单，用`()`来表示。
 
-可以看到零宽断言也是有小括号的，所以它也是分组。它应该是属于捕获分组，只不过捕获的结果是一个位置。
+非捕获分组，则基本可以分为五种：
 
-另外默认情况下.+是会进行贪婪匹配，而量词后加上?会进行惰性匹配。
+- `(?:)` 最基础也是最常见的非捕获分组。
+
+  我们可以使用`(?:)`来进行非捕获的分组，因为很多时候我们需要使用分组，比如`(\d{3})+`，但我们又并不想捕获这个分组，这时候就可以使用`(?:)`了。
+
+- `(?=)`零宽正向先行断言（zero-width positive lookahead assertion）。
+
+- `(?!)`零宽负向先行断言。
+
+- `(?<=)`零宽正向后行断言。
+
+- `(?<!)`零宽负向后行断言。
+
+
+
+零宽（zero-width）表示着它匹配的是一个位置，就像`^`或`$`又或者是`\b`一样，而不是匹配字符。
+
+这里的**先行**，表示着位置的右边；**后行**表示着位置的左边。而**正向**和**负向**，则就是有与无的关系了。
+
+
+
+另外默认情况下`.+`是会进行贪婪匹配，而量词后加上?会进行惰性匹配，比如`.+?`。
 
  
 
@@ -795,6 +815,17 @@ isMatch('https://qq.com') // true
 
 
 
+###### 电话号码判断
+
+``` js
+const isPhone = (str) => {
+    const reg = /^1[34578]\d{9}$/g
+    return reg.test(str)
+}
+```
+
+
+
 ###### 驼峰化
 
 将`aaa-bbb-ccc`转换为驼峰`aaaBbbCcc`
@@ -815,9 +846,19 @@ function toCamel(str) {
 ``` js
 // 正则，注意使用到了?=先行断言，?:为非捕获，可加可不加
 function format(num) {
-    const reg = /\d{1,3}(?=(?:\d{3})+$)/g
-    return num.toString().replace(reg, '$&,')
+    return num.toString().replace(/(?=(?<!^)(?:\d{3})+$)/g, ',')
 }
+
+// function format(num) {
+//     const reg = /\d{1,3}(?=(?:\d{3})+$)/g
+//     return num.toString().replace(reg, '$&,')
+// }
+
+// const format = (number) => {
+//     const str = number + ''
+//     return str.replace(/(?=(?!^)(\d{3})+$)/g, ',')
+//     // return str.replace(/\d{1,3}(?=(\d{3})+$)/, '$&,')
+// }
 
 // 也可以用toLocaleString轻松实现
 function format(num) {
@@ -843,6 +884,29 @@ function format (num) {
     num = '' + num
     arr.unshift(num)
     return arr.join(',')
+}
+```
+
+
+
+###### 替换元素
+
+把非P元素替换成P元素 `<div></div> => <p></p>`
+
+``` js
+const replaceP = (str) => {
+    return str.replace(/<(\/)?.*?>/g, '<$1p>')
+}
+```
+
+
+
+###### 文章出现最多的单词
+
+``` js
+const wordOfArticle = (str) => {
+    const reg = /(?=\b)(.+?)(?=\b)/g
+    console.log(str.match(reg))
 }
 ```
 
@@ -2186,14 +2250,14 @@ axios({
 function setClassProperty(target) {
    target.n = 'akara'
 }
-​
+
 @setClassProperty
 class People {
    
 }
-​
+
 console.log(People.n) // akara
-​
+
 // 2. 用于类方法
 function log(target, key, descriptor) {
    const fn = descriptor.value
@@ -2203,22 +2267,22 @@ function log(target, key, descriptor) {
   }
    return descriptor
 }
-​
+
 class People {
    constructor(name, age) {
        this.name = name
        this.age = age
   }
-​
+
    @log
    getName() {
        return this.name
   }
 }
-​
+
 const p = new People('akara', 20)
 console.log(p.getName())
-​
+
 // 3. 用于实例属性
 // 装饰实例属性的时候，descriptor有个属性为initializer
 // 通过修改这个函数的返回值，实例化时的属性值也不同
@@ -2230,12 +2294,12 @@ function test(target, key, descriptor) {
        return `${v}-${randomNumber}`
   }
 }
-​
+
 class People {
    @test
    name = 'akara'
 }
-​
+
 const p = new People()
 console.log(p.name)
 ```

@@ -859,32 +859,27 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
    binaryAdd('1010', '111') // '10001'
    
    // 其实就是两数相加，只是换成了二进制而已
-   
-   function binaryAdd(s1, s2) {
+   function binaryAdd(num1, num2) {
        let carry = 0
-       let res = []
-       let arr1 = s1.split('').reverse()
-       let arr2 = s2.split('').reverse()
-       const maxLength = Math.max(arr1.length, arr2.length)
-       for (let i = 0; i < maxLength; i++) {
-           let char1 = arr1[i] || 0
-           let char2 = arr2[i] || 0
-           let sum = parseInt(char1) + parseInt(char2) + carry
-           const flag = sum >= 2
-           carry = flag ? 1 : 0
-           sum = sum % 2
-           res[i] = '' + sum
+       let ret = []
+       const [len1, len2] = [num1.length, num2.length]
+       const maxLen = Math.max(len1, len2)
+       num1 = num1.padStart(maxLen, '0')
+       num2 = num2.padStart(maxLen, '0')
+       let arr1 = num1.split('')
+       let arr2 = num2.split('')
+       for (let i = maxLen - 1; i >= 0; i--) {
+           let [n1, n2] = [arr1[i], arr2[i]].map(i => Number(i))
+           let sum = n1 + n2 + carry
+           carry = sum >= 2 ? 1 : 0
+           sum %= 2
+           ret.unshift(sum.toString())
        }
-       if (carry = 1) {
-           res.push('1')
-       }
-       
-       
-       return res.reverse().join('')
+       if (carry) ret.unshift('1')
+       return ret.join('')
    }
-   console.log(binaryAdd('1010', '111'))
    ```
-
+   
 6. ``` js
    // 实现一个带并发限制的异步调度器Scheduler，保证同时运行的任务最多有两个。完善代码中Scheduler类，使得以下程序能正确输出
    class Scheduler {
