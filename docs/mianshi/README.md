@@ -1081,7 +1081,7 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
 
 4. new 操作符原理
 
-5. 盒模型 `content-bod`和`border-box`
+5. 盒模型 `content-box`和`border-box`
 
 6. `display:none;visibility: hidden;opacity:0`的区别
 
