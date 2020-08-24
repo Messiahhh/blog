@@ -1089,27 +1089,29 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
 
 8. 状态码301，302，304
 
-9. 知道`refer`头部吗，直接请求服务器时`refer`是多少，顺便聊了其在CSRF中的作用
+9. 知道`referer`头部吗，直接请求服务器时`referer`是多少，顺便聊了其在CSRF中的作用
 
-10. CSS动画，`transition`和`animation`，哪一个性能更好
+10. 后端怎么让浏览器中的Cookie过期
 
-11. Koa和Express的区别，以及Koa中间键的原理
+11. CSS动画，`transition`和`animation`，哪一个性能更好
 
-12. Vue的`v-model`的原理，Vue实例是怎么拿到data属性的
+12. Koa和Express的区别，以及Koa中间件的原理
 
-13. Hash和History模式的区别，原理
+13. Vue的`v-model`的原理，Vue实例是怎么拿到data属性的
 
-14. React的Fiber的原理，知道怎么实现的吗，是否了解Hook的实现原理
+14. Hash和History模式的区别，原理
 
-15. 聊了一下Redux和React-Redux
+15. React的Fiber的原理，知道怎么实现的吗，是否了解Hook的实现原理
 
-16. 给定一个字符串，输出该字符串所有排列的可能。如输入“abc”，输出“abc,acb,bca,bac,cab,cba”。
+16. 聊了一下Redux和React-Redux
+
+17. 给定一个字符串，输出该字符串所有排列的可能。如输入“abc”，输出“abc,acb,bca,bac,cab,cba”。
 
     ``` js
     function fullpermutate(str) {  var result = [];  return result;}
     ```
 
-15. 多行字符串转二维数组
+18. 多行字符串转二维数组
 
     ``` js
     const str=`
@@ -1125,9 +1127,9 @@ margin-top为负值，除了绝对定位还有哪些地方碰到过？说了个�
     ]
     ```
 
-16. 获得页面所有节点数
+19. 获得页面所有节点数
 
-17. 有什么问我的吗
+20. 有什么问我的吗
 
 ### 字节跳动 二面
 
