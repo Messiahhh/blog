@@ -48,6 +48,60 @@ let fruits = {
 
 
 
+##### tsconfig.json
+
+很多项目的根目录下都存在`tsconfig.json`文件，也就是`TypeScript`的配置文件，当我们使用`tsc`命令来编译代码的时候，会向上层目录中寻找该配置文件。
+
+需要注意的一点是，当我们使用`tsc index.tsx`来直接指定待编译文件时，`tsconfig.json`的配置并不会生效。因此我们大多数时候都是直接在`tsconfig.json`中指定编译的输入与输出，比如使用`files/include/exclude`等参数。
+
+另外，即使`tsconfig.json`为空，只要存在就拥有对应的默认参数。
+
+
+
+当我们在ts项目引用一个外部的js库时，需要拥有该文件对应的声明，通常可以使用`npm i @types/xxx`，或者是项目中存在对应的声明文件（xx.d.ts）
+
+``` tsx
+// xx.d.ts
+// 一种普通的场景
+declare module 'module-name' {
+    export function methodA(): void
+}
+```
+
+`tsconfig.json`中的一些配置：
+
+``` tsx
+{
+    "compilerOptions": {
+        // 编译后的输出目录
+        "outDir": "lib",
+        // true表示不会生成输出文件
+        "noEmit": true,
+        // true表示ts编译成js的同时，会生成对应的.d.ts声明文件
+        "declaration": true,
+		// 生成的js是严格模式
+        "strict": true,
+		// 生成的目标，通常是es5
+        "target": "es5"
+        // 等等...
+    },
+    // 指定待编译的文件
+    "files": [
+        
+    ],
+    // 指定待编译文件的目录
+    "include": [
+        
+    ],
+    // 指定哪些文件不被编译，默认值包括node_modules等
+    "exclude": [
+        
+    ]
+}
+```
+
+
+
 
 
 ##### 随手记录

@@ -3,6 +3,53 @@ sidebarDepth: 4
 ---
 ## Node
 
+### NPM
+
+安装的npm包放在`node_modules`目录下，可以这样使用：
+
+1. ``` shell
+   ./node_modules/.bin/pm2 list
+   ```
+
+2. ``` json
+   // package.json
+   {
+       "script": {
+           // npm run start
+           "start": "pm2 list"
+       }
+   }
+   ```
+
+3. ``` shell
+   npx pm2 list
+   ```
+
+
+
+通过npm发布包很简单，其实就两步
+
+1. `npm login`
+2. `npm publish`
+
+此时npm的镜像需要是官方镜像`npm config set registry https://registry.npmjs.org`
+
+另外我们可以创建类似`@akara/package`这样的库，这是属于用户作用域的包，默认是私有的。而我们不能直接发布私有包，因此我们需要使用以下代码来发布
+
+``` shell
+npm publish --access public
+```
+
+
+
+当我们发布一个npm库时，通常目的是发布构建后的文件，所以我们需要控制哪些文件可以被发布，哪些文件不会被发布。
+
+1. `.gitignore`中的文件不会被发布
+2. `.npmignore`中的文件不会被发布
+3. `package.json`中的`files`字段指定哪些文件会被发布
+
+
+
 ### 事件循环
 
 ##### 宏/微任务，队列
@@ -742,13 +789,3 @@ processLineByLine();
 
 
 
-当我们写完一个包，可以通过以下两个命令发布包。
-
-> npm的镜像源好像必须是官方源
->
-> npm config set registry https://registry.npmjs.org
-
-``` shell
-$npm login #登录npmjs
-$npm publish #发布包
-```
