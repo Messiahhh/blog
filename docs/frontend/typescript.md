@@ -48,6 +48,61 @@ let fruits = {
 
 
 
+如果想让对象的所有属性都有这样的表现，可以使用`const`断言
+
+``` typescript
+const o = {
+    name: 'akara' // type为string
+} 
+
+const o = {
+    name: 'akara' // type为'akara'，并且为readonly
+} as const
+
+
+const o = {
+    age: 20
+} as const
+let b: typeof o.age = 30
+// error: Type '30' is not assignable to type '20'
+
+const o = {
+    age: 20
+} as const
+o.age = 30
+// error: Cannot assign to 'age' because it is a read-only property
+```
+
+
+
+另外，以下代码会报错。
+
+``` typescript
+function sum<T extends number>(a: T, b: T): T {
+    return (a + b) as T
+}
+
+let arr = [1, 2]
+sum(...arr) // error: Expected 2 arguments, but got 0 or more
+```
+
+
+
+这是因为数组`arr`的长度是为止的，而`sum`函数只接受两个参数。可以使用`const`断言解决这个问题。
+
+``` typescript
+function sum<T extends number>(a: T, b: T): T {
+    return (a + b) as T
+}
+
+let arr = [1, 2] as const
+sum(...arr)
+```
+
+此时，arr的类型为 `readonly [1, 2]`（元组）
+
+
+
 ##### tsconfig.json
 
 很多项目的根目录下都存在`tsconfig.json`文件，也就是`TypeScript`的配置文件，当我们使用`tsc`命令来编译代码的时候，会向上层目录中寻找该配置文件。
