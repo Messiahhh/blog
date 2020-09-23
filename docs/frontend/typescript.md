@@ -4,6 +4,123 @@ sidebarDepth: 4
 
 ## TypeScript
 
+
+
+### 工具类型实现
+
+##### `Partial<T>`
+
+``` typescript
+// example
+interface Todo {
+  title: string;
+  description: string;
+}
+
+function updateTodo(todo: Todo, fieldsToUpdate: Partial<Todo>) {
+  return { ...todo, ...fieldsToUpdate };
+}
+
+const todo1 = {
+  title: "organize desk",
+  description: "clear clutter"
+};
+
+const todo2 = updateTodo(todo1, {
+  description: "throw out trash"
+});
+
+// implement
+type Partial<T> = {
+    [P in keyof T]?: T[P]
+}
+```
+
+
+
+##### `Readonly<T>`
+
+``` typescript
+type Readonly<T> = {
+    readonly [P in keyof T]: T[P]
+}
+```
+
+
+
+##### `Pick<T, K>`
+
+``` typescript
+// example
+interface Todo {
+  title: string;
+  description: string;
+  completed: boolean;
+}
+
+type TodoPreview = Pick<Todo, "title" | "completed">;
+
+const todo: TodoPreview = {
+  title: "Clean room",
+  completed: false
+};
+
+// implement
+type Pick<T, K extends keyof T> = {
+    [P in K]: T[P]
+}
+```
+
+
+
+##### `Exclude<T, U>`
+
+``` typescript
+// example
+type T0 = Exclude<"a" | "b" | "c", "a">; // "b" | "c"
+type T1 = Exclude<"a" | "b" | "c", "a" | "b">; // "c"
+type T2 = Exclude<string | number | (() => void), Function>; // string | number
+
+// implement
+// extends搭配 ?: 运算符使用
+type Exclude<T, U> = T extends U ? never : T;
+
+// 相当于: type A = 'a' 
+type A = Exclude<'x' | 'a', 'x' | 'y' | 'z'>
+```
+
+
+
+##### Omit<T, K>
+
+``` typescript
+// example
+interface Todo {
+  title: string;
+  description: string;
+  completed: boolean;
+}
+
+type TodoPreview = Omit<Todo, "description">;
+
+const todo: TodoPreview = {
+  title: "Clean room",
+  completed: false
+};
+
+// implement
+
+type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
+// or
+type Omit<T, K> = {
+    [P in Exclude<keyof T, K>]: T[P]
+}
+```
+
+
+
+
+
 ### 值得注意的问题
 
 ##### string 和 literal string
