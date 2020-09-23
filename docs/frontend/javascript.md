@@ -34,6 +34,10 @@ s = null;
 2. `===` 不会进行类型转换，但是`NaN`不等于自身，以及`+0`等于`-0 `
 3. `Object.is()` 完全相等
 
+##### nullish
+
+`||` 用来判断`falsey`值，但有的时候我们的变量可能是0或者false。可以使用`??`来判断`nullish`值（`undefined`或`null`）
+
 
 
 ### 数组
@@ -742,6 +746,16 @@ var re = /\w+/;
 ```
 
 
+
+字符串的`match`可以获取所有匹配正则的结果，但获取不到对应的捕获值。通常想捕获都是用正则表达式的`exec`方法，但要捕获全部的话需要进行循环`exec`。
+
+`es2020`新增了一个字符串方法`matchAll`，相当于循环执行了`exec`。
+
+``` js
+const reg = /[a-c]/g
+const str = 'abc'
+for (let i of str.matchAll(reg)) console.log(i)
+```
 
 
 
@@ -2303,3 +2317,39 @@ class People {
 const p = new People()
 console.log(p.name)
 ```
+
+
+
+``` js
+// 执行顺序 1 3 4 2
+function f() {
+  console.log(1);
+  return function (
+    target,
+    key,
+    descriptor,
+  ) {
+    console.log(2);
+  };
+}
+
+function g() {
+  console.log(3);
+  return function (
+    target,
+    key,
+    descriptor,
+  ) {
+    console.log(4);
+  };
+}
+
+class C {
+  @f()
+  @g()
+  method() {}
+}
+
+// @f @g test 相当于数学中的 f(g(test))
+```
+

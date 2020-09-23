@@ -4,7 +4,9 @@ sidebarDepth: 4
 
 ## TypeScript
 
-> 语法网上有，我就讲点别的东西
+### 值得注意的问题
+
+##### string 和 literal string
 
 ``` typescript
 // 报错
@@ -16,39 +18,11 @@ const fruits1 = 'apple'
 const Fruits1: 'orange' | 'apple' = fruits1
 ```
 
-发现直接用let声明的字符串的类型为string，而通过const声明的字符串的类型为字符串字面量（本例中为字符串字面量'apple'），有因为字符串字面量是继承于字符串的，所以把类型为字符串的变量赋值给类型为字面量的变量会出错。
-
-另外，当我们声明一个对象时，比如以下代码
-
-``` typescript
-let fruits = {
-   name: 'apple'
-}
-```
-
-此时该变量的属性name的类型为string
-
-而有的时候，我们想要完成以下操作，会报错
-
-``` typescript
-const Fruits: {
-   name: 'orange' | 'apple'
-} = fruits
-```
-
-这是由于string类型的值无法复制给字面量类型的值。
-
-这个时候可以使用断言。
-
-``` typescript
-let fruits = {
-   name: 'apple' as 'apple'
-}
-```
+发现直接用let声明的字符串的类型为string，而通过const声明的字符串的类型为字符串字面量（本例中为字符串字面量'apple'）
 
 
 
-如果想让对象的所有属性都有这样的表现，可以使用`const`断言
+##### const 断言
 
 ``` typescript
 const o = {
@@ -75,7 +49,7 @@ o.age = 30
 
 
 
-另外，以下代码会报错。
+以下代码会报错
 
 ``` typescript
 function sum<T extends number>(a: T, b: T): T {
@@ -85,8 +59,6 @@ function sum<T extends number>(a: T, b: T): T {
 let arr = [1, 2]
 sum(...arr) // error: Expected 2 arguments, but got 0 or more
 ```
-
-
 
 这是因为数组`arr`的长度是为止的，而`sum`函数只接受两个参数。可以使用`const`断言解决这个问题。
 
@@ -103,7 +75,108 @@ sum(...arr)
 
 
 
-##### tsconfig.json
+
+
+##### intersection 和 indexed access type
+
+``` typescript
+// 发现这样的写法不行
+type test = {
+    [K in 'a' | 'b' | 'c']?: number;
+    name: string;
+}
+
+// 必须得这样
+type test = {
+    [K in 'a' | 'b' | 'c']?: number
+} & {
+    name: string,
+}
+```
+
+
+
+##### subtraction
+
+``` typescript
+interface test {
+    one?: string;
+    two?: string
+}
+
+let b: {
+    [T in keyof test]-?: test[T]
+}
+```
+
+
+
+##### indexed access type
+
+``` typescript
+// 其他代码笔记
+interface test {
+    [b: string]: string,
+}
+
+let a: keyof test // string | number
+
+
+
+let b: string[][number] = '123'
+
+interface test {
+    [a: number]: string,
+    [b: string]: string,
+    ccc: number // 不能是number
+}
+
+let a: test = {
+    1: '111',
+    2: '222',
+    '3': '333'
+}
+
+let c: keyof test // 'number' | 'string'
+
+let b: test[number]
+```
+
+
+
+
+
+### Follow TypeScript Version
+
+#### 4.0
+
+##### Variadic Tuple Types
+
+``` typescript
+function tail<T extends any[]>(arr: readonly [any, ...T]) {
+  const [_ignored, ...rest] = arr;
+  return rest;
+}
+
+
+// spreads
+type Strings = [string, string];
+type Numbers = [number, number];
+
+type StrStrNumNumBool = [...Strings, ...Numbers, boolean];
+```
+
+
+
+##### labeld tuple
+
+``` typescript
+type Range = [start: number, end: number];
+```
+
+
+
+### tsconfig.json
 
 很多项目的根目录下都存在`tsconfig.json`文件，也就是`TypeScript`的配置文件，当我们使用`tsc`命令来编译代码的时候，会向上层目录中寻找该配置文件。
 
@@ -157,9 +230,7 @@ declare module 'module-name' {
 
 
 
-
-
-##### 随手记录
+### 随手记录
 
 ``` typescript
 const test = <T extends unknown>(a: T): T[] => {
