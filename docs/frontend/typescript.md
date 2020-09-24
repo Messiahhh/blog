@@ -38,6 +38,16 @@ type Partial<T> = {
 
 
 
+##### `Require<T>`
+
+``` typescript
+type Require<T> = {
+    [P in keyof T]-?: T[P]
+}
+```
+
+
+
 ##### `Readonly<T>`
 
 ``` typescript
@@ -91,6 +101,16 @@ type A = Exclude<'x' | 'a', 'x' | 'y' | 'z'>
 
 
 
+##### Extract<T, U>
+
+``` typescript
+type Extract<T, K> = T extends K ? T : never
+```
+
+
+
+
+
 ##### Omit<T, K>
 
 ``` typescript
@@ -116,6 +136,62 @@ type Omit<T, K> = {
     [P in Exclude<keyof T, K>]: T[P]
 }
 ```
+
+
+
+##### `Record<K, T>`
+
+``` typescript
+type _Record<K extends keyof any, T> = {
+    [P in K]: T
+}
+```
+
+
+
+##### `NonNullable<T>`
+
+``` typescript
+type NonNullable<T extends keyof any> = T extends null | undefined ? never : T
+```
+
+
+
+##### `Parameters<T>`
+
+``` typescript
+// infer 关键字
+type Parameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? P : never;
+```
+
+
+
+##### `ReturnType<T>`
+
+``` typescript
+// infer 关键字
+type ReturnType<T extends (...args: any) => any> = T extends (...args: any) => infer R ? R : never
+```
+
+
+
+##### `ConstructorParameters<T>`
+
+``` typescript
+type ConstructorParameters<T extends new (...args: any) => any> = T extends new (...args: infer P) => any ? P : never;
+```
+
+
+
+##### `InstanceType<T>`
+
+``` typescript
+type InstanceType<T extends new (...args: any) => any> = T extends new (...args: any) => infer R ? R : any;
+```
+
+
+
+
 
 
 
