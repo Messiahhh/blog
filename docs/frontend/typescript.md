@@ -101,7 +101,7 @@ type A = Exclude<'x' | 'a', 'x' | 'y' | 'z'>
 
 
 
-##### Extract<T, U>
+##### `Extract<T, U>`
 
 ``` typescript
 type Extract<T, K> = T extends K ? T : never
@@ -111,7 +111,7 @@ type Extract<T, K> = T extends K ? T : never
 
 
 
-##### Omit<T, K>
+##### `Omit<T, K>`
 
 ``` typescript
 // example
