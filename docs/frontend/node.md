@@ -789,3 +789,21 @@ processLineByLine();
 
 
 
+##### puppeteer
+
+使用`puppeteer.connect`来复用已启动的浏览器进程。
+
+1. 启动Chrome的时候加上`--remote-debugging-port=9222 `，重启浏览器
+
+2. 访问`http://127.0.0.1:9222/json/version`拿到`webSocketDebuggerUrl`字段
+
+3. ``` js
+   const url = 'ws://127.0.0.1:9222/devtools/browser/81daad69-fb53-49ea-9f97-3683b73afea0'
+   const browser = await puppeteer.connect({
+       browserWSEndpoint: url,
+   });
+   ```
+
+   
+
+参考：https://medium.com/@jaredpotter1/connecting-puppeteer-to-existing-chrome-window-8a10828149e0

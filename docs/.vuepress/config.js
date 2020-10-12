@@ -25,7 +25,7 @@ module.exports = {
         ['link', { rel: 'icon', href: '/favicon.ico' }]
     ],
     markdown: {
-        extractHeaders: [ 'h2', 'h3', 'h4', 'h5' ]
+        extractHeaders: ['h2', 'h3', 'h4', 'h5']
     },
     plugins: [
         '@vuepress/back-to-top',
@@ -86,6 +86,7 @@ module.exports = {
                 'linux',
                 'websocket',
                 'php',
+                '其他'
             ],
             '/mianshi/': [
                 '',

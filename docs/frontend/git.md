@@ -73,3 +73,16 @@ git rebase feature
 ![git rebase](https://upload-images.jianshu.io/upload_images/305877-467ba180733adca1.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp)
 
 git merge 保存了完成的历史记录，而git rebase 则尽量简化了历史记录（重写了历史记录）。
+
+
+
+##### 合并commit
+
+依靠`git rebase -i`来合并美化`commit`记录
+
+``` shell
+git rebase -i xxxx # commit 号
+git rebase -i HEAD~3 # 或者这种写法
+```
+
+之后在Vim里把对应的pick字段改成squash，再之后修改`commit msg`即可。
