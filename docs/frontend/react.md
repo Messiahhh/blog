@@ -945,6 +945,146 @@ const cb = useMemo(() => {
 
 
 
+##### Hook的闭包陷阱
+
+在学习Hook的过程中，我们可能会听到这样的名词：“闭包陷阱”。那么什么是闭包陷阱呢，我们可以看一下以下两个代码的例子。
+
+``` js
+// 测试代码1
+export default function Test1() {
+    const [count, setCount] = useState(0);
+    useEffect(() => {
+        setInterval(() => {
+            console.log(count)
+        }, 1000)
+    }, []) // 空数组
+
+    return (
+        <div>
+            {count}
+            <button onClick={() => setCount(10)}>点我</button>
+        </div>
+    )
+}
+
+// 测试代码2
+export default function Test2() {
+    const [count, setCount] = useState(0)
+    const fn = useCallback(() => {
+        console.log(count)
+    }, []) // 空数组
+    return (
+        <div>
+            {count}
+            <button onClick={() => setCount(100)}>点我</button>
+            <button onClick={fn}>输出</button> // 输出的是0而不是100
+        </div>
+    )
+}
+```
+
+首先看第一个例子，看起来很简单。组件挂载后运行一个定时器周期输出`count`的值。当我们点击按钮后，`count`从0变成100，这时候定时器输出的却依然是0而不是100。
+
+再看第二个例子。我们通过`useCallback`创建一个函数，这个函数的作用是输出`count`的值。当我们点击按钮后，`count`从0变成100，这时候执行之前的函数，输出的却也是0而不是100。
+
+
+
+简单解释一下。
+
+首先每次操作`count`之后，函数组件都会重新调用一次来渲染页面，这是关键的地方。
+
+对于第一个例子，函数组件第一次调用时创建一个定时器，这个定时器引用了当前函数作用域的`count`变量。因此当函数第二次被调用时，第一个函数作用域下的定时器输出了第一个函数作用域的变量`count`的值，也就是0。
+
+对于第二个例子，函数组件第一次调用时通过`useCallback`创建了一个函数`fn`，这个函数`fn`引用了第一个函数作用域下的`count`变量，由于依赖的是空数组（或者说不依赖于其他值），当函数第二次被调用时，并不会创建一个新的函数`fn`，而是得到一个引用和`fn`相同的函数。所以，在第二个函数作用域下的函数`fn`，引用和第一个函数作用域的`fn`是相同的，所以最后输出的结果也是第一个函数作用域下的`count`，也就是0。
+
+
+
+那么想要解决以上问题，只需要让`useCallback`创建的函数依赖某个值即可。
+
+``` js
+const fn = useCallback(() => {
+    console.log(count)
+}, [count]) // 空数组
+```
+
+这样子，当函数组件第二次被调用后，根据对于前后的依赖值`count`，发现`count`发现变化了，这时候就会重新创建一个新的函数`fn`，此时的函数`fn`的引用和第一次创建的`fn`的引用是不同的。因此这次的函数`fn`所引用的变量`count`，是第二个函数作用域的变量`count`，也就是100。
+
+
+
+以前有聊过`useCallback`的作用，通常函数组件每次调用都会生成一个新的作用域，所以可能会经常重复的销毁并生成新的内部函数，造成浪费。`useCallback`允许我们，即使函数组件重新调用，我们也可以得到引用相同的内部函数，除了不会浪费性能这点外，因为引用不同，即使内部函数作为`props`传递给子组件，子组件也不会重新渲染。
+
+
+
+但我们也可以看到，为了解决以上的“闭包陷阱”的问题，我们实际上在每次函数组件重新调用之后，都重新创建了内部函数，而`useCallback`最初的理念就是避免这种情况。
+
+在`react`的官方文档中，确实提供了一种方式来解决类似的问题，它所使用的是`useRef`，其实原理很简单。
+
+``` js
+function Test3() {
+  const [count, setCount] = useState(0);
+  const Ref = useRef();
+
+  useEffect(() => {
+    Ref.current = count; 
+  });
+
+  const fn = useCallback(() => {
+    const currentCount = Ref.current; 
+    console.log(currentCount);
+  }, [Ref]); // 
+
+  return (
+    <>
+      { count }
+      <button onClick={() => setCount(100)}>点我</button>
+      <button onClick={fn}>输出</button>
+    </>
+  );
+}
+```
+
+
+
+而在`ahooks`也提供了一个`usePersistFn`提供给我们使用。
+
+``` js
+export type noop = (...args: any[]) => any;
+
+function usePersistFn<T extends noop>(fn: T) {
+  const ref = useRef<any>(() => {
+    throw new Error('Cannot call function while rendering.');
+  });
+
+  ref.current = fn;
+
+  const persistFn = useCallback(((...args) => ref.current(...args)) as T, [ref]);
+
+  return persistFn;
+}
+
+// 使用
+const [count, setCount] = useState(0);
+const showCountPersistFn = usePersistFn(() => {
+message.info(`Current count is ${count}`);
+});
+```
+
+本质是`ref`的`current`不断被赋予新的函数`fn`，所以可以拿到新的函数作用域下的值。
+
+
+
+参考链接：
+
+[React Hook原理](https://github.com/brickspert/blog/issues/26)
+
+[React useEffect的陷阱](https://zhuanlan.zhihu.com/p/84697185)
+
+
+
+
+
+
+
 
 
 ### 状态逻辑复用
