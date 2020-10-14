@@ -86,7 +86,7 @@ module.exports = {
                 'linux',
                 'websocket',
                 'php',
-                '其他'
+                '其它'
             ],
             '/mianshi/': [
                 '',
