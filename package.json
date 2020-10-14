@@ -14,9 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "vuepress": "1.4.0",
-    "vue-router": "3.4.5",
-    "@vuepress/plugin-back-to-top": "^1.3.0"
+    "vuepress": "1.4.0"
   },
   "devDependencies": {}
 }
