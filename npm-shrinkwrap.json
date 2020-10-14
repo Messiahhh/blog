@@ -8979,6 +8979,11 @@
                 "vue-style-loader": "^4.1.0"
             }
         },
+        "vue-router": {
+            "version": "3.4.5",
+            "resolved": "http://r.tnpm.oa.com/vue-router/-/vue-router-3.4.5.tgz",
+            "integrity": "sha512-ioRY5QyDpXM9TDjOX6hX79gtaMXSVDDzSlbIlyAmbHNteIL81WIVB2e+jbzV23vzxtoV0krdS2XHm+GxFg+Nxg=="
+        },
         "vue-server-renderer": {
             "version": "2.6.12",
             "resolved": "http://r.tnpm.oa.com/vue-server-renderer/-/vue-server-renderer-2.6.12.tgz",
