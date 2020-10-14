@@ -2165,6 +2165,29 @@ fetch(url, options).then(function(response) {
 })
 ```
 
+通常我们可以使用`Content-Disposition: attachment`响应头部来下载资源。
+
+不过似乎我们只能靠`a`标签/`form`表单/`window.open`来下载资源，如果使用`ajax`/`fetch`请求资源，并不会默认下载资源。
+
+不过想要使用`fetch`来下载资源依然是有办法的。
+
+``` js
+fetch()
+.then(res => res.blob())
+.then(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.download = 'example.xlsx';
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+})
+```
+
+
+
+
+
 ##### XHR（AJAX）和Fetch的区别
 
 1. AJAX和Fetch发送同源请求时都默认携带Cookie，跨域请求则都默认不携带Cookie。
