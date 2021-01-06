@@ -7,9 +7,9 @@ tagline: Never Knows Best
 actionText: 前端博客 →
 actionLink: /frontend/index.html
 features:
-- title: 求Star
-  details: 不要和我说下次一定啊岂可休！
-- title: Wechat
+- title: 关于我
+  details: 克莱登大学计算机学院大四，勉强是一名ByteDancer
+- title: My wechat
   details: a616348105
-footer: MIT Licensed | Copyright © 2020-present Akara
+footer: MIT Licensed | Copyright © 2021-present Akara
 ---

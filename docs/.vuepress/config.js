@@ -19,7 +19,7 @@ function getSidebar(dir) {
 module.exports = {
     base: '/blog/',
     logo: '/assets/img/logo.jpg',
-    title: 'Akara的博客',
+    title: '菜鸟向前端指南',
     description: 'Fooly Cooly',
     head: [
         ['link', { rel: 'icon', href: '/favicon.ico' }]
@@ -49,14 +49,14 @@ module.exports = {
                 text: '杂记',
                 link: '/gossip/'
             },
-            {
-                text: '随笔',
-                link: 'https://messiahhh.github.io/'
-            },
-            {
-                text: '简历',
-                link: 'https://messiahhh.github.io/resume/'
-            }
+            // {
+            //     text: '随笔',
+            //     link: 'https://messiahhh.github.io/'
+            // },
+            // {
+            //     text: '简历',
+            //     link: 'https://messiahhh.github.io/resume/'
+            // }
         ],
         sidebar: {
             '/frontend/': [
@@ -86,12 +86,13 @@ module.exports = {
                 'linux',
                 'websocket',
                 'php',
-                '其它'
+                '代码段记录'
+                // '其它'
             ],
             '/mianshi/': [
                 '',
             ],
-            '/gossip/': getSidebar('gossip')
+            // '/gossip/': getSidebar('gossip')
         },
         lastUpdated: '上次更新时间',
         // 一些github的配置

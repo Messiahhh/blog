@@ -392,7 +392,7 @@ const path = require('path')
 
 ##### __dirname
 
-返回当前文件所在的绝对路径
+返回当前文件所在的**绝对路径**
 
 ##### path.resolve
 
@@ -441,7 +441,63 @@ const homedir = os.homedir() // 获取用户目录
 
 ##### process.cwd()
 
-获取执行脚本时所在的目录
+获取执行node脚本时所在的目录
+
+
+
+假设有以下目录结构，把`a.js`看作我们的业务代码，把`folder`文件夹看作外部库，会发现这是个很常见的场景。
+
+``` js
+- root
+    - a.js
+    - folder
+        - b.js
+        - test.txt
+```
+
+``` js
+// a.js 
+const b = require('./folder/b.js')
+
+// b.js
+const fs = require('fs')
+fs.readFile('./test.txt', 'utf8', (err, data) => {
+    console.log(data)
+})
+
+// test.txt
+12345
+```
+
+
+
+当我们在`root`目录执行`node app.js`时，输出`undefined`，并非我们想要的结果；而当我们进入`folder`目录执行`node ../a.js`输出`12345`。
+
+也就是说，我们执行了相同的代码，却得到了不同的结果。原因是`b.js`中的相对路径可以看成是相对于`process.cwd()`，因此当我们在`root`目录运行node时，路径为`root/test.txt`；当我们在folder目录运行node时，路径为`root/folder/test.txt`。
+
+由此可见以上代码的路径写法是有问题的，实际上大部分库都借助了`__dirname`，从而拿到绝对路径的文件资源
+
+``` js
+// 合理的写法 b.js 
+const fs = require('fs')
+fs.readFile(`${__dirname}/test.txt`, 'utf8', (err, data) => { 
+    console.log(data)
+})
+
+// 两种写法都行
+`${__dirname}/test.txt`
+path.join(__dirname, 'txt.txt')
+```
+
+
+
+
+
+
+
+
+
+
 
 
 
