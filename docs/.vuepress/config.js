@@ -73,26 +73,26 @@ module.exports = {
                 '前端工程化',
                 '计算机网络',
                 '前端安全',
-                '网站优化',
                 '错误监控',
-                '设计模式',
+                '网站优化',
                 '数据结构',
                 '排序',
                 '编程题',
-                '面试题',
-                'git',
-                'mysql',
+                '设计模式',
+                // '面试题',
                 'mongodb',
+                'mysql',
+                'git',
                 'linux',
                 'websocket',
+                '代码段记录',
                 'php',
-                '代码段记录'
                 // '其它'
             ],
             '/mianshi/': [
                 '',
             ],
-            // '/gossip/': getSidebar('gossip')
+            '/gossip/': getSidebar('gossip')
         },
         lastUpdated: '上次更新时间',
         // 一些github的配置

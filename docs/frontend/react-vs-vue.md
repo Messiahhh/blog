@@ -1,7 +1,7 @@
 ---
 sidebarDepth: 4
 ---
-## React和Vue的对比
+## React-vs-Vue
 
 > 本节待完善
 

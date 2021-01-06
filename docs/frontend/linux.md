@@ -1,7 +1,7 @@
 ---
 sidebarDepth: 4
 ---
-## Linux相关
+## Linux
 
 > 呜呜呜，以前明明看过《Linux就是这个范》，感觉忘了好多。
 >
