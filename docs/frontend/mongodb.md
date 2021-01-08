@@ -48,6 +48,8 @@ const p = new Model({
 
 ``` js
 { _id: ObjectId("5ff59ae87b43e51eccf83237"), ...} // _id是个对象
+
+await Model.findById('5ff59ae87b43e51eccf83237') // 可以找到对应的数据 
 ```
 
 

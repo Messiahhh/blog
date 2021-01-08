@@ -461,6 +461,121 @@ class App extends React.Component {
 
 父组件通过props把自己的函数传递给子组件，子组件内部可直接调用，实现子组件向父组件通信。
 
+
+
+``` js
+class Parent extends React.Component {
+    state = {
+        name: 'akara'
+    }
+
+	obj = {
+        user: 'aaa',
+        psw: 123456
+    }
+    render() {
+        return (
+        	<Child p1={this} p2={this.state} p3={this.obj}/> // 用来测试所以放了三个prop..
+        )
+    }
+}
+
+class Child extends React.Component {
+    // ...
+}
+```
+
+父组件可以通过Props传值给子组件使用，子组件后拿到Props后**可以直接操作父组件的数据**，但此时即使修改了父组件的数据也**不会触发父组件的重新渲染**。
+
+``` js
+// 子组件中修改props，父组件的obj.user会被修改，但不会重渲染
+this.props.p2.name = 'bbb'
+```
+
+所以在子组件想**修改父组件数据的同时触发父组件的渲染**，应该用下面这种常用的方法。
+
+``` react
+// 父组件
+class Parent extends React.Component {
+	handleChange = () => {
+        this.setState({name: 'bbb'})
+    }
+    render() {
+        return (
+            <Child p1={this} p2={this.state} p3={this.obj} handleChange={this.handleChange}/>
+        )
+    }
+}
+
+// 子组件
+this.props.handleChange()
+```
+
+> 一个组件什么时候会重新渲染？基本只有两种情况，一个是通过调用setState修改state时会重新渲染；还有一个是当父组件重新渲染时（如果子组件是纯组件则还需要浅对比一次props，如果前后浅对比发生了变化，则重新渲染）
+
+
+
+
+
+> 来观察一个代码例子。这里把state作为props传下去，并通过调用了this.setState。实际上这个this.state的引用会被改变！所以实际上哪怕Child组件是纯组件也会重新渲染，因为props.p 前后的引用不一致了！！！
+>
+> 类似于
+>
+> this.state = Object.assign(this.state, {name: 'aaa'}) 
+>
+> 一个要点是this.state被重新赋值了，另一个要点是Object.assign的浅合并
+
+``` js
+state = {
+    name: 'aaa'
+}
+
+this.setState({name: 'aaa'}) // this.state重新被赋值，所以会重新渲染
+
+<Child p={this.state} /> 
+    
+// -------- 分割 -------
+state = {
+    o: {
+        name: 'aaa'
+    }
+}
+
+this.setState({o: {name: 'aaa'}}) // 浅合并，this.state.o得到新的引用，所以也会重新渲染 
+<Child p={this.state.o} /> 
+```
+
+> 另外，如果父组件只是改了要传给子组件的值，但父组件没有重新渲染时，此时是不符合上面所说的第二个条件，因此子组件并不会重新渲染（不过子组件拿到的props确实发生了变化，毕竟引用类型）。比如：
+
+``` react
+// 父组件
+// 子组件通过props handleChange修改父组件的实例数据（不是state数据），没有触发父组件的重渲染
+class Parent extends React.Component {
+    obj = {
+        user: 'akara'
+    }
+	handleChange = () => {
+        this.obj.user 
+    }
+    render() {
+        return (
+            <Child p1={this} p2={this.state} p3={this.obj} handleChange={this.handleChange}/>
+        )
+    }
+}
+
+// 子组件
+this.props.handleChange()
+```
+
+
+
+
+
+
+
+
+
 ###### 非父子组件通信
 
 可以通过`events`实现发布-订阅。也可以借助于Context。
@@ -1004,7 +1119,7 @@ export default function Test2() {
 ``` js
 const fn = useCallback(() => {
     console.log(count)
-}, [count]) // 空数组
+}, [count]) 
 ```
 
 这样子，当函数组件第二次被调用后，根据对于前后的依赖值`count`，发现`count`发现变化了，这时候就会重新创建一个新的函数`fn`，此时的函数`fn`的引用和第一次创建的`fn`的引用是不同的。因此这次的函数`fn`所引用的变量`count`，是第二个函数作用域的变量`count`，也就是100。
