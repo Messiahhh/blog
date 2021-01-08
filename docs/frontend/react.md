@@ -494,7 +494,7 @@ this.props.p2.name = 'bbb'
 
 所以在子组件想**修改父组件数据的同时触发父组件的渲染**，应该用下面这种常用的方法。
 
-``` react
+``` jsx
 // 父组件
 class Parent extends React.Component {
 	handleChange = () => {
@@ -525,6 +525,8 @@ this.props.handleChange()
 >
 > 一个要点是this.state被重新赋值了，另一个要点是Object.assign的浅合并
 
+
+
 ``` js
 state = {
     name: 'aaa'
@@ -547,7 +549,7 @@ this.setState({o: {name: 'aaa'}}) // 浅合并，this.state.o得到新的引用�
 
 > 另外，如果父组件只是改了要传给子组件的值，但父组件没有重新渲染时，此时是不符合上面所说的第二个条件，因此子组件并不会重新渲染（不过子组件拿到的props确实发生了变化，毕竟引用类型）。比如：
 
-``` react
+``` jsx
 // 父组件
 // 子组件通过props handleChange修改父组件的实例数据（不是state数据），没有触发父组件的重渲染
 class Parent extends React.Component {
