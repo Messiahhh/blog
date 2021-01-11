@@ -1646,3 +1646,123 @@ function User() {
 "start:dev": "cross-env REACT_APP_NODE_ENV=development react-scripts start", // cross-env 用来跨操作系统设置环境变量
 ```
 
+
+
+### antd
+
+> 虽然说这种组件库完全被必要背，但常见组件还是尽量多熟悉一点，提高开发效率，提前下班时间。
+
+##### Input
+
+``` jsx
+// 1. 组件存在内部值，当输入新值的时候，会触发事件，将e.target.value的值赋给内部值
+<Input />  
+
+// 2. 数据驱动，通过我们的数据来控制组件的内部值
+<Input value={count} onChange={(e) => this.setState({count: e.target.value})}/>
+
+```
+
+##### Select
+
+``` jsx
+// 1. 
+<Select value="香蕉" >
+    <Option value="苹果">苹果</Option>
+    <Option value="香蕉">香蕉</Option>
+    <Option value="橘子">橘子</Option>
+</Select>
+
+// 2. 数据驱动
+<Select value={v} onChange={(value) => this.setState({v: value})}> // 这里的参数不是事件e
+    <Option value="苹果">苹果</Option>
+    <Option value="香蕉">香蕉</Option>
+    <Option value="橘子">橘子</Option>
+</Select>
+```
+
+##### Form
+
+``` jsx
+// 3. 依然是数据驱动，不过不需要我们自己维护数据了
+  <Form
+    name="data"
+    onFinish={this.handleFinish}
+  >
+    <Form.Item	
+      label="用户名"
+      name="username"
+      rules={[{required: true, message: 'Please input your username!'}]}
+    >
+      <Input />
+    </Form.Item>
+    <Form.Item
+      label="密码"
+      name="password"
+    >
+      <Input />
+    </Form.Item>
+    <Form.Item
+      label="性别"
+      name="sex"
+    >
+      <Select> {/* defaultValue不行 */}
+        <Option value="male">male</Option>
+        <Option value="female">female</Option>
+        <Option value="other">other</Option>
+      </Select>
+    </Form.Item>
+    <Form.Item>
+      <Button htmlType="submit">提交</Button>
+    </Form.Item>
+  </Form>
+```
+
+我们可以通过`getFieldsValue/setFieldsValue/resetFields`来获取/设置/清空表单字段的值。
+
+如果是`class`组件，则需要借助`ref`；如果是函数组件，则需要使用`Form.useForm`。
+
+``` jsx
+// class 组件
+myRef = React.createRef()
+// ...
+this.myRef.current.getFieldsValue()
+// ...
+<Form ref={myRef}>
+    
+// 函数组件
+const [form] = React.useForm()
+// ...
+form.getFieldsValue()
+// ...
+<Form form={form}>
+```
+
+###### Form布局
+
+首先，Form有三种基本布局方式`horizontal(default),vertical,inline`
+
+``` jsx
+<Form layout="inline"></Form>
+```
+
+其次，无论何种基本布局，都可以使用`labelCol/wrapperCol`来实现进一步的布局。这两个props既可以直接放在`Form`里应用给所有表单项，也可以放在单个`Form.Item`里应用给某一个表单项。
+
+``` jsx
+<Form
+	labelCol={{ span: 8 }}
+    wrapperCol={{ span: 14 }}
+>
+	<Form.Item></Form.Item>
+    <Form.Item></Form.Item>
+    <Form.Item
+    	labelCol={{ offset: 8 }}    
+    ></Form.Item>
+</Form>
+```
+
+`labelCol`用于表示`label`，`wrapperCol`用来表示`Form.Item`的内容（`Input/Select/Button`）。
+
+而他们的值是个对象，包含`span`和`offset`，`span`是值内容的宽度，而`offset`则表示左右的偏移度。
+
+另外，可以使用`labelAlign`来调整`label`的对齐方式，默认是`right`即右对齐。
