@@ -1766,3 +1766,55 @@ form.getFieldsValue()
 而他们的值是个对象，包含`span`和`offset`，`span`是值内容的宽度，而`offset`则表示左右的偏移度。
 
 另外，可以使用`labelAlign`来调整`label`的对齐方式，默认是`right`即右对齐。
+
+###### 嵌套结构
+
+表单的结构和接口的结构相对应的话，就无需自己处理数据的格式了。
+
+``` jsx
+<Item name="a"></Item>
+<Item name="b"></Item>
+<Item name={['c', 'c1']}></Item>
+<Item name={['c', 'c2']}></Item>
+
+
+// 结构
+- a: 1
+- b: 2
+- c
+  - c1: 3
+  - c2: 4
+```
+
+###### 数组结构
+
+``` jsx
+<Form.List name="userLists">
+      {(fields, {add}) => (
+        <>
+          {
+            fields.map(field => {
+              return (
+                <Space key={field.key}>
+                <Form.Item {...field}  name={[field.name, 'name']}>
+                 <Input />
+                 </Form.Item>
+                 <Form.Item {...field}  name={[field.name, 'psw']}>
+                   <Input />
+                 </Form.Item>
+               </Space>
+              )
+            })
+          }
+          <Form.Item>
+            <Button onClick={() => add()}>增加</Button>
+          </Form.Item>
+        </>
+      )}
+</Form.List>
+
+// 结构
+
+- userList: [{name: 'aaa', psw: 'bbb'}, {name: 'ccc', psw: 'ddd'}]
+```
+
