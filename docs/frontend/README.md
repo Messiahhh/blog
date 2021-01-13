@@ -133,3 +133,54 @@ res.statusCode = 301 // or 302
 res.setHeader('Location', 'https://messiahhh.github.io/blog')
 ```
 
+### HTML5
+
+> 介绍一些HTML5的用法
+
+##### 元素拖拽
+
+``` html
+<div class="contain"></div>
+<div class="el" draggable="true"></div> <!-- 使元素能够被拖拽 -->
+<script>
+    const contain = document.querySelector('.contain')
+	const el = document.querySelector('div')
+    el.addEventListener('dragstart', (e) => { // 当元素被拖拽时触发
+        console.log(e.target); // 被拖拽元素
+        e.dataTransfer.setData('message', 'hello')
+    })
+    
+    
+    contain.addEventListener('dragover', (e) => {
+        e.preventDefault()
+    })
+
+    contain.addEventListener('drop', (e) => {
+        e.preventDefault()
+        console.log(e.dataTransfer.getData('message'));
+    })
+</script>
+<!-- 事件触发了两次，两次的e.target不同，使用e.dataTransfer来传输数据 -->
+```
+
+##### 地理位置
+
+``` js
+navigator.geolocation.getCurrentPosition((position) => {
+    const {
+        latitude, // 纬度 
+        longitude // 经度
+    } = position.coords
+});
+```
+
+
+
+
+
+
+
+
+
+
+
