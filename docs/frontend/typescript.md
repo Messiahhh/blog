@@ -34,7 +34,7 @@ let num: number = u;
 
 ##### 数组
 
-######「类型 + 方括号」表示法
+###### 「类型 + 方括号」表示法
 
 > 数组只能包括同一种数据类型
 
@@ -270,19 +270,17 @@ tom.id = 9527;
 
 > Todo: 函数this
 
-##### 函数声明
+TypeScript中对函数的参数要求很严格，不能多输入参数，也不能少输入参数。
 
 ```ts
+// 函数声明
 function sum(x: number, y: number): number {
     return x + y;
 }
 ```
 
-注意，**输入多余的（或者少于要求的）参数，是不被允许的**（又是一处比JS严谨的地方）
-
-##### 函数表达式
-
 ```ts
+// 函数表达式
 let mySum = function (x: number, y: number): number {
     return x + y;
 };
@@ -297,6 +295,37 @@ let mySum: (x: number, y: number) => number = function (x: number, y: number): n
 ```
 
 在 TypeScript 的类型定义中，`=>` 用来表示函数的定义，左边是输入类型，需要用括号括起来，右边是输出类型。
+
+##### 函数类型
+
+有几种方式来表示函数的类型
+
+``` tsx
+let fn: (a: number) => void
+
+// 接口的形式
+let fn2: { 
+    (a: number): void,
+    id: number,
+    n: string
+}
+function A(a: number) {
+	
+}
+A.id = 1
+A.n = 'akara'
+
+fn2 = A
+
+
+
+```
+
+
+
+
+
+
 
 ##### 可选参数
 
@@ -336,9 +365,8 @@ let fn3: {
 
 ### 字面量类型
 
-##### 字符串字面量类型
-
 ```ts
+// 字符串字面量类型
 type EventNames = 'click' | 'scroll' | 'mousemove';
 function handleEvent(ele: Element, event: EventNames) {
     // do something
@@ -346,25 +374,17 @@ function handleEvent(ele: Element, event: EventNames) {
 
 handleEvent(document.getElementById('hello'), 'scroll');  // 没问题
 handleEvent(document.getElementById('world'), 'dbclick');
-```
 
-##### 数字字面量类型
-
-``` tsx
+// 数字字面量类型
 let aka: 1 | 2 | 3 = 2
-```
 
-##### 布尔字面量类型
-
-``` tsx
+// 布尔字面量类型
 let aka: true = true
 ```
 
 
 
-### Union and Intersection
-
-##### 联合类型（Union）
+### 联合类型（Union）
 
 联合类型（Union Types）表示取值可以为多种类型中的一种。
 
@@ -393,7 +413,7 @@ function getString(something: string | number): string {
 }
 ```
 
-##### 交叉类型（intersection）
+### 交叉类型（intersection）
 
 ``` tsx
 type a = {
@@ -413,8 +433,6 @@ let test: a & b = {
 
 
 ### 类
-
-##### public private 和 protected
 
 TypeScript 可以使用三种访问修饰符（Access Modifiers），分别是 `public`、`private` 和 `protected`。
 
@@ -441,9 +459,9 @@ class Animal {
 }
 ```
 
-##### readonly
 
-只读属性关键字，只允许出现在属性声明或索引签名或构造函数中。
+
+只读属性关键字`readonly`，只允许出现在属性声明或索引签名或构造函数中。
 
 ```ts
 class Animal {
@@ -498,15 +516,9 @@ class Cat extends Animal {
 let cat = new Cat('Tom');
 ```
 
-##### 类与接口
+##### 接口实现
 
-接口（Interfaces）不仅可以用于对「对象的形状（Shape）」进行描述。
-
-这一章主要介绍接口的另一个用途，对类的一部分行为进行抽象。
-
-实现（implements）是面向对象中的一个重要概念。一般来讲，一个类只能继承自另一个类，有时候不同类之间可以有一些共有的特性，这时候就可以把特性提取成接口（interfaces），用 `implements` 关键字来实现。这个特性大大提高了面向对象的灵活性。
-
-一个类可以实现多个接口
+接口除了用于描述对象的形状，还可以对类的一部分行为进行抽象
 
 ```tsx
 interface Alarm {
