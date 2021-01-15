@@ -270,23 +270,21 @@ tom.id = 9527;
 
 > Todo: 函数this
 
-TypeScript中对函数的参数要求很严格，不能多输入参数，也不能少输入参数。
+
 
 ```ts
 // 函数声明
 function sum(x: number, y: number): number {
     return x + y;
 }
-```
 
-```ts
 // 函数表达式
 let mySum = function (x: number, y: number): number {
     return x + y;
 };
 ```
 
-这是可以通过编译的，不过事实上，上面的代码只对等号右侧的匿名函数进行了类型定义，而等号左边的 `mySum`，是通过赋值操作进行类型推论而推断出来的。如果需要我们手动给 `mySum` 添加类型，则应该是这样：
+其中函数表达式的写法，我们只对右边的匿名函数进行了类型定义，并没有给出`mySum`的类型。此时会类型推导出`mySum`的类型，因此代码等价于：
 
 ```ts
 let mySum: (x: number, y: number) => number = function (x: number, y: number): number {
@@ -294,40 +292,90 @@ let mySum: (x: number, y: number) => number = function (x: number, y: number): n
 };
 ```
 
-在 TypeScript 的类型定义中，`=>` 用来表示函数的定义，左边是输入类型，需要用括号括起来，右边是输出类型。
-
-##### 函数类型
-
-有几种方式来表示函数的类型
+函数类型`(x: number, y: number) => number`中的`x`和`y`只是为了可读性，可以替换成任何其他名字，如：
 
 ``` tsx
-let fn: (a: number) => void
-
-// 接口的形式
-let fn2: { 
-    (a: number): void,
-    id: number,
-    n: string
+let mySum = (one: number, two: number) => number = function (x: number, y: number): number {
+    return x + y
 }
-function A(a: number) {
-	
-}
-A.id = 1
-A.n = 'akara'
-
-fn2 = A
-
-
-
 ```
 
 
 
+我们还可以使用接口的形式表示函数类型
 
+``` tsx
+let mySum: {
+    (x: number, y: number): number
+} = function (x: number, y: number): number {
+    return x + y
+}
+
+// 接口也可以继续拓展，如
+function A(x: number, y: number): number {
+    return x + y
+}
+
+A.id = 996
+A.name = 'akara'
+
+let mySum: {
+    (x: number, y: number): number;
+	id: number;
+	name: string
+} = A
+
+// 同时构造函数的类型也可以用接口的形式来表示
+class People {
+  name: string
+  id: number
+
+  constructor(name: string, id: number) {
+    this.name = name
+    this.id = id
+  }
+}
+
+
+let People2: {
+  new (name: string, id: number): People // class也可以当作类型
+} = People
+
+let p: People = new People('aka', 996)
+```
+
+不过，如果使用以下写法，则会报错！
+
+``` tsx
+// 感觉在ts中最好还是只用class，别用单纯的构造函数，免得坑多...
+interface PeopleType {
+  name: string;
+  id: number
+}
+
+function People (this: PeopleType, name: string, id: number) {
+    this.name = name
+    this.id = id
+}
+
+// 报错
+// Type '(this: PeopleType, name: string, id: number) => void' is not assignable to type 'new (name: string, id: number) => PeopleType'.
+//  Type '(this: PeopleType, name: string, id: number) => void' provides no match for the signature 'new (name: string, id: number): PeopleType'.(2322)
+let People2: {
+  new (name: string, id: number): PeopleType
+} = People
+
+
+// 报错
+// 'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.(7009)
+new People('aka', 996)
+```
 
 
 
 ##### 可选参数
+
+TypeScript中函数对参数的类型和长度的要求很严格，不允许传入更多/更少的参数。
 
 与接口中的可选属性类似，我们用 `?` 表示可选的参数：
 
@@ -343,25 +391,67 @@ let tomcat = buildName('Tom', 'Cat');
 let tom = buildName('Tom');
 ```
 
-函数类型
+##### 默认值
 
 ``` tsx
-let fn: (a: number) => void
-let fn2: {
-    (a: number): void
+function A(name = 'akara'): string { // or (name: string = 'akara') 
+    return name
 }
-    
-function A(a: number) {
-	
-}
-A.id = 1
-A.n = 'akara'
-let fn3: {
-    (a: number): void,
-    id: number,
-    n: string
-} = A
 ```
+
+### This
+
+``` tsx
+function fn() {
+    // 报错!
+    // 'this' implicitly has type 'any' because it does not have a type annotation.
+	console.log(this)
+}
+
+//-------------分割线-----------------
+
+let obj = {
+    fn() {
+        console.log(this) // { fn(): void; }
+    }
+}
+
+var fn2 = obj.fn
+window.fn2() // ok
+
+//-------------分割线-----------------
+
+let obj2 = {
+    // 报错！
+    // 'obj2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    fn(this: typeof obj) {
+        console.log(this) 
+    }
+}
+
+//-------------分割线-----------------
+
+type obj3Type = {
+    fn(): void
+}
+let obj3: obj3Type = {
+    fn(this: obj3Type) {
+        console.log(this) // obj3Type
+    }
+}
+
+var fn2 = obj3.fn
+window.fn2() // 
+
+
+
+function fn(this: typeof window) {
+    console.log(this)
+}
+
+```
+
+
 
 ### 字面量类型
 
@@ -433,6 +523,29 @@ let test: a & b = {
 
 
 ### 类
+
+``` ts
+// js中可以，ts必须设置初始值
+
+// Wrong! Property 'age' has no initializer and is not definitely assigned in the constructor
+class Person {
+    name: string;
+    age: number;
+}
+
+// Ok
+class Person {
+    name: string = 'aka';
+    age: number;
+    constructor(age: number) {
+        this.age = age
+    }
+}
+```
+
+
+
+
 
 TypeScript 可以使用三种访问修饰符（Access Modifiers），分别是 `public`、`private` 和 `protected`。
 
