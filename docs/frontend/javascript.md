@@ -1,6 +1,8 @@
 ---
 sidebarDepth: 4
 ---
+## JavaScript
+
 ##### typeof
 
 ``` js
