@@ -25,11 +25,23 @@ let n : null = null // null
 
 ```tsx
 // 这样不会报错
-let num: number = undefined;
+let num: number = undefined; // 不设置 --strictNullChecks时
 
 // 会报错
 let u: void;
 let num: number = u;
+```
+
+> However, when using the `--strictNullChecks` flag, `null` and `undefined` are only assignable to `unknown`, `any` and their respective types (the one exception being that `undefined` is also assignable to `void`). This helps avoid *many* common errors. In cases where you want to pass in either a `string` or `null` or `undefined`, you can use the union type `string | null | undefined`.
+>
+> Union types are an advanced topic that we’ll cover in a later chapter.
+>
+> > As a note: we encourage the use of `--strictNullChecks` when possible, but for the purposes of this handbook, we will assume it is turned off.
+
+根据官网的这段补充，可以知道如果设置了`--strictNullChecks`，`undefined`和`undefined`就不能赋值给`string`的变量了。不过这个时候我们依然可以这样：
+
+``` tsx
+let num: number | undefined = undefined
 ```
 
 ##### 数组
@@ -214,7 +226,8 @@ let tom: Person = {
 需要注意的是，**一旦定义了任意属性，那么确定属性和可选属性的类型都必须是它的类型的子集**
 
 ```ts
-// 报错！！！
+// 错误！
+// Property 'age' of type 'number | undefined' is not assignable to string index type 'string'
 interface Person {
     name: string;
     age?: number;
@@ -266,11 +279,84 @@ let tom: Person = {
 tom.id = 9527;
 ```
 
+
+
+### 字面量类型
+
+`string literal`是`string`的子集，`number literal`是`number`的子集，`boolean literal`是`boolean`的子集
+
+```ts
+// 字符串字面量类型
+type EventNames = 'click' | 'scroll' | 'mousemove';
+function handleEvent(ele: Element, event: EventNames) {
+    // do something
+}
+
+handleEvent(document.getElementById('hello'), 'scroll');  // 没问题
+handleEvent(document.getElementById('world'), 'dbclick');
+
+// 数字字面量类型
+let aka: 1 | 2 | 3 = 2
+
+// 布尔字面量类型
+let aka: true = true
+```
+
+
+
+### 联合类型（Union）
+
+联合类型（Union Types）表示取值可以为多种类型中的一种。
+
+```ts
+let value : string | number
+value = 'akara'
+value = 12345
+```
+
+当 TypeScript 不确定一个联合类型的变量到底是哪个类型的时候，我们**只能访问此联合类型的所有类型里共有的属性或方法**。
+
+```ts
+// 报错！！！
+function getLength(something: string | number): number {
+ return something.length;
+}
+```
+
+上例中，`length` 不是 `string` 和 `number` 的共有属性，所以会报错。
+
+访问 `string` 和 `number` 的共有属性是没问题的
+
+```ts
+function getString(something: string | number): string {
+ return something.toString();
+}
+```
+
+
+
+### 交叉类型（intersection）
+
+``` tsx
+type a = {
+  id: number
+}
+type b = {
+  name: string
+}
+
+let test: a & b = {
+  id: 2,
+  name: 'aa'
+}
+
+```
+
+
+
+
+
 ### 函数
-
-> Todo: 函数this
-
-
 
 ```ts
 // 函数声明
@@ -343,35 +429,6 @@ let People2: {
 
 let p: People = new People('aka', 996)
 ```
-
-不过，如果使用以下写法，则会报错！
-
-``` tsx
-// 感觉在ts中最好还是只用class，别用单纯的构造函数，免得坑多...
-interface PeopleType {
-  name: string;
-  id: number
-}
-
-function People (this: PeopleType, name: string, id: number) {
-    this.name = name
-    this.id = id
-}
-
-// 报错
-// Type '(this: PeopleType, name: string, id: number) => void' is not assignable to type 'new (name: string, id: number) => PeopleType'.
-//  Type '(this: PeopleType, name: string, id: number) => void' provides no match for the signature 'new (name: string, id: number): PeopleType'.(2322)
-let People2: {
-  new (name: string, id: number): PeopleType
-} = People
-
-
-// 报错
-// 'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.(7009)
-new People('aka', 996)
-```
-
-
 
 ##### 可选参数
 
@@ -449,73 +506,18 @@ function fn(this: typeof window) {
     console.log(this)
 }
 
-```
-
-
-
-### 字面量类型
-
-```ts
-// 字符串字面量类型
-type EventNames = 'click' | 'scroll' | 'mousemove';
-function handleEvent(ele: Element, event: EventNames) {
-    // do something
+//-------------分割线-----------------
+// 感觉差不多，都能获得到this
+let obj = {
+    fn() {
+        console.log(this) // { fn(): void; }
+    }
 }
 
-handleEvent(document.getElementById('hello'), 'scroll');  // 没问题
-handleEvent(document.getElementById('world'), 'dbclick');
-
-// 数字字面量类型
-let aka: 1 | 2 | 3 = 2
-
-// 布尔字面量类型
-let aka: true = true
-```
-
-
-
-### 联合类型（Union）
-
-联合类型（Union Types）表示取值可以为多种类型中的一种。
-
-```ts
-let value : string | number
-value = 'akara'
-value = 12345
-```
-
-当 TypeScript 不确定一个联合类型的变量到底是哪个类型的时候，我们**只能访问此联合类型的所有类型里共有的属性或方法**。
-
-```ts
-// 报错！！！
-function getLength(something: string | number): number {
- return something.length;
-}
-```
-
-上例中，`length` 不是 `string` 和 `number` 的共有属性，所以会报错。
-
-访问 `string` 和 `number` 的共有属性是没问题的
-
-```ts
-function getString(something: string | number): string {
- return something.toString();
-}
-```
-
-### 交叉类型（intersection）
-
-``` tsx
-type a = {
-  id: number
-}
-type b = {
-  name: string
-}
-
-let test: a & b = {
-  id: 2,
-  name: 'aa'
+class People {
+    constructor() {
+        console.log(this)
+    }
 }
 
 ```
@@ -524,9 +526,97 @@ let test: a & b = {
 
 ### 类
 
-``` ts
-// js中可以，ts必须设置初始值
+在JavaScript中，通常有两种方式去声明一个类，分别是`class`和`construct function`：
 
+``` js
+class People {
+    constructor(name) {
+        this.name = name
+    }
+}
+
+function People(name) {
+    this.name = name
+}
+
+new People('aka')
+```
+
+不管怎么样，当我们通过`new`操作符来生成一个类的实例时，会经过几个步骤：先创建空的实例对象，再通过构造函数的调用给这个空对象增加属性。
+
+而既然TypeScript引入了类型系统，我们就不能够在构造函数中给空对象增加属性，相反，我们传入构造函数的实例最初就应该拥有这几个属性了。
+
+``` tsx
+// 这个类在JS中肯定是正确的，但在TS中报错了
+class People {
+  constructor(name: string) {
+    this.name = name // 错误！Property 'name' does not exist on type 'People'
+  }
+}
+
+// 原因可以用以下伪代码解释
+
+let obj = {
+    __proto__: Object.prototype
+}
+
+obj.name = 'akara' // 错误！property 'name' does not exist on type '{ __proto__: Object; }'
+```
+
+正因如此，在TypeScript中创建`class`的推荐写法如下：
+
+``` tsx
+class People {
+  name: string // 传入构造函数前，实例就拥有name属性了
+  constructor(name: string) {
+    this.name = name // 正确，构造函数中只是重新给该属性赋值
+  }
+}
+
+// 类似于
+
+let obj = {
+    name: undefined,
+    __proto__: Object.prototype
+}
+
+obj.name = 'akara'
+```
+
+上文解释了，因为TypeScript引入了类型系统，以往创建`class`的方式会报错，而多亏`class`的这种实例属性的写法，我们稍微改动代码就可以了。
+
+而类的声明除了`class`还有直接创建`construct function`，后者就没有什么办法了，事实上我在文档中也没有看到相关的例子，所以强烈建议想要创建类的时候，**只用`class`关键字就行了**！
+
+否则，你就会掉进坑中
+
+``` tsx
+// 如果在TypeScript中使用以下方式创建类，感觉很多问题
+
+
+// 错误
+// 'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.
+function A() {}
+new A()
+
+// 错误
+// Type '() => void' is not assignable to type 'new () => void'.
+// Type '() => void' provides no match for the signature 'new (): void'.
+const A: new() => void = function() {}
+
+
+// 错误！
+// 'this' implicitly has type 'any' because it does not have a type annotation.
+function People (name: string, id: number) {
+    this.name = name 
+    this.id = id 
+}
+```
+
+
+
+再补充一点JS和TS的`class`声明的差异，JS的实例属性可以不初始化，而TS的实例属性必须初始化
+
+``` ts
 // Wrong! Property 'age' has no initializer and is not definitely assigned in the constructor
 class Person {
     name: string;
@@ -542,8 +632,6 @@ class Person {
     }
 }
 ```
-
-
 
 
 
