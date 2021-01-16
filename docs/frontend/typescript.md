@@ -464,6 +464,10 @@ function A(name = 'akara'): string { // or (name: string = 'akara')
 
 ##### this
 
+> 待完善
+
+[可以参考这篇文](https://jkchao.github.io/typescript-book-chinese/typings/thisType.html)
+
 ``` tsx
 function fn() {
     // 报错!
@@ -532,25 +536,33 @@ class People {
 
 ### 类
 
-在JavaScript中，通常有两种方式去声明一个类，分别是`class`和`construct function`：
+在JavaScript中，通常有两种方式去声明一个类，分别是`class`和`construct function`，如下：
 
 ``` js
+// 使用class关键字
 class People {
     constructor(name) {
         this.name = name
     }
 }
 
+// 直接声明构造函数
 function People(name) {
     this.name = name
 }
 
-new People('aka')
+new People('akara')
 ```
 
-不管怎么样，当我们通过`new`操作符来生成一个类的实例时，会经过几个步骤：先创建空的实例对象，再通过构造函数的调用给这个空对象增加属性。
+不管怎么样，当我们通过`new`操作符来生成一个类的实例时，会经过几个步骤：先创建空的实例对象，再通过调用构造函数来给这个空对象增加新属性。像这样：
 
-而既然TypeScript引入了类型系统，我们就不能够在构造函数中给空对象增加属性，相反，我们传入构造函数的实例最初就应该拥有这几个属性了。
+``` js
+People.call({
+    __proto__: People.prototype
+}, 'akara')
+```
+
+而既然TypeScript引入了严格的类型系统，我们就不能在构造函数中给空对象增加属性，相反的做法是，我们传入构造函数的实例最初就应该拥有这几个属性了。
 
 ``` tsx
 // 这个类在JS中肯定是正确的，但在TS中报错了
@@ -566,10 +578,11 @@ let obj = {
     __proto__: Object.prototype
 }
 
-obj.name = 'akara' // 错误！property 'name' does not exist on type '{ __proto__: Object; }'
+// 错误！property 'name' does not exist on type '{ __proto__: Object; }'
+People.call(obj, 'akara') // 等价于 obj.name = 'akara'
 ```
 
-正因如此，在TypeScript中创建`class`的推荐写法如下：
+所以，在TypeScript中创建`class`的推荐写法如下：
 
 ``` tsx
 class People {
@@ -586,17 +599,19 @@ let obj = {
     __proto__: Object.prototype
 }
 
-obj.name = 'akara'
+People.call(obj, 'akara') // 等价于 obj.name = 'akara'  
 ```
 
-上文解释了，因为TypeScript引入了类型系统，以往创建`class`的方式会报错，而多亏`class`的这种实例属性的写法，我们稍微改动代码就可以了。
+上文解释了，因为TypeScript引入了类型系统，用以往的写法（实例属性在构造函数中设置）声明`class`的方式会报错，而多亏`class`的这种实例属性的写法（实例属性在构造函数外设置），我们稍微改动代码就可以了。
 
-而类的声明除了`class`还有直接创建`construct function`，后者就没有什么办法了，事实上我在文档中也没有看到相关的例子，所以强烈建议想要创建类的时候，**只用`class`关键字就行了**！
+而类的声明除了使用`class`，也可以使用`construct function`，但后者并不能像`class`一样在构造函数调用前就给实例设置好属性，事实上我在官方文档中也没有看到相关的例子。所以在TypeScript中，建议只使用`class`来声明类，只有这样声明的类才能通过`new`操作符来初始化。
 
-否则，你就会掉进坑中
+
+
+以下是一些失败的尝试：
 
 ``` tsx
-// 如果在TypeScript中使用以下方式创建类，感觉很多问题
+// 如果在TypeScript中使用construct function的方式创建类，感觉很多问题
 
 
 // 错误
@@ -620,7 +635,7 @@ function People (name: string, id: number) {
 
 
 
-再补充一点JS和TS的`class`声明的差异，JS的实例属性可以不初始化，而TS的实例属性必须初始化
+再补充一点JS和TS的`class`声明的差异，JS中类的实例属性可以不初始化，而TS中类的实例属性必须初始化
 
 ``` ts
 // Wrong! Property 'age' has no initializer and is not definitely assigned in the constructor
@@ -637,6 +652,20 @@ class Person {
         this.age = age
     }
 }
+```
+
+
+
+另外，当我们用`class`来声明一个类，这个类名也可以被当成类型！也就是这个类的实例的类型
+
+``` tsx
+class People {
+    name = 'akara'
+}
+
+let p: People = new People() // 实例
+
+let People2: typeof People = People // 类
 ```
 
 
