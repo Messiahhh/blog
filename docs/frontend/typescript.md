@@ -38,7 +38,7 @@ let num: number = u;
 >
 > > As a note: we encourage the use of `--strictNullChecks` when possible, but for the purposes of this handbook, we will assume it is turned off.
 
-根据官网的这段补充，可以知道如果设置了`--strictNullChecks`，`undefined`和`undefined`就不能赋值给`string`的变量了。不过这个时候我们依然可以这样：
+根据官网的这段补充，可以知道如果设置了`--strictNullChecks`，`undefined`和`null`就不能赋值给`string`的变量了。不过这个时候我们依然可以这样：
 
 ``` tsx
 let num: number | undefined = undefined
@@ -159,6 +159,31 @@ let value : string = 'abcd'
 value = 123456
 ```
 
+
+
+### 字面量类型
+
+`string literal`是`string`的子集，`number literal`是`number`的子集，`boolean literal`是`boolean`的子集
+
+```ts
+// 字符串字面量类型
+type EventNames = 'click' | 'scroll' | 'mousemove';
+function handleEvent(ele: Element, event: EventNames) {
+    // do something
+}
+
+handleEvent(document.getElementById('hello'), 'scroll');  // 没问题
+handleEvent(document.getElementById('world'), 'dbclick');
+
+// 数字字面量类型
+let aka: 1 | 2 | 3 = 2
+
+// 布尔字面量类型
+let aka: true = true
+```
+
+
+
 ### 接口
 
 接口作用基本可以分为两类，①是对类的一部分行为进行抽象，②是对对象的形状进行描述。本节介绍的就是第二个作用：描述对象的形状。
@@ -257,7 +282,7 @@ let tom: Person = {
 };
 ```
 
-##### 只读属性（readonly）
+##### 只读属性
 
 有时候我们希望对象中的一些字段只能在创建的时候被赋值，那么可以用 `readonly` 定义只读属性
 
@@ -281,30 +306,9 @@ tom.id = 9527;
 
 
 
-### 字面量类型
-
-`string literal`是`string`的子集，`number literal`是`number`的子集，`boolean literal`是`boolean`的子集
-
-```ts
-// 字符串字面量类型
-type EventNames = 'click' | 'scroll' | 'mousemove';
-function handleEvent(ele: Element, event: EventNames) {
-    // do something
-}
-
-handleEvent(document.getElementById('hello'), 'scroll');  // 没问题
-handleEvent(document.getElementById('world'), 'dbclick');
-
-// 数字字面量类型
-let aka: 1 | 2 | 3 = 2
-
-// 布尔字面量类型
-let aka: true = true
-```
 
 
-
-### 联合类型（Union）
+### 联合类型
 
 联合类型（Union Types）表示取值可以为多种类型中的一种。
 
@@ -335,7 +339,9 @@ function getString(something: string | number): string {
 
 
 
-### 交叉类型（intersection）
+### 交叉类型
+
+交叉类型（Intersection Type）
 
 ``` tsx
 type a = {
@@ -448,7 +454,7 @@ let tomcat = buildName('Tom', 'Cat');
 let tom = buildName('Tom');
 ```
 
-##### 默认值
+##### 参数默认值
 
 ``` tsx
 function A(name = 'akara'): string { // or (name: string = 'akara') 
@@ -456,7 +462,7 @@ function A(name = 'akara'): string { // or (name: string = 'akara')
 }
 ```
 
-### This
+##### this
 
 ``` tsx
 function fn() {
