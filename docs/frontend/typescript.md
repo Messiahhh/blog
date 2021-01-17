@@ -119,7 +119,26 @@ console.log(Days["Sat"] === 6); // true
 
 ##### unknown
 
-> Todo
+`unknown`表示某个变量的类型是未知的，也意味着这个变量可能是任意类型的值，这个值可能是来自于动态内容。
+
+``` tsx
+let a: unknown = '1'
+a = true
+a = 1
+
+let b: number = a // 错误，a可能是任意类型的值，因此不能传给类型为number的b 
+```
+
+我们可以通过使用类型守卫（如等值判断，或者是使用`typeof`进行类型判断），来`narrow`该变量的类型范围
+
+``` tsx
+let a: unknown = 1
+let b: number 
+if (a === 1) {
+	// 此时，TypeScript知道a的类型为number，因此不会报错
+	b = a
+}
+```
 
 ##### any
 
@@ -141,13 +160,45 @@ let value
 let value : any
 ```
 
+
+
+`any`和`unknown`的一个区别如下：
+
+``` tsx
+// 对比上面unknown一节的代码
+let a: any = '1'
+a = true
+a = 1
+
+let b: number = a // 不报错
+```
+
 ##### never
 
-> Todo
+> The `never` type represents the type of values that never occur. For instance, `never` is the return type for a function expression or an arrow function expression that always throws an exception or one that never returns. Variables also acquire the type `never` when narrowed by any type guards that can never be true.
 
-##### Object
+``` tsx
+function error(message: string): never { 
+  throw new Error(message); // 抛出错误，函数并没有返回值
+}
 
-> todo
+function infiniteLoop(): never {
+  while (true) {} // 函数没有返回值
+}
+```
+
+##### object
+
+我们通常会使用`interface`来描述对象的类型，但此时对象的属性会被严格的限制住，很多时候我们并不知道对象的结构如何，此时可以使用`object`
+
+``` tsx
+let i: object = {}
+i = {
+  name: 'akara'
+}
+```
+
+
 
 ##### 类型推导
 
