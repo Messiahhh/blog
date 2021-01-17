@@ -5,6 +5,8 @@ sidebarDepth: 4
 ## TypeScript
 
 > 注：本章节部分代码与解释**引用于官方文档或网络资源**！章节的顺序也是和官网Handbook保持一致。
+>
+> 本节内容正在不断完善中...
 
 ### 基本类型
 
@@ -231,57 +233,6 @@ let tom: Person = {
 };
 ```
 
-##### 任意属性
-
-有时候我们希望一个接口允许有任意的属性，可以使用如下方式：
-
-```ts
-interface Person {
-    name: string;
-    age?: number;
-    [propName: string]: any;
-}
-
-let tom: Person = {
-    name: 'Tom',
-    gender: 'male'
-};
-```
-
-需要注意的是，**一旦定义了任意属性，那么确定属性和可选属性的类型都必须是它的类型的子集**
-
-```ts
-// 错误！
-// Property 'age' of type 'number | undefined' is not assignable to string index type 'string'
-interface Person {
-    name: string;
-    age?: number;
-    [propName: string]: string;
-}
-
-let tom: Person = {
-    name: 'Tom',
-    age: 25,
-    gender: 'male'
-};
-```
-
-如果接口中有多个类型的属性，则可以在任意属性中使用联合类型
-
-```tsx
-interface Person {
-    name: string;
-    age?: number;
-    [propName: string]: string | number;
-}
-
-let tom: Person = {
-    name: 'Tom',
-    age: 25,
-    gender: 'male'
-};
-```
-
 ##### 只读属性
 
 有时候我们希望对象中的一些字段只能在创建的时候被赋值，那么可以用 `readonly` 定义只读属性
@@ -304,7 +255,85 @@ let tom: Person = {
 tom.id = 9527;
 ```
 
+##### 索引类型
 
+索引类型（Indexable Types）有两种，分别是`string`（字符串索引）和`number`（数字索引），其语法如下
+
+``` tsx
+interface test {
+    [n: number]: number; 
+    [s: string]: number | string; // 这里的n和s除了可读性，没有任何意义
+}
+```
+
+有时候我们希望一个接口允许存在任意的字符串属性，可以使用如下方式：
+
+```ts
+interface Person {
+    name: string;
+    age?: number;
+    [propName: string]: any;
+}
+
+let tom: Person = {
+    name: 'Tom',
+    gender: 'male'
+};
+```
+
+需要注意的是，一旦使用了字符串索引，那么字符串类型的确定属性和可选属性的类型都必须是它的类型的子集，如下：
+
+```ts
+// 错误！
+// Property 'age' of type 'number | undefined' is not assignable to string index type 'string'
+interface Person {
+    name: string;
+    age?: number;
+    [propName: string]: string;
+}
+
+let tom: Person = {
+    name: 'Tom',
+    age: 25,
+    gender: 'male'
+};
+
+// 正确！
+interface Person {
+    name: string;
+    age?: number;
+    [propName: string]: string | number;
+}
+
+let tom: Person = {
+    name: 'Tom',
+    age: 25,
+    gender: 'male'
+};
+```
+
+> There are two types of supported index signatures: string and number. It is possible to support both types of indexers, but **the type returned from a numeric indexer must be a subtype of the type returned from the string indexer. This is because when indexing with a `number`, JavaScript will actually convert that to a `string` before indexing into an object.** That means that indexing with `100` (a `number`) is the same thing as indexing with `"100"` (a `string`), so the two need to be consistent.
+
+根据官网的这段说明，我们也能知道：`1`是`[n: number]`的子集，`'name'`是`[s: string]`的子集，而`[n: number]`又是`[s: string]`的子集。
+
+事实上，通过如下一段奇怪的代码，你可以得出类似的结论：
+
+``` tsx
+interface test {
+    [b: number]: string,
+}
+
+let a: keyof test // number
+
+
+interface test {
+    [b: string]: string,
+}
+
+let a: keyof test // string | number  是不是和预期不一致？
+```
+
+很明显，我们只去定义了`string index`，但最后发现接口同时存在了`number index`和`string index`。这也是因为数字索引是字符串索引的子集。
 
 
 
@@ -323,7 +352,7 @@ value = 12345
 ```ts
 // 报错！！！
 function getLength(something: string | number): number {
- return something.length;
+ 	return something.length;
 }
 ```
 
@@ -333,7 +362,7 @@ function getLength(something: string | number): number {
 
 ```ts
 function getString(something: string | number): string {
- return something.toString();
+ 	return something.toString();
 }
 ```
 
@@ -797,11 +826,85 @@ createArray<string>(3, 'x'); // ['x', 'x', 'x']
 
 
 
+### 类型操作
 
+> 介绍一些常用的类型操作！
 
+##### typeof 
 
+`typeof 变量`
 
+`typeof`在JavaScript中被用来获取变量的基本类型，而在TypeScript中，我们也可以在`type context`中使用`typeof`关键字，能够拿到变量的类型
 
+``` tsx
+let source = {
+    name: 'akara',
+    age: 20,
+}
+
+let target: typeof source = {
+    name: 'bkara',
+    age: 200,
+}
+```
+
+##### keyof
+
+`keyof 类型`
+
+获得指定类型的所有键值，这些键值的联合类型组成了新类型
+
+``` tsx
+let source = {
+    name: 'akara',
+    age: 20
+}
+let target: keyof typeof source // 'name' | 'age'
+target = 'name' // or target = 'age'
+```
+
+##### Indexed Access Types
+
+`类型[<键值>]`
+
+我们的接口类型也是类似对象的结构，那么我们自然可以使用索引来获取接口类型的某个键值的类型
+
+``` tsx
+type source = {
+    name: string;
+    age: number;
+}
+
+// 获取一个键的类型
+let target: source['name'] = 'aka' // string
+
+// 获取多个键的类型
+let target: source['name' | 'age'] = 'aka' // string | number 
+target = 20
+
+// 因此也可以搭配keyof使用
+let target: source[keyof source] = 'aka' // string | number 
+```
+
+在接口一节，有提到**任意属性**，我们也可以拿到该键值的类型，比如：
+
+``` tsx
+interface source {
+    name: string;
+    [s: string]: string;
+}
+
+let target: source[string] = 'akara' // string
+
+// or
+
+interface source {
+    name: string;
+    [n: number]: number;
+}
+
+let target: source[number] = 0 // number
+```
 
 ### 值得注意的问题
 
@@ -936,7 +1039,7 @@ let a: test = {
     '3': '333'
 }
 
-let c: keyof test // 'number' | 'string'
+let c: keyof test // number | string
 
 let b: test[number]
 ```
