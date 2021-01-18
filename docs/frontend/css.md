@@ -161,6 +161,80 @@ sidebarDepth: 4
 }
 ```
 
+### Flex
+
+##### 容器属性
+
+``` css
+.flex-container {
+    display: flex;
+    flex-direction: row;
+    /* 主轴的方向，默认row，从左往右 */
+    flex-wrap: nowrap;
+    /* 是否换行，默认不换行*/
+    justify-content: center;
+    /* 主轴上的布局，默认flex-start */
+    align-items: center;
+    /* 交叉轴上的布局，默认值flex-start */
+    align-content: center;
+    /* 多条轴线的布局 */
+}
+```
+
+##### 项目属性
+
+``` css
+.flex-items {
+    order: 2;
+    /* 项目的order， 越大的越后面*/
+    flex-grow: 1;
+    /* 扩张比例，默认0，不占剩余空间 */
+    flex-shrink: 0;
+    /* 缩小比例，默认1，自动缩小*/
+    flex-basis: 200px;
+    /* 主轴上的宽度 */
+    flex: 1 0 200px;
+    /* 上面三条的缩写 */
+    align-self: flex-end;
+    /* 修改项目的交叉轴布局*/
+}
+```
+
+##### Flex 搭配 margin
+
+给Flex容器内的项目设置margin为auto，则margin会自动占据剩下的所有未分配空间。
+
+``` html
+<!-- 实现一个导航栏 -->
+<ul class="g-nav">
+    <li>导航A</li>
+    <li>导航B</li>
+    <li>导航C</li>
+    <li>导航D</li>
+    <li class="g-login">登陆</li>
+    <li>注册</li>
+</ul>
+<style>
+    .g-nav {
+        display: flex;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+    .g-nav li {
+        padding: 0 20px;
+    }
+
+    .g-login {
+        margin-left: auto;
+    }
+</style>
+```
+
+
+
+
+
 ### 布局
 
 **块级元素（block）**：div, h1~h6, p 等
@@ -463,11 +537,41 @@ inline和inline-block可以设置padding和margin，但无法通过像block一�
 </body>
 ```
 
-##### 移动端布局
+### PC与移动端
+
+首先有个现象需要知道。在PC浏览器中，当内容的宽大于`viewport`的宽时，我们可以看到横向的滚动条；而在手机浏览器中表现是不同的，此时当内容的宽大于`viewport`的宽时，我们的手机屏幕依然能够显示这些内容（没有滚动条）。更加具体地说，我们知道IphoneX的设备像素宽为`375px`，无论我们的`html`有没有加`meta`头部，只要`html`内容宽度小于某个较大的数值，整个手机屏幕都可以放下内容（没有滚动条）；只有当`html`内容宽度大于那个数值，我们才能够看到滚动条。这个现象可以自行验证。
+
+
+
+如果我们写了一个不带`meta`头部的`html`页面，并在手机浏览器打开，可能会觉得页面呈现出的效果完全不符合预期，甚至可以说得上诡异。
+
+我们现在开发手机页面基本上必须带上`meta`头部，那为什么不带这个头部时，浏览器表现的这么奇怪呢？
 
 ``` html
 <meta name="viewport" content="width=device-width,initial-scale=1">
 ```
+
+这是有历史原因的，我们知道，智能手机的诞生要远远晚于PC浏览器。而智能手机诞生后，为了能更方便的浏览当时的页面（当时页面普遍宽980px左右），手机浏览器的默认`viewport`也被设置成了980px。`viewport`980px意味着在小小的手机屏幕上放置了过量的内容，所以那个时候我们需要使用双指缩放整个页面，然后滑动手指来阅读页面。
+
+因此，现代的移动端页面都应该带上`meta`，根据当前的移动设备来设置`viewport`，比如手机是IphoneX的话，`viewport`就会被设置为375px。
+
+
+
+现在我们可以试着打开B站来观察他们的页面布局。我们可以观察到两点：①首页有大量的图片等信息。②主体内容的两侧留白，并会根据媒体查询缩短主体的宽度。通过第二点，当我们从PC标准的1980px缩短到1200px左右，主体的内容依然能够完整的呈现了出来，也从而实现了对Ipad的适配。但我们却不能从1200px更进一步的缩短来适配移动端，这主要是因为首页信息过多，无法做到。
+
+事实上，通常有两种方式适配移动端页面。
+
+第一种是PC端和移动端公用一套代码，根据媒体查询来改变页面的布局，从而实现对移动端的适配。通常信息量少的网站可能会采取这个方案。像B站这样PC端内容很多的页面，很难降级成移动端页面。
+
+第二种是PC端和移动端采用两套不同的代码，事实上B站，知乎等网站也是这么做的。
+
+
+
+
+
+
+
+其他补充：
 
 **em和rem**
 
@@ -481,83 +585,63 @@ inline和inline-block可以设置padding和margin，但无法通过像block一�
 
 1vh 等于 1 / 100 视口高
 
-### Flex
 
 
 
-##### 容器属性
+
+### 常见网站布局
+
+> 通过观察各大主流网站的布局，熟悉流行的布局方案
+>
+> 待更新...
+
+##### B站
+
+头部`banner`宽不给定值，随`viewport`变化，同时设置了`min-width: 999px`。因此当`viewport`过小，窗口会出现横向的滚动条。
+
+主体部分做了媒体查询：
 
 ``` css
-.flex-container {
-    display: flex;
-    flex-direction: row;
-    /* 主轴的方向，默认row，从左往右 */
-    flex-wrap: nowrap;
-    /* 是否换行，默认不换行*/
-    justify-content: center;
-    /* 主轴上的布局，默认flex-start */
-    align-items: center;
-    /* 交叉轴上的布局，默认值flex-start */
-    align-content: center;
-    /* 多条轴线的布局 */
+@media screen and (max-width: 1438px)
+.b-wrap {
+    width: 999px;
+}
+
+@media screen and (max-width: 1654px)
+.b-wrap {
+    width: 1198px;
+}
+
+@media screen and (max-width: 1870px)
+.b-wrap {
+    width: 1414px;
+}
+
+.b-wrap {
+    width: 1630px;
+    margin: 0 auto;
 }
 ```
 
-##### 项目属性
 
-``` css
-.flex-items {
-    order: 2;
-    /* 项目的order， 越大的越后面*/
-    flex-grow: 1;
-    /* 扩张比例，默认0，不占剩余空间 */
-    flex-shrink: 0;
-    /* 缩小比例，默认1，自动缩小*/
-    flex-basis: 200px;
-    /* 主轴上的宽度 */
-    flex: 1 0 200px;
-    /* 上面三条的缩写 */
-    align-self: flex-end;
-    /* 修改项目的交叉轴布局*/
-}
-```
 
-##### Flex 搭配 margin
+PC端和手机端是两份代码，PC端使用媒体查询稍微适配了Ipad
 
-给Flex容器内的项目设置margin为auto，则margin会自动占据剩下的所有未分配空间。
 
-``` html
-<!-- 实现一个导航栏 -->
-<ul class="g-nav">
-    <li>导航A</li>
-    <li>导航B</li>
-    <li>导航C</li>
-    <li>导航D</li>
-    <li class="g-login">登陆</li>
-    <li>注册</li>
-</ul>
-<style>
-    .g-nav {
-        display: flex;
-        padding: 0;
-        margin: 0;
-        list-style: none;
-    }
-    .g-nav li {
-        padding: 0 20px;
-    }
 
-    .g-login {
-        margin-left: auto;
-    }
-</style>
-```
+##### 知乎
+
+首部使用`margin: 0 auto`，内容部分不是定宽，而是`max-width`搭配`min-width`。相比使用定宽，显得更加弹性一点。
+
+主体部分就是一个定宽加上`margin: 0 auto`
 
 
 
 
 
-### BFC
+### 常见问题
+
+##### BFC
 
 BFC，也就是Block Formatting Contexts （块级格式化上下文)
 
@@ -634,7 +718,7 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 <div class="content"></div>
 ```
 
-### 清除浮动
+##### 清除浮动
 
 一：上述的BFC清除浮动
 
@@ -679,42 +763,9 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 </div>
 ```
 
-### 常见问题
+##### display/visibility/opacity
 
-#### inline-block的间隙问题
-
-两个display：inline-block元素放到一起会产生一段空白。
-
-原因：此时两个元素间的回车/换行会被转换为空白符
-
-``` html
-<body>
-    <div class="a">
-        1
-    </div>
-    <div class="a">
-        2
-    </div>
-</body>
-```
-
-解决方案:
-
-1. 将子元素标签的结束符和下一个标签的开始符写在同一行或把所有子标签写在同一行
-
-   ``` html
-   <body>
-       <div class="a">
-           1
-       </div><div class="a">
-           2
-       </div>
-   </body>
-   ```
-
-2. 父元素设置font-size: 0; 子元素重新设置正确的font-size
-
-#### display: none，visibility: hidden, opacity: 0 的区别
+`display: none，visibility: hidden, opacity: 0`三者的区别：
 
 三个样式的作用都是使目标元素不可见，不过三个元素之间也是有区别的
 
@@ -752,9 +803,9 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 
 如果希望子元素不被父元素的透明度影响，我们可以使用`background: rgba`代替`opacity: 0`
 
-#### 文本溢出
+##### 文本溢出
 
-##### 单行文本
+**单行文本**
 
 ``` css
 overflow: hidden;
@@ -762,4 +813,40 @@ white-space: nowrap;
 text-overflow: ellipsis;
 ```
 
-##### 多行文本
+**多行文本**
+
+##### inline-block的间隙问题
+
+两个display：inline-block元素放到一起会产生一段空白。
+
+原因：此时两个元素间的回车/换行会被转换为空白符
+
+``` html
+<body>
+    <div class="a">
+        1
+    </div>
+    <div class="a">
+        2
+    </div>
+</body>
+```
+
+解决方案:
+
+1. 将子元素标签的结束符和下一个标签的开始符写在同一行或把所有子标签写在同一行
+
+   ``` html
+   <body>
+       <div class="a">
+           1
+       </div><div class="a">
+           2
+       </div>
+   </body>
+   ```
+
+2. 父元素设置font-size: 0; 子元素重新设置正确的font-size
+
+
+
