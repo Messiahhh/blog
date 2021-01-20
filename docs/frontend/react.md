@@ -1566,12 +1566,10 @@ export default connect(
 
 ### React-Router
 
-安装
-
 ``` javascript
 import React from 'react'
 import {
-    BrowserRouter as Router,
+    BrowserRouter as Router, // History mode而不是hash mode
     Link,
     Switch,
     Route
@@ -1601,6 +1599,75 @@ function App () {
 
 
 ```
+
+
+
+##### Api
+
+###### useRouteMatch，useParams
+
+``` jsx
+// 当前路由/profile/akara
+
+<Route path="/profile/:id">
+    <Test />
+</Route>
+
+function Test() {
+    const match = useRouteMatch()
+    const p = useParams() //   { id: akara }
+    const {
+        path, //    /profile/:id
+        url, //    /profile/akara
+        params, //   { id: akara }
+    } = match
+    
+    return (
+        <div>
+            <Link to={`${url}/avatar`}>点击</Link> 
+            
+            <Route path={`${path}/avatar`}>
+            	<div>content...</div>
+            </Route>
+        </div>
+    )
+}
+```
+
+
+
+##### 嵌套路由
+
+**`<Route path="">`**
+
+全局路由一旦改变，`Route`组件就会对比全局路由和`path`的参数，若匹配就渲染对应的组件。
+
+``` jsx
+<Link to="/a/b">按钮1</Link>
+<Link to="/b">按钮2</Link>
+
+<Route path="/a">
+    <div>aaa</div>
+	<Route path="/b">
+        <div>bbb</div>
+    </Route>
+    <Route path="/a/b">
+        <div>abab</div>
+    </Route>
+</Route>
+```
+
+如果我们点击按钮1时，全局路由变成`/a/b`。
+
+此时全局路由和`<Route path="/a">`的`path`成功匹配，渲染其对应组件；紧接着，因为全局路由又和`Route`的子`<Route path="/a/b">`成功匹配，渲染其对应组件。
+
+
+
+而如果我们点击按钮2，全局路由变成`/b`。
+
+此时全局路由和`<Route path="/a">`的`path`匹配失败，什么也不渲染。
+
+
 
 ##### 动态路由匹配
 
