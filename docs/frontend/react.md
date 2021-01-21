@@ -3,7 +3,7 @@ sidebarDepth: 4
 ---
 ## React
 
-### React基础
+### 基础
 
 ##### JSX
 
@@ -657,7 +657,7 @@ function Todos() {
 }
 ```
 
-###### 短语法
+可以使用短语法：
 
 ``` js
 function Todos() {
@@ -671,50 +671,109 @@ function Todos() {
 }
 ```
 
-### Fiber架构
 
-React在它的V16版本推出了Fiber架构，在弄清楚什么是Fiber之前，我们应该先了解为什么需要Fiber。
 
-首先，浏览器是多线程的，这些线程包括JS引擎线程（主线程），以及GUI渲染线程，定时器线程，事件线程等工作线程。其中，JS引擎线程和GUI渲染线程是互斥的。又因为绝大多数的浏览器页面的刷新频率取决于显示器的刷新频率，即每16.6毫秒就会通过GUI渲染引擎刷新一次。所以，如果JS引擎线程一次性执行了一个长时间（大于16.6毫秒）的同步任务，就可能出现掉帧的情况，影响用户的体验。
+### 状态逻辑复用
 
-而在旧版本的React中，对于一个庞大的组件，无论是组件的创建还是更新都可能需要较长的时间。而Fiber的思路是将原本耗时较长的同步任务分片为多个任务单元，执行完一个任务单元后可以保存当前的状态，切换到GUI渲染线程去刷新页面，接下来再回到主线程并从上个断点继续执行任务。
+通常有三种方式
 
-我的个人体会，React中的Fiber（纤程）类似或者说就是Coroutine（协程）。ES6的Generator本身也算是协程的一种实现，或者说是状态机，通过它能够得到一个可以暂停的函数任务；而React中的Fiber，将原本耗时很长的同步任务分成多个耗时短的分片，从而实现了浏览器中互斥的主线程与GUI渲染线程之间的调度。
-
-除此之外，对于每一个Fiber的同步任务来说，都拥有一个优先级（总共定义了6种优先级）。
-
-当主线程刚执行完一个任务A的一个分片，若此时出现了一个优先级更高的任务B，React就可能会把任务A废弃掉，待之后重新执行一次任务A。
-
-为什么这里要加一个可能，这是因为对于使用了Fiber的React来说，组件可以分为两个阶段，分别是“Render/Reconciliation phase”和"Commit phase"，可以在官方的生命周期图谱看到具体的信息。第一个阶段是没有副作用的，也因此可以被React暂停，废弃又或者重新执行；而第二个阶段会涉及到实际的DOM，是有副作用的，所以无法被React暂停，重新执行。
-
-那么结合上面两段，可以知道处于“Render/Reconciliation phase”的任务A，如果执行时出现了优先级更高的任务B，任务A就会被废弃，之后重新被执行。
-
-举个例子。由于componentWillMount已经要被React废弃了，所以在以上链接中的图谱没有被标出来，它其实也是属于"Render/Reconciliation phase"的。那么当一个组件即将挂载时，就会调用这个生命周期钩子，假如在这之后我们就碰到了优先级更高的任务，那么原本的任务就会被废弃，并在之后被重新调用。导致的结果就是componentWillMount被调用了两次，这是一个值得注意的点。
+1. 高阶组件（HOC）
+2. Render props
+3. Hook
 
 
 
+##### 高阶组件
 
-### Diff策略
+``` js
+function App () {
+    const MouseWithCat = withMouse(Cat)
+    return (
+        <MouseWithCat />
+    )
+}
 
-[参考](https://zhuanlan.zhihu.com/p/20346379)
+function Cat (props) {
+    let {x, y} = props.mouse
+    x += 20
+    y += 20
+    return (
+        <img src='https://messiahhh.github.io/blog/logo.png' style={{position: 'absolute', left: x , top: y, width: '40px', height: '40px'}}/>
+    )
+}
 
-1. Web UI 中 DOM 节点跨层级的移动操作特别少，可以忽略不计。
-2. 拥有相同类的两个组件将会生成相似的树形结构，拥有不同类的两个组件将会生成不同的树形结构。
-3. 对于同一层级的一组子节点，它们可以通过唯一 id 进行区分。
+function withMouse(WrappedComponent) {
+    return function () {
+        let [point, setPoint] = useState({
+            x: 0,
+            y: 0,
+        })
+
+        const move = (e) => {
+            setPoint({
+                x: e.clientX,
+                y: e.clientY
+            })
+        }
+
+        return (
+            <div style={{height: '100vh'}} onMouseMove={move}>
+                鼠标的位置：{ point.x } , { point.y }
+                <WrappedComponent mouse={point} />
+            </div>
+        )
+    }
+}
+```
+
+##### Render Props
+
+``` js
+function App () {
+    return (
+        <Mouse render={point =>
+            <Cat mouse={point} />
+        }/>
+    )
+}
+
+function Cat (props) {
+    let {x, y} = props.mouse
+    x += 20
+    y += 20
+    return (
+        <img src='https://messiahhh.github.io/blog/logo.png' style={{position: 'absolute', left: x , top: y, width: '40px', height: '40px'}}/>
+    )
+}
 
 
+function Mouse(props) {
+    let [point, setPoint] = useState({
+        x: 0,
+        y: 0,
+    })
 
-针对第一点策略，React只对新老树进行同层的比较（Vue也是如此）。
+    const move = (e) => {
+        setPoint({
+            x: e.clientX,
+            y: e.clientY
+        })
+    }
 
-> **tree diff**
->
-> 基于策略一，React 对树的算法进行了简洁明了的优化，即对树进行分层比较，两棵树只会对同一层次的节点进行比较。
->
-> 既然 DOM 节点跨层级的移动操作少到可以忽略不计，针对这一现象，React 通过 updateDepth 对 Virtual DOM 树进行层级控制，只会对相同颜色方框内的 DOM 节点进行比较，即同一个父节点下的所有子节点。当发现节点已经不存在，则该节点及其子节点会被完全删除掉，不会用于进一步的比较。这样只需要对树进行一次遍历，便能完成整个 DOM 树的比较。
+    return (
+        <div style={{height: '100vh'}} onMouseMove={move}>
+            鼠标的位置：{ point.x } , { point.y }
+            {props.render(point)}
+        </div>
+    )
+}
+```
+
+##### Hook
+
+在下一节重点介绍。
 
 
-
-针对第二点策略，当React遇到不同类的两个组件，它会将旧组件删除，并增加新的组件。
 
 
 
@@ -1204,121 +1263,68 @@ message.info(`Current count is ${count}`);
 
 
 
-### 状态逻辑复用
-
-通常有三种方式
-
-1. 高阶组件（HOC）
-2. Render props
-3. Hook
 
 
+### 底层原理
 
-##### 高阶组件
+##### Fiber架构
+
+React在它的V16版本推出了Fiber架构，在弄清楚什么是Fiber之前，我们应该先了解为什么需要Fiber。
+
+首先，浏览器是多线程的，这些线程包括JS引擎线程（主线程），以及GUI渲染线程，定时器线程，事件线程等工作线程。其中，JS引擎线程和GUI渲染线程是互斥的。又因为绝大多数的浏览器页面的刷新频率取决于显示器的刷新频率，即每16.6毫秒就会通过GUI渲染引擎刷新一次。所以，如果JS引擎线程一次性执行了一个长时间（大于16.6毫秒）的同步任务，就可能出现掉帧的情况，影响用户的体验。
+
+而在旧版本的React中，对于一个庞大的组件，无论是组件的创建还是更新都可能需要较长的时间。而Fiber的思路是将原本耗时较长的同步任务分片为多个任务单元，执行完一个任务单元后可以保存当前的状态，切换到GUI渲染线程去刷新页面，接下来再回到主线程并从上个断点继续执行任务。
+
+我的个人体会，React中的Fiber（纤程）类似或者说就是Coroutine（协程）。ES6的Generator本身也算是协程的一种实现，或者说是状态机，通过它能够得到一个可以暂停的函数任务；而React中的Fiber，将原本耗时很长的同步任务分成多个耗时短的分片，从而实现了浏览器中互斥的主线程与GUI渲染线程之间的调度。
+
+除此之外，对于每一个Fiber的同步任务来说，都拥有一个优先级（总共定义了6种优先级）。
+
+当主线程刚执行完一个任务A的一个分片，若此时出现了一个优先级更高的任务B，React就可能会把任务A废弃掉，待之后重新执行一次任务A。
+
+为什么这里要加一个可能，这是因为对于使用了Fiber的React来说，组件可以分为两个阶段，分别是“Render/Reconciliation phase”和"Commit phase"，可以在官方的生命周期图谱看到具体的信息。第一个阶段是没有副作用的，也因此可以被React暂停，废弃又或者重新执行；而第二个阶段会涉及到实际的DOM，是有副作用的，所以无法被React暂停，重新执行。
+
+那么结合上面两段，可以知道处于“Render/Reconciliation phase”的任务A，如果执行时出现了优先级更高的任务B，任务A就会被废弃，之后重新被执行。
+
+举个例子。由于componentWillMount已经要被React废弃了，所以在以上链接中的图谱没有被标出来，它其实也是属于"Render/Reconciliation phase"的。那么当一个组件即将挂载时，就会调用这个生命周期钩子，假如在这之后我们就碰到了优先级更高的任务，那么原本的任务就会被废弃，并在之后被重新调用。导致的结果就是componentWillMount被调用了两次，这是一个值得注意的点。
+
+##### Diff策略
+
+[参考](https://zhuanlan.zhihu.com/p/20346379)
+
+1. Web UI 中 DOM 节点跨层级的移动操作特别少，可以忽略不计。
+2. 拥有相同类的两个组件将会生成相似的树形结构，拥有不同类的两个组件将会生成不同的树形结构。
+3. 对于同一层级的一组子节点，它们可以通过唯一 id 进行区分。
+
+
+
+针对第一点策略，React只对新老树进行同层的比较（Vue也是如此）。
+
+> **tree diff**
+>
+> 基于策略一，React 对树的算法进行了简洁明了的优化，即对树进行分层比较，两棵树只会对同一层次的节点进行比较。
+>
+> 既然 DOM 节点跨层级的移动操作少到可以忽略不计，针对这一现象，React 通过 updateDepth 对 Virtual DOM 树进行层级控制，只会对相同颜色方框内的 DOM 节点进行比较，即同一个父节点下的所有子节点。当发现节点已经不存在，则该节点及其子节点会被完全删除掉，不会用于进一步的比较。这样只需要对树进行一次遍历，便能完成整个 DOM 树的比较。
+
+
+
+针对第二点策略，当React遇到不同类的两个组件，它会将旧组件删除，并增加新的组件。
+
+
+
+### create-react-app
+
+通常项目存在测试环境和正式环境，这两个环境所对应的后端域名也是不同的。
+
+我们可以通过设置环境变量，代码中通过`process.env.xxx`读取该环境变量，从而实现根据环境的不同设置不同的接口域名。
+
+
+
+有个注意的点是`create-react-app`创建的项目，会根据执行的命令自动设置环境变量`NODE_ENV`，比如当我们使用`npm start`时的环境变量的值为`development`，当我们使用`npm test`时环境变量的值为`test`，当我们使用`npm build`时环境变量的值为`production`。
+
+除了这个点，还有个重要的地方是`react-script`只会读取到以`REACT_APP_`开头的环境变量，比如你的`package.json`可以这样写
 
 ``` js
-function App () {
-    const MouseWithCat = withMouse(Cat)
-    return (
-        <MouseWithCat />
-    )
-}
-
-function Cat (props) {
-    let {x, y} = props.mouse
-    x += 20
-    y += 20
-    return (
-        <img src='https://messiahhh.github.io/blog/logo.png' style={{position: 'absolute', left: x , top: y, width: '40px', height: '40px'}}/>
-    )
-}
-
-function withMouse(WrappedComponent) {
-    return function () {
-        let [point, setPoint] = useState({
-            x: 0,
-            y: 0,
-        })
-
-        const move = (e) => {
-            setPoint({
-                x: e.clientX,
-                y: e.clientY
-            })
-        }
-
-        return (
-            <div style={{height: '100vh'}} onMouseMove={move}>
-                鼠标的位置：{ point.x } , { point.y }
-                <WrappedComponent mouse={point} />
-            </div>
-        )
-    }
-}
-```
-
-##### Render Props
-
-``` js
-function App () {
-    return (
-        <Mouse render={point =>
-            <Cat mouse={point} />
-        }/>
-    )
-}
-
-function Cat (props) {
-    let {x, y} = props.mouse
-    x += 20
-    y += 20
-    return (
-        <img src='https://messiahhh.github.io/blog/logo.png' style={{position: 'absolute', left: x , top: y, width: '40px', height: '40px'}}/>
-    )
-}
-
-
-function Mouse(props) {
-    let [point, setPoint] = useState({
-        x: 0,
-        y: 0,
-    })
-
-    const move = (e) => {
-        setPoint({
-            x: e.clientX,
-            y: e.clientY
-        })
-    }
-
-    return (
-        <div style={{height: '100vh'}} onMouseMove={move}>
-            鼠标的位置：{ point.x } , { point.y }
-            {props.render(point)}
-        </div>
-    )
-}
-```
-
-##### Hook
-
-```js
-function useFriendStatus(friendID) {
-  const [isOnline, setIsOnline] = useState(null);
-
-  useEffect(() => {
-    function handleStatusChange(status) {
-      setIsOnline(status.isOnline);
-    }
-
-    ChatAPI.subscribeToFriendStatus(friendID, handleStatusChange);
-    return () => {
-      ChatAPI.unsubscribeFromFriendStatus(friendID, handleStatusChange);
-    };
-  });
-
-  return isOnline;
-}
+"start:dev": "cross-env REACT_APP_NODE_ENV=development react-scripts start", // cross-env 用来跨操作系统设置环境变量
 ```
 
 
@@ -1564,6 +1570,12 @@ export default connect(
 
 
 
+
+
+
+
+
+
 ### React-Router
 
 ``` javascript
@@ -1604,18 +1616,82 @@ function App () {
 
 ##### Api
 
-###### useRouteMatch，useParams
+###### useLocation
+
+可用于获取当前全局路由
+
+``` jsx
+// /profile/akara?name=aa#code
+const location = useLocation()
+{
+    hash: "#code"
+    pathname: "/profile/akara"
+    search: "?name=aa"
+    state: undefined
+}
+```
+
+
+
+###### useHistory
+
+可用于编程式导航
+
+``` jsx
+const history = useHistory()
+history.push('/')
+```
+
+
+
+###### useParams
+
+可用于获取动态路由`/profile/:id`的参数`id`
 
 ``` jsx
 // 当前路由/profile/akara
+<Route path="/profile/:id">
+    <Test />
+</Route>
+
+const params = useParams() //   { id: akara }
+
+```
+
+
+
+###### useRouteMatch
+
+我们知道`<Route path="">`的`path`会和全局路由匹配，得到匹配的结果。
+
+`useRouteMatch`也是一样，用于查看全局路由和某个路径是否匹配
+
+> The `useRouteMatch` hook attempts to [match](https://reactrouter.com/web/api/match) the current URL in the same way that a `<Route>` would
+
+
+
+
+
+`useRouteMatch`基本上有两种用法
+
+> - takes no argument and returns the match object of the current  `<Route>` 
+> - takes a single argument, which is identical to [props argument of matchPath](https://reactrouter.com/web/api/matchPath/props). It can be either a pathname as a string (like the example above) or an object with the matching props that `Route` accepts, like this:
+
+
+
+
+
+``` jsx
+// 第一种用法
+// 全局路由为/profile/akara
 
 <Route path="/profile/:id">
     <Test />
 </Route>
 
 function Test() {
-    const match = useRouteMatch()
-    const p = useParams() //   { id: akara }
+    // 不传参数，相当于拿到全局路由和<Route path="/profile/:id">的匹配结果
+    const match = useRouteMatch() 
     const {
         path, //    /profile/:id
         url, //    /profile/akara
@@ -1632,6 +1708,30 @@ function Test() {
         </div>
     )
 }
+```
+
+
+
+``` jsx
+// 第二种用法
+// 全局路由为/profile时，和/test匹配失败
+const match = useRouteMatch({
+    path: '/test'
+})
+console.log(match); // null
+```
+
+
+
+###### `<Redirect>`
+
+``` jsx
+<Redirect
+    to={{
+      pathname: "/login",
+      state: { from: location }
+    }}
+/>
 ```
 
 
@@ -1697,21 +1797,9 @@ function User() {
 
 
 
-### create-react-app
+##### 渐变动画
 
-通常项目存在测试环境和正式环境，这两个环境所对应的后端域名也是不同的。
-
-我们可以通过设置环境变量，代码中通过`process.env.xxx`读取该环境变量，从而实现根据环境的不同设置不同的接口域名。
-
-
-
-有个注意的点是`create-react-app`创建的项目，会根据执行的命令自动设置环境变量`NODE_ENV`，比如当我们使用`npm start`时的环境变量的值为`development`，当我们使用`npm test`时环境变量的值为`test`，当我们使用`npm build`时环境变量的值为`production`。
-
-除了这个点，还有个重要的地方是`react-script`只会读取到以`REACT_APP_`开头的环境变量，比如你的`package.json`可以这样写
-
-``` js
-"start:dev": "cross-env REACT_APP_NODE_ENV=development react-scripts start", // cross-env 用来跨操作系统设置环境变量
-```
+我们可以借助`react-transition-group`库，来给路由的切换加上动画效果
 
 
 

@@ -2307,7 +2307,32 @@ async function use() {
 use()
 ```
 
-### fetch
+
+
+##### Axios库
+
+可以使用现成的AJAX库Axios，当然也可以采用下一节介绍的浏览器自带的Fetch来发请求
+
+``` js
+axios({
+    method: 'post',
+    url: '/user/12345',
+    data: {
+        firstName: 'Fred',
+        lastName: 'Flintstone'
+    }
+})
+.then(function (response) {
+    console.log(response);
+})
+.catch(function (error) {
+    console.log(error);
+});
+```
+
+
+
+### Fetch
 
 ``` javascript
 fetch(url, options).then(function(response) {
@@ -2348,7 +2373,7 @@ fetch()
 
 
 
-##### XHR（AJAX）和Fetch的区别
+##### 和AJAX的区别
 
 1. AJAX和Fetch发送同源请求时都默认携带Cookie，跨域请求则都默认不携带Cookie。
 
@@ -2420,24 +2445,7 @@ fetch()
 
 4. fetch无法检测请求的进度(onprogress)
 
-### axios
 
-``` javascript
-axios({
-    method: 'post',
-    url: '/user/12345',
-    data: {
-        firstName: 'Fred',
-        lastName: 'Flintstone'
-    }
-})
-.then(function (response) {
-    console.log(response);
-})
-.catch(function (error) {
-    console.log(error);
-});
-```
 
 ### Decorator
 
@@ -2534,5 +2542,39 @@ class C {
 }
 
 // @f @g test 相当于数学中的 f(g(test))
+```
+
+
+
+### Api
+
+> 记录一些零碎的Api
+
+##### encodeURI
+
+编码解码
+
+``` js
+encodeURI('你好') // "%E4%BD%A0%E5%A5%BD"
+decodeURI('%E4%BD%A0%E5%A5%BD') // 你好
+```
+
+
+
+##### encodeURIComponent
+
+``` js
+encodeURI('https://www.bilibili.com/') // "https://www.bilibili.com/"
+encodeURIComponent('https://www.bilibili.com/') // "https%3A%2F%2Fwww.bilibili.com%2F"
+```
+
+
+
+##### URLSearchParams
+
+用于处理查询字符串
+
+``` js
+new URLSearchParams('?name=aaa&age=20').get('age')
 ```
 
