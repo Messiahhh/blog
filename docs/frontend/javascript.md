@@ -2546,7 +2546,7 @@ class C {
 
 
 
-### Api
+### 浏览器api
 
 > 记录一些零碎的Api
 
@@ -2577,4 +2577,26 @@ encodeURIComponent('https://www.bilibili.com/') // "https%3A%2F%2Fwww.bilibili.c
 ``` js
 new URLSearchParams('?name=aaa&age=20').get('age')
 ```
+
+
+
+##### window.scrollTo()
+
+``` js
+window.scrollTo(0, 0) // 滚动到最顶端
+```
+
+
+
+##### history.scrollRestoration
+
+`history`保存着我们的历史记录，同时也记录着每个历史记录对应的滚动距离。
+
+
+
+当我们从A页面进入B页面，再从B页面回退回A页面时，通常希望此时A页面的滚动距离和之前保持一致，而不是回到了顶端。
+
+`history.scrollRestoration`默认值为`auto`，即浏览器默认支持**滚动恢复**的功能；我们可以修改成`manual`，即不会恢复到原本的位置，而是处于页面的顶端。
+
+
 

@@ -1803,6 +1803,10 @@ function User() {
 
 
 
+
+
+
+
 ### antd
 
 > 虽然说这种组件库完全被必要背，但常见组件还是尽量多熟悉一点，提高开发效率，提前下班时间。
@@ -1972,4 +1976,70 @@ form.getFieldsValue()
 
 - userList: [{name: 'aaa', psw: 'bbb'}, {name: 'ccc', psw: 'ddd'}]
 ```
+
+
+
+### react-transition-group
+
+一个渐变库
+
+``` jsx
+import { CSSTransition } from 'react-transition-group'
+
+<CSSTransition
+    in={show} // 根据该变量来控制渐变
+    timeout={2000} // 动画时间
+    classNames="prefix" // 如果这里是a，之后会带上a-enter a-enter-active a-enter-done类名
+    unmountOnExit
+>
+   <div>hello world</div>
+</CSSTransition>
+<button onClick={() => setShow(true)}>打开</button>
+<button onClick={() => setShow(false)}>关闭</button>
+```
+
+
+
+##### in
+
+根据`in`来控制渐变：
+
+1. 当`in`变为`true`时，元素带上类名`prefix-enter prefix-enter-active`，并在`timeout`时间后变成`prefix-enter-done`
+
+2. 当`in`变为`false`时，元素带上类名`prefix-exit prefix-exit-active`，并在`timeout`时间后变成`prefix-exit-done`
+
+
+
+由此我们知道，这个库是用来自动添加/删除类名的，我们可以自己写具体的样式来实现渐变效果。
+
+``` css
+/* 进入效果 */
+.prefix-enter {
+  opacity: 0;
+}
+
+.prefix-enter-active {
+  opacity: 1;
+  transition: all 3s;
+}
+
+/* 退出效果 */
+
+.prefix-exit-active {
+  opacity: 0;
+  transition: all 2s;
+}
+
+.prefix-exit {
+  opacity: 1;
+}
+```
+
+当我们的`in`变成`true`，**依次**(看起来两个是一起添加，但应该是有顺序，只是太快了)给元素带上`prefix-enter`和`prefix-enter-active`，所以元素在最初的瞬间`opacity`为0，之后渐变为1。
+
+
+
+##### unmountOnExit
+
+如果带上这个prop，那么元素在`exit`时期就不会挂载（显示）
 
