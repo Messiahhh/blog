@@ -66,6 +66,7 @@ module.exports = {
                 'node',
                 'koa',
                 'react',
+                'react相关库',
                 'vue',
                 'react-vs-vue',
                 'typescript',
@@ -86,7 +87,6 @@ module.exports = {
                 'linux',
                 'websocket',
                 '代码段记录',
-                '第三方库',
                 'php',
                 // '其它'
             ],
