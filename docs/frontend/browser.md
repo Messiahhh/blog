@@ -3,6 +3,198 @@ sidebarDepth: 4
 ---
 ## 浏览器相关
 
+### 跨域
+
+同源：协议，域名，端口号三者都相同，我们称之为同源。
+
+同源策略：只有浏览器才受到同源策略的限制。即不同源的脚本在没有授权的情况下，不能读写对方的资源。比如我们打开了`A.com`，之后又在没有许可的情况下向`B.com`发送请求，通常这个请求是失败的。想要摆脱同源策略的限制，就得使用下面介绍的跨域手段了。
+
+
+
+下面介绍了许多种跨域手段，最常用的是`CORS`和反向代理。
+
+##### JSONP
+
+客户端
+
+```html
+<script>
+	function doSomething(json) {
+    	//do something
+	}
+</script>
+
+<script src="http://api.example.com/data?callback=doSomething&parma=a"></script>
+```
+
+服务端
+
+``` js
+ctx.body = `doSomething(${myJson})` // 传参
+```
+
+缺点：**仅支持GET请求**，安全性低
+
+
+
+##### document.domain
+
+Cookie 是服务器写入浏览器的一小段信息，只有同源的网页才能共享。但是，两个网页一级域名相同，只是二级域名不同，浏览器允许通过设置`document.domain`共享 Cookie。
+
+如a.example.com和b.example.com。
+
+此时两个网站都设置 `document.domain =  "example.com"`， 那么两个网页就可以共享Cookie了。
+
+``` js
+// a.example.com
+document.cookie = 'aaa'
+
+// b.example.com 
+console.log(document.cookie) // 'aaa'
+```
+
+
+
+
+
+##### window.name
+
+这个方法主要用于**父窗口和iframe窗口的通信**。
+
+如果父窗口和iframe窗口是不同源的，则通常无法进行通信。
+
+``` html
+<html>
+    <body>
+        <!-- 我是父窗口 -->
+        <iframe src='xxx.com'>
+            <!-- 我是子窗口 -->
+        </iframe>
+    </body>
+</html>
+```
+
+
+
+`window.name`特点：无论是否同源，只要在同一个窗口里，前一个网页设置了这个属性，后一个网页可以读取它。
+
+例如，我们在a.com页面下设置
+
+``` js
+window.name = '123'
+location.href = 'b.com'
+```
+
+然后在b.com也能获取到`window.name`的值。
+
+
+
+实现跨域：
+
+使用时，先设置`iframe`的`src`为我们想要通信的目标页面。当目标页面的`window.name`修改时，将我们的`iframe`的`src`修改为一个和父窗口同源的页面。
+
+
+
+本质：
+
+iframe内的目标页面 <=> iframe内的一个和父窗口同源的页面 <=> 父窗口
+
+
+
+##### location.hash
+
+这个方法也是主要用于**父窗口和iframe窗口的通信**。
+
+
+
+特点：如果只是改变片段标识符(fragment/hash)，页面不会重新刷新。
+
+
+
+实现跨域：
+
+父窗口修改`iframe`窗口的`src`
+
+``` js
+// 父窗口
+let src = `${originUrl}#${data}`
+document.querySelector('iframe').src = src
+```
+
+`iframe`窗口的页面不会刷新，但是能知道`hash`的变化
+
+``` js
+// iframe窗口
+window.onhashchange = function () {}
+```
+
+同理，`iframe`窗口也可以改变父窗口的`hash`来实现通信。
+
+
+
+##### CORS
+
+CORS（Cross-Origin ResourceSharing）跨域资源共享
+
+只需要后端在响应头设置`Access-Control-Allow-Origin: *`， * 为任意Origin，也可以指定Origin
+
+使用CORS时默认不发送Cookie，想要发送Cookie需要:
+
+1. 设置`Access-Control-Allow-Credentials: true`
+2. 此时`Access-Control-Allow-Origin`不能设置为 * ，必须指定Origin
+
+浏览器把请求分为简单请求与非简单请求
+
+简单请求必须满足以下两大条件
+
+1. 请求方法为 HEAD / GET / POST
+2. HTTP头部不超过以下几种
+   1. Accept
+   2. Accept-Language
+   3. Content-Language
+   4. Last-Event-ID
+   5. Content-Type：只限于三个值`application/x-www-form-urlencoded`、`multipart/form-data`、`text/plain`
+
+不满足的就为非简单请求。
+
+非简单请求的CORS请求，会在正式通信之前，增加一次HTTP查询请求，称为"预检"请求。
+
+这个请求的请求方法为`OPTIONS` ，预检请求的头部还会包括以下几个字段
+
+`Origin` 
+
+`Access-Control-Request-Method` 用来表示非简单请求的请求方法
+
+`Access-Control-Request-Headers`  用来表示非简单请求的额外头部，例如自定义头部
+
+
+
+
+
+#####  postMessage 
+
+跨文档通信。比起`window.name`和`location.hash`，该方法更加方便。
+
+``` js
+window.postMessage('message', url) 
+
+window.on('message', function (e) {
+    console.log(e.data)
+})
+```
+
+
+
+##### 反向代理
+
+由于同源策略是浏览器的策略。
+
+`A.com:80`不能向`B.com:3000`发送请求。那我们可以在`A.com:8080`设置一个代理服务器来代理请求，之后发请求就是`A.com:80 -> A.com:8080 -> B.com:3000`，此时请求可以成功发过去。
+
+通常我们本地开发项目是使用`webpack-dev-server`，而它自带了代理服务器的功能（只需要我们在配置文件中加上`proxy`），所以可以轻松解决跨域问题。除此之外我们也可以使用`nginx`来进行反向代理。
+
+
+
 ### 浏览器渲染机制
 
 1. 浏览器先对得到的HTML进行解码，之后进行网络资源的预处理，将以后要发送的请求提前加进请求队列中。
