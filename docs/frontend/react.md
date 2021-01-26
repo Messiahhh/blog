@@ -21,14 +21,22 @@ const element = (
     Hello, world!
   </h1>
 );
-```
 
-```js
+// 等价于
+
 const element = React.createElement(
   'h1',
   {className: 'greeting'},
   'Hello, world!'
 );
+```
+
+```js
+<App />
+    
+// 等价于
+    
+React.createElement(App, null)
 ```
 
 **这也是为什么你必须引入React库，因为使用JSX就需要React库。**
