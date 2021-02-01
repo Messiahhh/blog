@@ -2,25 +2,27 @@
 sidebarDepth: 4
 ---
 ## CSS
-### CSS基础
+### 基础
+
+
 
 ##### 选择器
 
-1. 标签选择器
-2. ID选择器
-3. class选择器
-4. *选择器
-5. 子代选择器（如div > p，父子关系）
-6. 后代选择器 （如div p， 可以是爷爷和孙子的关系）
-7. 相邻兄弟选择器（如div + p， 选择紧邻着div后面的p）
-8. 属性选择器(如`[type=input]`)
-9. 伪类选择器(`:hover`等)
+1. 标签选择器，如`div`
+2. ID选择器，如`#root`
+3. class选择器，如`.container`
+5. 子代选择器，父子关系，如`div > p`
+6. 后代选择器 ，可以是爷爷和孙子的关系，如`div p`
+7. 相邻兄弟选择器，如`div + p`， 选择紧邻着div后面的p
+8. 属性选择器，如`[type=input]`
+9. 伪类选择器，如`:hover`
+9. 通配符选择器，`*`
 
 
 
 `:first-child`和`:first-of-type` 不要混淆了
 
-`p:first-child`: 只有当一个p元素是其父元素的第一个子元素时，才应用对应的样式。
+`p:first-child`，只有当一个p元素是其父元素的第一个子元素时，才应用对应的样式。
 
 ``` html
 <style>
@@ -55,7 +57,13 @@ sidebarDepth: 4
 
 
 
-##### 继承属性
+##### 选择器优先级
+
+!important > 内联样式 > ID选择器 > class选择器 > 标签选择器 > 通配符（*） > 浏览器默认样式 > 继承样式
+
+
+
+##### 继承样式
 
 常见的继承属性：
 
@@ -65,25 +73,130 @@ sidebarDepth: 4
 
 
 
-注意：background 和 opacity不是继承属性噢。
+> 注意：`background` 和 `opacity`不是继承属性。
 
 
 
-##### 属性的权重
 
-!important > 内联样式 > ID选择器 > class选择器 > 标签选择器 > 通配符（*） > 浏览器默认样式 > 继承样式
+
+
+
+##### display
+
+`display`属性有三种，分别是`block`、`inline`和`inline-block`
+
+**block（块级元素）**：`div`, `h1`~`h6`, `p` 等
+
+如`div`，`h1~h6`，`p`，`header`等
+
+1. 可以设置`width`和`height`属性 
+2. 元素独占一行，**会**自动根据父元素计算出元素的宽度
+
+**inline（行内元素）**
+
+如`a`，`span`，`img`等
+
+1. 不可以设置`width`和`height`属性 
+2. 元素不会独占一行
+
+> `img`有点特殊。在浏览器控制台可以看到其`display`为`inline`，但它实际的表现更贴近`inline-block`，
+>
+> 比如它实际上可以设置`width`和`height`属性
+
+**inline-block** 
+
+如`input`
+
+兼具了`block`和`inline`的特性
+
+1. 可以设置`width`和`height`属性 
+2. 元素不独占一行，**不会**自动根据父元素计算出元素的宽度
+
+
+
+> 补充：`inline`和`inline-block`可以设置`padding`和`margin`，但无法通过像`block`一样使用`margin: 0 auto`做到水平居中。
+
+
+
+##### 文本与换行
+
+[参考文章](https://www.jianshu.com/p/215654c0b03d)
+
+对于浏览器的文本，不同语言的文本在换行时采用的规则不一样。根据换行时的行为差异，可以把文本分为两类：
+
+1. CJK文本，即中文、日文和韩文
+2. Non-CJK文本，比如我们用的最多的英文
+
+> 在默认情况下，即`word-wrap: normal`, `word-break: normal`, `white-space: normal`时，CJK文本可以在任意2个字符间断行，而英文只能在空白符处断行。
+
+``` html
+<body>
+	<div>
+        <a>苹果</a>
+        <a>草莓</a>
+        <a>香蕉</a>    
+        <a>橘子</a> <!-- 额外补充，如果设置成inline-block，也可以实现文本不分割的效果 -->
+        
+        <br />
+        
+        <a>aaa</a>
+        <a>bbb</a>
+        <a>ccc</a>    
+        <a>ddd</a>
+    </div>    
+</body>
+```
+
+橘子一词可能被分割开成`橘 子`
+
+> 苹果 草莓 香蕉 橘
+>
+> 子
+
+`ddd`一词不会被分割开成`d dd`
+
+> aaa bbb ccc 
+>
+> ddd
+
+###### word-break
+
+> 如果我们想要CJK文本表现的和非CJK文本一样或者想要非CJK文本表现和CJK文本一样要怎么办呢？`word-break`属性就是来处理这种情况。默认情况下`word-break: normal`，CJK文本和非CJK应用自己的默认换行规则。设置为`word-break: break-all`后，非CJK文本会应用CJK文本的换行规则，可以在任意位置断行。而设置`word-break: keep-all`后，CJK文本会应用非CJK文本的换行规则，只能在空白处断行。
+
+###### word-wrap
+
+> `word-wrap`属性用来处理这样的情景：一个不可分割的字符串过长，超过容器盒的宽时应该如何处理？在默认情况下(`word-wrap: normal`)，字符串超出了容器盒的宽，不会断行。当设为`word-wrap: break-word`时，过长的字符串会发生断行。
+
+###### white-space
+
+> `white-space`属性是用来设置针对空白符的处理规则。其中`white-space: nowrap`会使文本中换行无效。这一规则优先于上面提到的规则。所以在`white-space: nowrap`时，无论是设置了`word-break: break-all`还是设置了`word-wrap: break-word`，文本都不会换行。
+
+
+
+
 
 ##### 盒模型
 
-现代浏览器默认的`box-sizing: content-box`
+讨论到盒模型，除了核心的`content -> padding -> border -> margin`，另一个要点就是元素的`box-sizing`属性。
 
-意味着当我们设置`width`的时候，实际上在设置盒模型的`content`的长度。此时盒子的实际长度等于`content(width) + padding + border `
+浏览器默认的`box-sizing: content-box`，这意味着当我们设置元素的`width`，实际上是在设置`content`的长度。此时盒子的实际长度等于`content(width) + padding + border `
+
+我们可以修改`box-sizing`为`border-box`，此时我们的`width`等于`content + padding + border`
 
 
 
-我们可以通过设置`box-sizing: border-box`
+##### border
 
-此时我们的`width`等于`content + padding + border`
+###### 画三角形
+
+``` css
+.container::after {
+    content: '';
+    position: absolute;
+    border: 10px solid transparent;
+    border-bottom-color: pink;
+}
+```
 
 
 
@@ -98,6 +211,10 @@ sidebarDepth: 4
     border-radius: 50%;
 }
 ```
+
+
+
+
 
 
 
@@ -150,16 +267,7 @@ sidebarDepth: 4
 
 
 
-##### 画三角形
 
-``` css
-.container::after {
-    content: '';
-    position: absolute;
-    border: 10px solid transparent;
-    border-bottom-color: pink;
-}
-```
 
 ### Flex
 
@@ -237,59 +345,7 @@ sidebarDepth: 4
 
 ### 布局
 
-**block（块级元素）**：div, h1~h6, p 等
-
-如`div`，`h1~h6`，`p`，`header`等
-
-1. 元素独占一行
-2. 可以设置`width`和`height`属性
-
-**inline（行内元素）**
-
-如`a`，`span`，`input`，`img`等
-
-1. 元素不会独占一行
-2. 不可以设置`width`和`height`属性
-
-> `img`标签可以设置宽高，但其display属性的值为inline而不是inline-block，不过它确实兼具二者的特性
-
-**inline-block** 
-
-兼具了`block`和`inline`的特性
-
-1. 元素不独占一行
-2. 可以设置`width`和`height`属性
-
-
-
-举个例子，假设我们有以下结构的`html`代码
-
-``` html
-<div>
-	<a>链接1</a>
-    <a>链接2</a>
-    <a>链接3</a>    
-    <a>链接4</a>
-</div>
-```
-
-当`div`元素宽度不能容纳所有`a`元素（`a`是`inline`元素），会另起一行，页面效果如下
-
-``` txt
-链接1 链接2 链接3 链
-接4
-```
-
-很明显这不是我们想要的结果，我们可以让`a`变成`inline-block`元素，页面效果如下
-
-``` txt
-链接1 链接2 链接3
-链接4
-```
-
-
-
-> 补充：`inline`和`inline-block`可以设置`padding`和`margin`，但无法通过像`block`一样使用`margin: 0 auto`做到水平居中。
+> 
 
 
 
@@ -654,6 +710,68 @@ B站无法直接实现Ipad向移动端的适配，主要原因是页面的内容
 
 总的来说就是以后只用`vw`就行了。
 
+
+
+### Better-Scroll
+
+``` bash
+npm i @better-scroll/core -S
+```
+
+`better-scroll`主要用于解决移动端的滚动需求。提供了让滚动元素显得有弹性、下拉加载或上拉加载等功能。
+
+``` jsx
+import BScroll from '@better-scroll/core'
+function App() {
+    const myRef = useRef(null)
+    useEffect(() => {
+        const bs = new BScroll(myRef.current, {})
+        return () => {
+            bs.destroy()
+        }
+    }, [])
+    return (
+        <div className="wrapper" ref={myRef} >
+            <div className="content">
+                <div className="item">item1</div>
+                <div className="item">item3</div>
+                <div className="item">item4</div>
+                <div className="item">item2</div>
+                <div className="item">item5</div>
+            </div>
+        </div>
+    )
+}
+```
+
+``` css
+.wrapper { 
+    overflow: hidden | scroll;
+}
+
+/**
+ * content宽或高大于wrapper，才有滚动条
+ */
+```
+
+
+
+
+
+##### 插件
+
+`@better-scroll/core`提供了核心也是最基础的功能，让滚动显得更加弹性，我们也可以根据按需引入特定的插件。
+
+
+
+
+
+
+
+### Swiper
+
+
+
 ### 常见网站布局
 
 > 通过观察各大主流网站的布局，熟悉流行的布局方案
@@ -880,22 +998,22 @@ text-overflow: ellipsis;
 
 **多行文本**
 
-##### inline-block的间隙问题
 
-两个display：inline-block元素放到一起会产生一段空白。
 
-原因：此时两个元素间的回车/换行会被转换为空白符
+
+
+##### 行内元素的间隙
+
+两个`inline`或`inline-block`元素中会产生间隙。
 
 ``` html
-<body>
-    <div class="a">
-        1
-    </div>
-    <div class="a">
-        2
-    </div>
-</body>
+<div>
+    <span>item</span> 
+    <span>item</span>
+</div>
 ```
+
+可以看作是`<span>item item</span>`
 
 解决方案:
 
