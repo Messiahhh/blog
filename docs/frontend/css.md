@@ -94,7 +94,7 @@ sidebarDepth: 4
 
 **inline（行内元素）**
 
-如`a`，`span`，`img`等
+如`a`，`span`，`img`等，文本也是行内元素
 
 1. 不可以设置`width`和`height`属性 
 2. 元素不会独占一行
@@ -111,6 +111,12 @@ sidebarDepth: 4
 
 1. 可以设置`width`和`height`属性 
 2. 元素不独占一行，**不会**自动根据父元素计算出元素的宽度
+
+
+
+
+
+由此我们可以知道，对于一个`block`元素，如果我们没有手动设置它的宽，那么它的宽将会**由父元素决定**；而对于一个`inline-block`元素，如果我们没有手动设置它的宽，那么它的宽将会由**子元素决定**。
 
 
 
@@ -744,14 +750,27 @@ function App() {
 }
 ```
 
-``` css
-.wrapper { 
-    overflow: hidden | scroll;
-}
+使用`better-scroll`时，两大要点：
 
-/**
- * content宽或高大于wrapper，才有滚动条
- */
+1. `wrapper`使用`overflow: hidden`
+2. `content`的高或宽要大于`wrapper`的，才会有滚动条和滚动效果
+
+##### 事件派发
+
+``` js
+bs.on('scrollStart', () => {}) // 开始滚动时触发
+bs.on('scroll', () => {}) // 滚动过程中持续触发 
+bs.on('scrollEnd', () => {}) // 结束滚动时触发
+```
+
+其中`scroll`由于会持续触发，可能对性能产生影响，所以默认情况下`scroll`事件不会触发。
+
+我们可以设置`probeType`配置项来改变该行为，比如`probeType: 3`来使任何时候都派发`scroll`事件。
+
+``` js
+new BScroll(el, {
+    probeType: 3
+})
 ```
 
 
@@ -760,7 +779,118 @@ function App() {
 
 ##### 插件
 
-`@better-scroll/core`提供了核心也是最基础的功能，让滚动显得更加弹性，我们也可以根据按需引入特定的插件。
+BetterScroll`1.0`版本一个包涵盖了所有的功能，体积因此也比较大，所以`2.0`版本把核心功能都封装进`@better-scroll/core`，我们可以按需引入特定的插件。
+
+引入插件后，我们需要先通过`BScroll.use(plugin)`注册插件，之后实例化BetterScroll就可以传入插件相关的配置项，并且`bs.on()`可传进去的参数也会变多，如`bs.on('pullingDown')`。
+
+###### pulldown
+
+`pulldown`插件提供了下拉的功能，可以实现下拉刷新。
+
+``` bash
+npm install @better-scroll/pull-down --save
+```
+
+``` jsx
+import BScroll from '@better-scroll/core'
+import PullDown from '@better-scroll/pull-down'
+BScroll.use(PullDown)
+
+const sleep = async (duration) => new Promise((resolve) => setTimeout(() => resolve(), duration))
+
+function App() {
+    const myRef = useRef(null)
+    const [beforePulling, setBeforePulling] = useState(true)
+    const [isPulling, setIsPulling] = useState(false)
+
+    useEffect(() => {
+        const bs = new BScroll(myRef.current, {
+            pullDownRefresh: {
+                threshold: 70,
+                stop: 56,
+            },
+        })
+        bs.on('pullingDown', async () => {
+            setBeforePulling(false)
+            setIsPulling(true)
+            await sleep(1000)
+            setIsPulling(false)
+
+            bs.finishPullDown()
+            setTimeout(() => {
+                setBeforePulling(true)
+                bs.refresh()
+              }, 800)
+
+        })
+
+        return () => {
+            bs.destroy()
+        }
+    }, [])
+    return (
+        <div className="wrapper" ref={myRef} >
+            <div className="content">
+                <div className="pulldown">
+                    {
+                        beforePulling ? (
+                            <span>下拉刷新页面</span>
+                        ) : isPulling ? (
+                            <span>刷新中</span>
+                        ) : (
+                            <span>页面刷新成功</span>
+                        )
+                    }
+                </div>
+                <div className="item">item1</div>
+                <div className="item">item2</div>
+                <div className="item">item3</div>
+                <div className="item">item4</div>
+                <div className="item">item5</div>
+            </div>
+        </div>
+    )
+}
+```
+
+``` css
+body, ul, li {
+  margin: 0;
+}
+
+.wrapper {
+  width: 800px;
+  height: 800px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+}
+
+
+.item {
+  height: 400px;
+  text-align: center;
+  line-height: 400px;
+}
+
+.item:nth-child(2n) {
+  background: skyblue;
+}
+
+.item:nth-child(2n+1) {
+  background: tomato;
+}
+
+.pulldown {
+  position: absolute;
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  text-align: center;
+  color: #999;
+  transform: translateY(-100%)  translateZ(0)
+}
+```
 
 
 
