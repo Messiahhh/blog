@@ -471,7 +471,7 @@ fs.readFile('./test.txt', 'utf8', (err, data) => {
 
 
 
-当我们在`root`目录执行`node app.js`时，输出`undefined`，并非我们想要的结果；而当我们进入`folder`目录执行`node ../a.js`输出`12345`。
+当我们在`root`目录执行`node a.js`时，输出`undefined`，并非我们想要的结果；而当我们进入`folder`目录执行`node ../a.js`输出`12345`。
 
 也就是说，我们执行了相同的代码，却得到了不同的结果。原因是`b.js`中的相对路径可以看成是相对于`process.cwd()`，因此当我们在`root`目录运行node时，路径为`root/test.txt`；当我们在folder目录运行node时，路径为`root/folder/test.txt`。
 

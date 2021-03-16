@@ -112,7 +112,7 @@ Koa的实例app有三个公共的API
 - listen
 
   ``` javascript
-  app.use(3000)
+  app.listen(3000)
   ```
 
   等价于

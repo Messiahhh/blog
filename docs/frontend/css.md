@@ -83,7 +83,7 @@ sidebarDepth: 4
 
 ##### display
 
-`display`属性有三种，分别是`block`、`inline`和`inline-block`
+常用`display`属性有`block`、`inline`、`inline-block`、`flex`等
 
 **block（块级元素）**：`div`, `h1`~`h6`, `p` 等
 

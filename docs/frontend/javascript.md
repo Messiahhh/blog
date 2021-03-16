@@ -614,7 +614,7 @@ setInterval(throttle(function() {
 ```javascript
 Function.prototype.bind = function (context, ...args) {
     return (...newArgs) => {
-        this.call(context, ...args, ...newArgs)
+        return this.call(context, ...args, ...newArgs)
     }
 }
 ```
