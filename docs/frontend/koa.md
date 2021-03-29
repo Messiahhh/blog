@@ -279,3 +279,34 @@ const logger = require('koa-logger')
 app.use(logger())
 ```
 
+
+
+### koa-views
+
+通常用于搭配模板引擎进行服务端渲染，不过似乎现在不怎么用了。
+
+另外使用的场合要额外去安装对应的模板引擎，比如想用`ejs`记得先`npm i ejs`
+
+``` js
+const views = require('koa-views')
+const render = views('./views', { extension: 'ejs'})
+
+app.use(render)
+app.use(async ctx => {
+    await ctx.render('template', {
+        content: 'hello'
+    }) 
+})
+```
+
+``` ejs
+<!-- template.ejs -->
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>
+    <div><%= content %></div>    
+</body>
+</html>
+```
+
