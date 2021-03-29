@@ -269,3 +269,13 @@ app.use((ctx) => {
     console.log(ctx.request.body)
 })
 ```
+
+
+
+### koa-logger
+
+```  js
+const logger = require('koa-logger')
+app.use(logger())
+```
+
