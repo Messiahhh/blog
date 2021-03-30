@@ -1987,7 +1987,7 @@ for (let i of set) console.log(i)
 ### AJAX
 
 ``` javascript
-let xhr = new XMLHttpRequese()
+let xhr = new XMLHttpRequest()
 xhr.onreadystatechange = function () {
     if (xhr.readyState === 4) {
 
