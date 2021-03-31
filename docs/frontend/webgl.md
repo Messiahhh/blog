@@ -56,7 +56,7 @@ animate()
 
 ##### controls
 
-常用controls，比如`OrbitControl.jsd`，提供了良好的交互效果
+常用controls，比如`OrbitControl.js`，提供了良好的交互效果
 
 ``` js
 const controls = new THREE.OrbitControls(camera, renderer.domElement)

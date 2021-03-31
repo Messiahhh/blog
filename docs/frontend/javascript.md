@@ -2422,15 +2422,17 @@ fetch()
    
    ```
 
-3. fetch不支持超时控制timeout
+3. fetch不支持超时控制
+
+   何为超时控制。比如我们请求一个后端不存在的接口，同时后端没有做`fallback`处理，那么我们就请求不到资源，并可能等上十多秒才能看到错误信息。
 
    ``` js
-   // ajax的超时控制
-   xhr.timeout = 2000
+   // 如果2S内没有收到响应，则Cancel这次通信
+   xhr.timeout = 2000 
    xhr.ontimeout = () => {}
    ```
 
-   我们如何实现**fetch的超时控制**
+   我们如何实现**fetch的超时控制**，不过此时通信依然存在，并没有手动`cancel/abort`掉
 
    ``` javascript
    Promise.race([
