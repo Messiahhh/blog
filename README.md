@@ -1,2 +1,2 @@
-## [前端笔记](http://messiahhh.github.io/blog/) （点击访问）
+## [前端笔记](http://messiahhh.github.io/blog/) （求star）
 http://messiahhh.github.io/blog/
