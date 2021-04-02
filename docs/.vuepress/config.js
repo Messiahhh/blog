@@ -82,11 +82,11 @@ module.exports = {
                 // '面试题',
                 'mongodb',
                 'mysql',
+                'linux',
                 'git',
                 '设计模式',
-                'webgl',
                 'websocket',
-                'linux',
+                'webgl',
                 'php',
                 '代码段记录',
                 // '其它'
