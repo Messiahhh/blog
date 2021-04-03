@@ -4,9 +4,84 @@ sidebarDepth: 4
 
 ## TypeScript
 
-> 注：本章节部分代码与解释**引用于官方文档或网络资源**！章节的顺序也是和官网Handbook保持一致。
->
-> 本节内容正在不断完善中...
+> 本节参考自官网文档，部分代码直接引用于原文档的例子
+
+
+
+### 安装 
+
+``` shell
+npm install typescript -g
+tsc index.tsx
+```
+
+##### 项目中添加TS
+
+``` shell
+npm install --save typescript @types/node @types/react @types/react-dom @types/jest
+```
+
+比如在已有的CRA项目中添加TS支持
+
+
+
+### 配置
+
+##### noEmitOnError
+
+``` shell
+tsc --noEmitOnError index.tsx
+```
+
+当不开启该标志时，当调用`tsc`时，即使`ts`代码存在错误，依然会生成一份新的`js`代码。
+
+当开启该标志时，只有`ts`代码没有错误时，才生成新的代码。
+
+
+
+##### noImplicitAny
+
+当开启该标志时，参数如果是隐式any类型，就会报错。
+
+``` tsx
+function A(name) { // 隐式any类型，报错
+    console.log(name)
+}
+```
+
+
+
+##### strictNullChecks
+
+当不开启该标志时，`undefined`和`null`的值可以被赋值给其他类型的变量（如`string`类型）
+
+``` tsx
+let str: string = undefined // 不会报错
+```
+
+当开启该标志时，该代码就会报错。
+
+此时只能：
+
+``` tsx
+let str: string | undefined = undefined
+```
+
+### 概念
+
+##### 类型推导
+
+``` tsx
+// 报错！！！因为第一句会自动将value的类型推导为string
+let value = 'abcd' 
+value = 123456
+
+// 等价于以下代码
+let value : string = 'abcd'
+value = 123456
+```
+
+
 
 ### 基本类型
 
@@ -14,85 +89,36 @@ sidebarDepth: 4
 let success : boolean = true // 布尔值
 let age : number = 20 // 数字
 let name : string = 'akara' // 字符串
+let u : undefined = undefined // undefined
+let n : null = null // null
 
 // void 用来代表空值，值只能是undefined或null
 let value : void = undefined
 value = null
-
-let u : undefined = undefined // undefined
-let n : null = null // null
-```
-
-与 `void` 的区别是，`undefined` 和 `null` 是所有类型的子类型，而`void`并不是其他类型的子类型。因此 `undefined` 类型的变量，可以赋值给 `number` 类型的变量；而`void`类型的变量，不可以赋值给其他类型。
-
-```tsx
-// 这样不会报错
-let num: number = undefined; // 不设置 --strictNullChecks时
-
-// 会报错
-let u: void;
-let num: number = u;
-```
-
-> However, when using the `--strictNullChecks` flag, `null` and `undefined` are only assignable to `unknown`, `any` and their respective types (the one exception being that `undefined` is also assignable to `void`). This helps avoid *many* common errors. In cases where you want to pass in either a `string` or `null` or `undefined`, you can use the union type `string | null | undefined`.
->
-> Union types are an advanced topic that we’ll cover in a later chapter.
->
-> > As a note: we encourage the use of `--strictNullChecks` when possible, but for the purposes of this handbook, we will assume it is turned off.
-
-根据官网的这段补充，可以知道如果设置了`--strictNullChecks`，`undefined`和`null`就不能赋值给`string`的变量了。不过这个时候我们依然可以这样：
-
-``` tsx
-let num: number | undefined = undefined
 ```
 
 ##### 数组
 
-###### 「类型 + 方括号」表示法
+TS中数组只可以储存一种数据类型，并且数组长度可变。
 
-> 数组只能包括同一种数据类型
-
-```ts
-let fibonacci: number[] = [1, 1, 2, 3, 5];
-```
-
-###### 泛型表示
-
-我们也可以使用数组泛型（Array Generic） 来表示数组
-
-```ts
-let fibonacci: Array<number> = [1, 1, 2, 3, 5];
+``` tsx
+let arr: number[] = [1, 2, 3]
+let arr: Array[number] = [1, 2, 3]
 ```
 
 ##### 元组
 
-元组可以包括多种不同的数据类型
+元组可以储存多种数据类型，但是元组长度不可变。
 
 ```ts
-let tom: [string, number] = ['Tom', 25];
-```
+let aka: [string, number] = ['akara', 20]
 
-数组的长度是可变的，而元组的长度是不可变的
-
-```ts
-tom[0] = 'jack' // ok
-
-tom = ['jack', 20] // ok
-
-tom = ['jack'] // wrong. 元组的长度不能改变
+aka = ['akara', 20, 100] // 报错
 ```
 
 ##### 枚举
 
-枚举（Enum）类型用于取值被限定在一定范围内的场景，比如一周只能有七天，颜色限定为红绿蓝等。
-
-```ts
-enum Days {Sun, Mon, Tue, Wed, Thu, Fri, Sat};
-```
-
-枚举成员会被赋值为从 `0` 开始递增的数字，同时也会对枚举值到枚举名进行反向映射：
-
-```ts
+``` tsx
 enum Days {Sun, Mon, Tue, Wed, Thu, Fri, Sat};
 
 console.log(Days["Sun"] === 0); // true
@@ -106,71 +132,41 @@ console.log(Days[2] === "Tue"); // true
 console.log(Days[6] === "Sat"); // true
 ```
 
-```ts
-enum Days {Sun = 7, Mon = 1, Tue, Wed, Thu, Fri, Sat};
+##### any
 
-console.log(Days["Sun"] === 7); // true
-console.log(Days["Mon"] === 1); // true
-console.log(Days["Tue"] === 2); // true
-console.log(Days["Sat"] === 6); // true
+``` js
+let value: any = 'akara'
+value = 100 // 不报错
+let num: boolean = value // 不报错
+
+let obj: any = {}
+obj.getName() // 不报错
+
 ```
 
-上面的例子中，未手动赋值的枚举项会接着上一个枚举项递增。
+`any`类型的变量可以获取它的任何属性和方法
 
 ##### unknown
 
 `unknown`表示某个变量的类型是未知的，也意味着这个变量可能是任意类型的值，这个值可能是来自于动态内容。
 
 ``` tsx
-let a: unknown = '1'
-a = true
-a = 1
+let value: unknown = 'akara'
+value = 100 // 不报错
+let num: boolean = value // 报错！这里和any的表现不同
 
-let b: number = a // 错误，a可能是任意类型的值，因此不能传给类型为number的b 
+let obj: unknown = {}
+obj.getName() // 报错！
 ```
 
-我们可以通过使用类型守卫（如等值判断，或者是使用`typeof`进行类型判断），来`narrow`该变量的类型范围
+我们可以通过类型守卫（如`typeof`）来`narrow`变量的类型范围
 
 ``` tsx
-let a: unknown = 1
-let b: number 
-if (a === 1) {
-	// 此时，TypeScript知道a的类型为number，因此不会报错
-	b = a
+let value: unknown = 100
+let num: number 
+if (typeof value === 'number') {
+	num = value // 此时不报错
 }
-```
-
-##### any
-
-```ts
-let value : string = 'akara'
-value = 20 // 报错，类型不能更改
-
-let value : any = 'akara'
-value = 20 // 不报错
-```
-
-在任意值上访问任何属性都是允许的，也允许调用任何方法。
-
-变量如果在声明的时候，未指定其类型，那么它会被识别为任意值类型。
-
-```ts
-let value
-// 等于
-let value : any
-```
-
-
-
-`any`和`unknown`的一个区别如下：
-
-``` tsx
-// 对比上面unknown一节的代码
-let a: any = '1'
-a = true
-a = 1
-
-let b: number = a // 不报错
 ```
 
 ##### never
@@ -192,101 +188,72 @@ function infiniteLoop(): never {
 我们通常会使用`interface`来描述对象的类型，但此时对象的属性会被严格的限制住，很多时候我们并不知道对象的结构如何，此时可以使用`object`
 
 ``` tsx
-let i: object = {}
-i = {
+let obj: object = {
   name: 'akara'
 }
 ```
 
-
-
-##### 类型推导
-
-```ts
-// 报错！！！因为第一句会自动将value的类型推导为string
-let value = 'abcd' 
-value = 123456
-
-// 等价于以下代码
-let value : string = 'abcd'
-value = 123456
-```
-
-
-
-### 字面量类型
-
-`string literal`是`string`的子集，`number literal`是`number`的子集，`boolean literal`是`boolean`的子集
+##### 字面量类型
 
 ```ts
 // 字符串字面量类型
-type EventNames = 'click' | 'scroll' | 'mousemove';
-function handleEvent(ele: Element, event: EventNames) {
-    // do something
-}
-
-handleEvent(document.getElementById('hello'), 'scroll');  // 没问题
-handleEvent(document.getElementById('world'), 'dbclick');
+let str: 'small' = 'large'
 
 // 数字字面量类型
-let aka: 1 | 2 | 3 = 2
+let num: 1 = 1
 
 // 布尔字面量类型
-let aka: true = true
+let boo: true = true
 ```
+
+字面量类型可以视为相应类型的子集，如字符串字面量类型可以视为字符串类型的子集。
 
 
 
 ### 接口
 
-接口作用基本可以分为两类，①是对类的一部分行为进行抽象，②是对对象的形状进行描述。本节介绍的就是第二个作用：描述对象的形状。
+接口作用：①描述对象的形状，②对类的行为进行抽象。本节介绍作用①。
 
 ``` tsx
 interface Person {
- name: string;
- age: number;
+	name: string;
+	age: number;
 }
 
-let tom: Person = {
- name: 'Tom',
- age: 25
+let me: Person = {
+	name: 'akara',
+	age: 20,
 };
 ```
 
-定义的变量比接口少了一些属性是不允许的，多一些属性也是不允许的
+接口的属性**不可以多，也不可以少**
 
 ```ts
-// 报错！！！不能少属性
-let tom : Person = {
- name: 'Tom'
+let me : Person = { // 报错，少了属性
+	name: 'aka' 
 }
 
-// 报错！！！不能多属性
-let tom : Person = {
- name: 'Tom',
- age: 25,
- gender: 'male'
+let tom : Person = { // 报错，多了属性
+	name: 'aka',
+	age: 20,
+	gender: 'male'
 }
 ```
 
-##### 可选属性
-
-有时我们希望不要完全匹配一个形状，那么可以用可选属性
+**可选属性**
 
 ```tsx
 interface Person {
- name: string;
- age?: number;
+	name: string;
+	age?: number;
 }
 
 let tom: Person = {
- name: 'Tom'
+	name: 'aka' // 不报错
 };
 ```
 
-##### 只读属性
-
-有时候我们希望对象中的一些字段只能在创建的时候被赋值，那么可以用 `readonly` 定义只读属性
+**只读属性**
 
 ```ts
 interface Person {
@@ -302,13 +269,12 @@ let tom: Person = {
     gender: 'male'
 };
 
-// 报错！！！
-tom.id = 9527;
+tom.id = 9527; // 报错
 ```
 
 ##### 索引类型
 
-索引类型（Indexable Types）有两种，分别是`string`（字符串索引）和`number`（数字索引），其语法如下
+首先，索引类型分为**字符串索引类型**和数字索引类型。
 
 ``` tsx
 interface test {
@@ -317,126 +283,49 @@ interface test {
 }
 ```
 
-有时候我们希望一个接口允许存在任意的字符串属性，可以使用如下方式：
+再来看几个例子：
 
-```ts
-interface Person {
+``` tsx
+interface test {
     name: string;
-    age?: number;
-    [propName: string]: any;
+    age: number;
 }
 
-let tom: Person = {
-    name: 'Tom',
-    gender: 'male'
-};
+let o: keyof test // 'name' | 'age'
 ```
 
-需要注意的是，一旦使用了字符串索引，那么字符串类型的确定属性和可选属性的类型都必须是它的类型的子集，如下：
-
-```ts
-// 错误！
-// Property 'age' of type 'number | undefined' is not assignable to string index type 'string'
-interface Person {
-    name: string;
-    age?: number;
-    [propName: string]: string;
+``` tsx
+interface test {
+    [n: number]: number; // 数字索引类型
 }
 
-let tom: Person = {
-    name: 'Tom',
-    age: 25,
-    gender: 'male'
-};
-
-// 正确！
-interface Person {
-    name: string;
-    age?: number;
-    [propName: string]: string | number;
-}
-
-let tom: Person = {
-    name: 'Tom',
-    age: 25,
-    gender: 'male'
-};
+let o = keyof test // number
 ```
+
+``` tsx
+interface test {
+    [s: string]: string; // 字符串索引类型
+}
+
+let o = keyof test // string | number
+```
+
+从中我们能得出一个结论：**数字索引类型是字符串索引类型的子集**。
+
+``` tsx
+interface test2 {
+    1: number;
+    'a': string;
+    [n: number]: number;
+    [s: string]: string | number; // 注意这里
+}
+```
+
+在这个代码例子中，接口属性有以下几种类型：数字字面量1、字符串字面量'a'、`number`、`string `。**其中数字字面量是`[n: number]`的子集，字符串字面量是`[s:string]`的子集，`[n: number]`又是`[s: string]`的子集。**
+
+所以`[s: string]`的值的类型必须包含`[n: number]`的值的类型和字面量的值的类型。
 
 > There are two types of supported index signatures: string and number. It is possible to support both types of indexers, but **the type returned from a numeric indexer must be a subtype of the type returned from the string indexer. This is because when indexing with a `number`, JavaScript will actually convert that to a `string` before indexing into an object.** That means that indexing with `100` (a `number`) is the same thing as indexing with `"100"` (a `string`), so the two need to be consistent.
-
-根据官网的这段说明，我们也能知道：`1`是`[n: number]`的子集，`'name'`是`[s: string]`的子集，而`[n: number]`又是`[s: string]`的子集。
-
-事实上，通过如下一段奇怪的代码，你可以得出类似的结论：
-
-``` tsx
-interface test {
-    [b: number]: string,
-}
-
-let a: keyof test // number
-
-
-interface test {
-    [b: string]: string,
-}
-
-let a: keyof test // string | number  是不是和预期不一致？
-```
-
-很明显，我们只去定义了`string index`，但最后发现接口同时存在了`number index`和`string index`。这也是因为数字索引是字符串索引的子集。
-
-
-
-### 联合类型
-
-联合类型（Union Types）表示取值可以为多种类型中的一种。
-
-```ts
-let value : string | number
-value = 'akara'
-value = 12345
-```
-
-当 TypeScript 不确定一个联合类型的变量到底是哪个类型的时候，我们**只能访问此联合类型的所有类型里共有的属性或方法**。
-
-```ts
-// 报错！！！
-function getLength(something: string | number): number {
- 	return something.length;
-}
-```
-
-上例中，`length` 不是 `string` 和 `number` 的共有属性，所以会报错。
-
-访问 `string` 和 `number` 的共有属性是没问题的
-
-```ts
-function getString(something: string | number): string {
- 	return something.toString();
-}
-```
-
-
-
-### 交叉类型
-
-交叉类型（Intersection Type）
-
-``` tsx
-type a = {
-  id: number
-}
-type b = {
-  name: string
-}
-
-let test: a & b = {
-  id: 2,
-  name: 'aa'
-}
-
-```
 
 
 
@@ -879,40 +768,81 @@ createArray<string>(3, 'x'); // ['x', 'x', 'x']
 
 ### 类型操作
 
-> 介绍一些常用的类型操作！
+##### `typeof`
 
-##### typeof 
-
-`typeof 变量`
-
-`typeof`在JavaScript中被用来获取变量的基本类型，而在TypeScript中，我们也可以在`type context`中使用`typeof`关键字，能够拿到变量的类型
+在JavaScript中`typeof`用来获取变量的基本类型，而在TypeScript中可以在`type context`使用`typeof`获取类型
 
 ``` tsx
 let source = {
-    name: 'akara',
-    age: 20,
+    name: 'aka',
 }
 
 let target: typeof source = {
-    name: 'bkara',
-    age: 200,
+    name: 'bkb',
 }
 ```
 
-##### keyof
 
-`keyof 类型`
 
-获得指定类型的所有键值，这些键值的联合类型组成了新类型
+##### `keyof`
 
 ``` tsx
 let source = {
-    name: 'akara',
+    name: 'aka',
     age: 20
 }
-let target: keyof typeof source // 'name' | 'age'
-target = 'name' // or target = 'age'
+let target: keyof typeof source = 'name' // 'name' | 'age' 
 ```
+
+
+
+##### 联合类型
+
+联合类型（Union Types）表示取值可以为多种类型中的一种。
+
+```ts
+let value : string | number
+value = 'akara'
+value = 12345
+```
+
+当 TypeScript 不确定一个联合类型的变量到底是哪个类型的时候，我们**只能访问此联合类型的所有类型里共有的属性或方法**。
+
+```ts
+// 报错！！！
+function getLength(something: string | number): number {
+ 	return something.length;
+}
+```
+
+上例中，`length` 不是 `string` 和 `number` 的共有属性，所以会报错。
+
+访问 `string` 和 `number` 的共有属性是没问题的
+
+```ts
+function getString(something: string | number): string {
+ 	return something.toString();
+}
+```
+
+
+
+##### 交叉类型
+
+``` tsx
+type a = {
+    name: string;
+}
+type b = {
+    age: number;
+}
+let o: a & b = {
+    name: 'aka',
+    age: 20,
+}
+```
+
+
 
 ##### Indexed Access Types
 
