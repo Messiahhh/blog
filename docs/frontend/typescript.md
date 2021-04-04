@@ -4,7 +4,7 @@ sidebarDepth: 4
 
 ## TypeScript
 
-> 本节参考自官网文档，部分代码直接引用于原文档的例子
+> 注：本节参考自官网文档，部分代码直接引用于原文档的例子
 
 
 
@@ -199,7 +199,9 @@ let value: unknown = 'akara'
 value = 100 // 不报错
 let num: boolean = value // 报错！这里和any的表现不同
 
-let obj: unknown = {}
+let obj: unknown = {
+    getName: function() {}
+}
 obj.getName() // 报错！
 ```
 
@@ -363,7 +365,9 @@ let obj = {
 }
 ```
 
+##### 重载
 
+> Todo
 
 ### 对象类型
 
@@ -624,69 +628,56 @@ function People (name: string, id: number) {
 
 
 
-
-
-
-
-
-
-另外，当我们用`class`来声明一个类，这个类名也可以被当成类型！也就是这个类的实例的类型
-
-``` tsx
-class People {
-    name = 'akara'
-}
-
-let p: People = new People() // 实例
-
-let People2: typeof People = People // 类
-```
-
-
-
 ### 泛型
 
-```tsx
-function createArray<T>(length: number, value: T): Array<T> {
-    let result: T[] = [];
-    for (let i = 0; i < length; i++) {
-        result[i] = value;
-    }
-    return result;
+泛型主要被使用在**`interface`**和**函数**当中。
+
+``` tsx
+interface A<T> {
+    name: T;
+    age: T;
 }
 
-createArray<string>(3, 'x'); // ['x', 'x', 'x']
+let a: A<string> = {
+    name: 'aka',
+    age: '20',
+}
 ```
+
+``` tsx
+function A<T>(name: T, age: T): T[] {
+    return [name, age]
+} 
+A('a', 'b')
+```
+
+无论是`interface`还是函数，都存在多个变量的类型，而很多时候我们希望这些变量的类型**强关联**，所以引入了泛型的概念。
+
+函数有个好处是当我们调用的时候不需要显式传入泛型的值，它会根据函数的参数进行推导。
+
+
+
+##### 泛型约束
+
+很多时候我们需要限定泛型的值在某个范围，也就是通过`extends`来对其进行约束。
+
+``` tsx
+function A<T extends { id: number }> (name: T) {
+    console.log(name.id)
+}
+A({ id: 100 })
+
+function B<T extends 'a' | 'b'> (name: T) {
+    console.log(name)
+}
+B('a')
+```
+
+
 
 
 
 ### 类型操作
-
-##### `typeof`
-
-在JavaScript中`typeof`用来获取变量的基本类型，而在TypeScript中可以在`type context`使用`typeof`获取类型
-
-``` tsx
-let source = {
-    name: 'aka',
-}
-
-let target: typeof source = {
-    name: 'bkb',
-}
-```
-
-
-
-##### `keyof`
-
-``` tsx
-let source = {
-    name: 'aka',
-    age: 20
-}
-let target: keyof typeof source = 'name' // 'name' | 'age' 
-```
 
 
 
@@ -738,9 +729,37 @@ let o: a & b = {
 
 
 
-##### Indexed Access Types
+##### `typeof`
 
-`类型[<键值>]`
+在JavaScript中`typeof`用来获取变量的基本类型，而在TypeScript中可以在`type context`使用`typeof`获取类型
+
+``` tsx
+let source = {
+    name: 'aka',
+}
+
+let target: typeof source = {
+    name: 'bkb',
+}
+```
+
+
+
+##### `keyof`
+
+``` tsx
+let source = {
+    name: 'aka',
+    age: 20
+}
+let target: keyof typeof source = 'name' // 'name' | 'age' 
+```
+
+
+
+
+
+##### `Indexed Access Types`
 
 我们的接口类型也是类似对象的结构，那么我们自然可以使用索引来获取接口类型的某个键值的类型
 
@@ -761,7 +780,7 @@ target = 20
 let target: source[keyof source] = 'aka' // string | number 
 ```
 
-在接口一节，有提到**任意属性**，我们也可以拿到该键值的类型，比如：
+我们也可以拿到`interface`中索引类型的值：
 
 ``` tsx
 interface source {
@@ -781,9 +800,107 @@ interface source {
 let target: source[number] = 0 // number
 ```
 
+
+
+##### `Conditional Types`
+
+形式：`A extends B ? a : b`
+
+``` tsx
+interface IdLabel {
+  	id: number /* some fields */;
+}
+interface NameLabel {
+  	name: string /* other fields */;
+}
+
+type NameOrId<T extends number | string> = T extends number
+  ? IdLabel
+  : NameLabel;
+
+function createLabel<T extends number | string>(idOrName: T): NameOrId<T> {
+	throw "unimplemented";
+}
+```
+
+``` tsx
+type MessageOf<T extends { message: unknown }> = T["message"];
+type MessageOf<T> = T extends { message: unknown } ? T["message"] : never;
+```
+
+我们通常会使用泛型对类型进行约束，不过有的时候我们也希望当参数是约束外的类型时，有一个固定的返回值。此时可以使用第二行的写法。
+
+
+
+###### `infer`
+
+使用条件类型时，我们还可以在内部使用`infer`关键字
+
+``` tsx
+type A<T> = T extends Array<infer U> ? U : T 
+                            
+type GetReturnType<Type> = Type extends (...args: never[]) => infer Return
+  ? Return
+  : never;
+```
+
+
+
+##### Mapped Types
+
+``` tsx
+type A = {
+    name: string;
+    age: number
+}
+
+type B = {
+    [p in keyof A]+?: A[p]
+}
+```
+
+> Note that this syntax describes a type rather than a member. If you want to add members, you can use an intersection type
+
+``` tsx
+// 错误的写法
+type test = {
+    [K in 'a' | 'b' | 'c']?: number;
+    name: string;
+}
+
+// 正确的写法
+type test = {
+    [K in 'a' | 'b' | 'c']?: number
+} & {
+    name: string,
+}
+```
+
+
+
+###### 修饰符
+
+可以使用`-readonly`、`-?`、`+readonly`、`+?`等操作符。
+
+``` tsx
+type B = {
+    [p in keyof A]-?: A[p]
+}
+
+type B = {
+    -readonly[p in keyof A]: A[p]
+}
+
+type B = {
+    [p in keyof A]?: A[p] // 等于 +?
+}
+```
+
+
+
+
+
 ### 值得注意的问题
-
-
 
 ##### intersection 和 indexed access type
 
@@ -803,52 +920,6 @@ type test = {
 ```
 
 
-
-##### subtraction
-
-``` typescript
-interface test {
-    one?: string;
-    two?: string
-}
-
-let b: {
-    [T in keyof test]-?: test[T]
-}
-```
-
-
-
-##### indexed access type
-
-``` typescript
-// 其他代码笔记
-interface test {
-    [b: string]: string,
-}
-
-let a: keyof test // string | number
-
-
-
-let b: string[][number] = '123'
-
-interface test {
-    [a: number]: string,
-    [b: string]: string,
-    ccc: number // 不能是number
-}
-
-let a: test = {
-    1: '111',
-    2: '222',
-    '3': '333'
-}
-
-let c: keyof test // number | string
-
-let b: test[number]
-```
 
 
 
