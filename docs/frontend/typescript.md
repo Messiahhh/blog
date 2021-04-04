@@ -898,31 +898,6 @@ type B = {
 
 
 
-
-
-### 值得注意的问题
-
-##### intersection 和 indexed access type
-
-``` typescript
-// 发现这样的写法不行
-type test = {
-    [K in 'a' | 'b' | 'c']?: number;
-    name: string;
-}
-
-// 必须得这样
-type test = {
-    [K in 'a' | 'b' | 'c']?: number
-} & {
-    name: string,
-}
-```
-
-
-
-
-
 ### 工具类型实现
 
 ##### `Partial<T>`
