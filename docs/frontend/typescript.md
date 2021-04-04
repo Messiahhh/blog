@@ -83,6 +83,50 @@ value = 123456
 
 
 
+##### 类型断言
+
+``` tsx
+const el = document.querySelector('.el') as HTMLCanvasElement 
+
+// or
+
+const el = <HTMLCanvasElement>document.querySelector('.el')
+```
+
+
+
+###### const 断言
+
+``` tsx
+let obj = {
+    name: 'aka' // string
+}
+
+let obj = {
+    name: 'aka' // readonly 'aka' 
+} as const
+```
+
+`const`断言还可以把数组断言成只读元组：
+
+``` tsx
+let arr = [1, 2, 3] as const
+```
+
+
+
+###### Not-null 断言
+
+``` tsx
+function liveDangerously(x?: number | undefined) {
+  console.log(x!.toFixed());
+}
+```
+
+
+
+
+
 ### 基本类型
 
 ``` tsx
@@ -193,6 +237,28 @@ let obj: object = {
 }
 ```
 
+##### Object
+
+> object和Object不同，我们应该总是使用object
+
+``` tsx
+const d: Date = new Date()
+const e: Error = new Error('wrong')
+const obj: Object = {}
+
+
+class People {
+    name = 'aka'
+}
+
+const p: People = new People()
+const People2: typeof People = People
+```
+
+
+
+
+
 ##### 字面量类型
 
 ```ts
@@ -208,9 +274,100 @@ let boo: true = true
 
 字面量类型可以视为相应类型的子集，如字符串字面量类型可以视为字符串类型的子集。
 
+值得注意的是，用`let`和`const`声明变量时，其类型是不同的。
+
+``` tsx
+let name = 'aka' // string
+const name = 'aka' // 'aka'
+```
 
 
-### 接口
+
+
+
+### 函数
+
+```ts
+function sum(x: number, y: number): number { // 函数声明
+    return x + y;
+}
+
+let mySum = function (x: number, y: number): number { // 函数表达式
+    return x + y;
+};
+```
+
+##### 类型表示
+
+``` tsx
+const A: (name: string) => void = fn1
+
+const B: {
+    (name: string): void;
+    id: number;
+} = fn2
+
+const C: {
+    id: number;
+    new (name: string): People;
+} = People 
+```
+
+##### 参数
+
+TypeScript中函数对参数的长度要求很严格，可使用`?`表示可选参数，也可以使用参数默认值：
+
+``` tsx
+function A(name?: string): string | undefined { // name的实际类型为string | undefined
+    return name
+}
+```
+
+``` tsx
+function A(name = 'akara'): string { 
+    return name
+}
+```
+
+##### 匿名函数
+
+匿名函数中会自动推导参数的类型
+
+``` tsx
+let arr = [1, 2, 3]
+arr.forEach(item => console.log(item)) // 不用给item加类型注解
+```
+
+
+
+##### this
+
+TypeScript对`this`的使用很严格，使用的时候需要多加注意，比如声明类的时候最好不要使用构造函数。
+
+[可以参考这篇文章](https://jkchao.github.io/typescript-book-chinese/typings/thisType.html)
+
+
+
+以及一些代码例子以供参考：
+
+``` tsx
+function fn() {
+    // 'this' implicitly has type 'any' because it does not have a type annotation.
+	console.log(this)
+}
+
+let obj = {
+    fn() {
+        console.log(this) // 不报错
+    }
+}
+```
+
+
+
+### 对象类型
+
+##### 接口
 
 接口作用：①描述对象的形状，②对类的行为进行抽象。本节介绍作用①。
 
@@ -245,7 +402,7 @@ let tom : Person = { // 报错，多了属性
 ```tsx
 interface Person {
 	name: string;
-	age?: number;
+	age?: number; // 此时age的实际类型为number | undefined
 }
 
 let tom: Person = {
@@ -272,7 +429,7 @@ let tom: Person = {
 tom.id = 9527; // 报错
 ```
 
-##### 索引类型
+###### 索引类型
 
 首先，索引类型分为**字符串索引类型**和数字索引类型。
 
@@ -327,319 +484,44 @@ interface test2 {
 
 > There are two types of supported index signatures: string and number. It is possible to support both types of indexers, but **the type returned from a numeric indexer must be a subtype of the type returned from the string indexer. This is because when indexing with a `number`, JavaScript will actually convert that to a `string` before indexing into an object.** That means that indexing with `100` (a `number`) is the same thing as indexing with `"100"` (a `string`), so the two need to be consistent.
 
+##### Type alias
 
-
-
-
-### 函数
-
-```ts
-// 函数声明
-function sum(x: number, y: number): number {
-    return x + y;
-}
-
-// 函数表达式
-let mySum = function (x: number, y: number): number {
-    return x + y;
-};
-```
-
-其中函数表达式的写法，我们只对右边的匿名函数进行了类型定义，并没有给出`mySum`的类型。此时会类型推导出`mySum`的类型，因此代码等价于：
-
-```ts
-let mySum: (x: number, y: number) => number = function (x: number, y: number): number {
-    return x + y;
-};
-```
-
-函数类型`(x: number, y: number) => number`中的`x`和`y`只是为了可读性，可以替换成任何其他名字，如：
+`interface`和`type alias`作用基本相当，但二者还是有一些区别的，这里挑几个重点的说说
 
 ``` tsx
-let mySum = (one: number, two: number) => number = function (x: number, y: number): number {
-    return x + y
+interface A {
+    name: string
 }
-```
-
-
-
-我们还可以使用接口的形式表示函数类型
-
-``` tsx
-let mySum: {
-    (x: number, y: number): number
-} = function (x: number, y: number): number {
-    return x + y
+interface B extends A {
+    age: number
 }
 
-// 接口也可以继续拓展，如
-function A(x: number, y: number): number {
-    return x + y
+// ----- 分割线 -----
+
+type A = {
+    name: string
 }
-
-A.id = 996
-A.name = 'akara'
-
-let mySum: {
-    (x: number, y: number): number;
-	id: number;
-	name: string
-} = A
-
-// 同时构造函数的类型也可以用接口的形式来表示
-class People {
-  name: string
-  id: number
-
-  constructor(name: string, id: number) {
-    this.name = name
-    this.id = id
-  }
+type B = A & {
+    age: number
 }
-
-
-let People2: {
-  new (name: string, id: number): People // class也可以当作类型
-} = People
-
-let p: People = new People('aka', 996)
-```
-
-##### 可选参数
-
-TypeScript中函数对参数的类型和长度的要求很严格，不允许传入更多/更少的参数。
-
-与接口中的可选属性类似，我们用 `?` 表示可选的参数：
-
-```ts
-function buildName(firstName: string, lastName?: string) {
-    if (lastName) {
-        return firstName + ' ' + lastName;
-    } else {
-        return firstName;
-    }
-}
-let tomcat = buildName('Tom', 'Cat');
-let tom = buildName('Tom');
-```
-
-##### 参数默认值
-
-``` tsx
-function A(name = 'akara'): string { // or (name: string = 'akara') 
-    return name
-}
-```
-
-##### this
-
-> 待完善
-
-[可以参考这篇文](https://jkchao.github.io/typescript-book-chinese/typings/thisType.html)
-
-``` tsx
-function fn() {
-    // 报错!
-    // 'this' implicitly has type 'any' because it does not have a type annotation.
-	console.log(this)
-}
-
-//-------------分割线-----------------
-
-let obj = {
-    fn() {
-        console.log(this) // { fn(): void; }
-    }
-}
-
-var fn2 = obj.fn
-window.fn2() // ok
-
-//-------------分割线-----------------
-
-let obj2 = {
-    // 报错！
-    // 'obj2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
-    fn(this: typeof obj) {
-        console.log(this) 
-    }
-}
-
-//-------------分割线-----------------
-
-type obj3Type = {
-    fn(): void
-}
-let obj3: obj3Type = {
-    fn(this: obj3Type) {
-        console.log(this) // obj3Type
-    }
-}
-
-var fn2 = obj3.fn
-window.fn2() // 
-
-
-
-function fn(this: typeof window) {
-    console.log(this)
-}
-
-//-------------分割线-----------------
-// 感觉差不多，都能获得到this
-let obj = {
-    fn() {
-        console.log(this) // { fn(): void; }
-    }
-}
-
-class People {
-    constructor() {
-        console.log(this)
-    }
-}
-
 ```
 
 
 
 ### 类
 
-在JavaScript中，通常有两种方式去声明一个类，分别是`class`和`construct function`，如下：
-
-``` js
-// 使用class关键字
-class People {
-    constructor(name) {
-        this.name = name
-    }
-}
-
-// 直接声明构造函数
-function People(name) {
-    this.name = name
-}
-
-new People('akara')
-```
-
-不管怎么样，当我们通过`new`操作符来生成一个类的实例时，会经过几个步骤：先创建空的实例对象，再通过调用构造函数来给这个空对象增加新属性。像这样：
-
-``` js
-People.call({
-    __proto__: People.prototype
-}, 'akara')
-```
-
-而既然TypeScript引入了严格的类型系统，我们就不能在构造函数中给空对象增加属性，相反的做法是，我们传入构造函数的实例最初就应该拥有这几个属性了。
+在TypeScript中，强烈建议只使用`class`而不是构造函数来声明类，推荐写法：
 
 ``` tsx
-// 这个类在JS中肯定是正确的，但在TS中报错了
 class People {
+  name: string 
   constructor(name: string) {
-    this.name = name // 错误！Property 'name' does not exist on type 'People'
-  }
-}
-
-// 原因可以用以下伪代码解释
-
-let obj = {
-    __proto__: Object.prototype
-}
-
-// 错误！property 'name' does not exist on type '{ __proto__: Object; }'
-People.call(obj, 'akara') // 等价于 obj.name = 'akara'
-```
-
-所以，在TypeScript中创建`class`的推荐写法如下：
-
-``` tsx
-class People {
-  name: string // 传入构造函数前，实例就拥有name属性了
-  constructor(name: string) {
-    this.name = name // 正确，构造函数中只是重新给该属性赋值
-  }
-}
-
-// 类似于
-
-let obj = {
-    name: undefined,
-    __proto__: Object.prototype
-}
-
-People.call(obj, 'akara') // 等价于 obj.name = 'akara'  
-```
-
-上文解释了，因为TypeScript引入了类型系统，用以往的写法（实例属性在构造函数中设置）声明`class`的方式会报错，而多亏`class`的这种实例属性的写法（实例属性在构造函数外设置），我们稍微改动代码就可以了。
-
-而类的声明除了使用`class`，也可以使用`construct function`，但后者并不能像`class`一样在构造函数调用前就给实例设置好属性，事实上我在官方文档中也没有看到相关的例子。所以在TypeScript中，建议只使用`class`来声明类，只有这样声明的类才能通过`new`操作符来初始化。
-
-
-
-以下是一些失败的尝试：
-
-``` tsx
-// 如果在TypeScript中使用construct function的方式创建类，感觉很多问题
-
-
-// 错误
-// 'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.
-function A() {}
-new A()
-
-// 错误
-// Type '() => void' is not assignable to type 'new () => void'.
-// Type '() => void' provides no match for the signature 'new (): void'.
-const A: new() => void = function() {}
-
-
-// 错误！
-// 'this' implicitly has type 'any' because it does not have a type annotation.
-function People (name: string, id: number) {
     this.name = name 
-    this.id = id 
+  }
 }
 ```
 
-
-
-再补充一点JS和TS的`class`声明的差异，JS中类的实例属性可以不初始化，而TS中类的实例属性必须初始化
-
-``` ts
-// Wrong! Property 'age' has no initializer and is not definitely assigned in the constructor
-class Person {
-    name: string;
-    age: number;
-}
-
-// Ok
-class Person {
-    name: string = 'aka';
-    age: number;
-    constructor(age: number) {
-        this.age = age
-    }
-}
-```
-
-
-
-另外，当我们用`class`来声明一个类，这个类名也可以被当成类型！也就是这个类的实例的类型
-
-``` tsx
-class People {
-    name = 'akara'
-}
-
-let p: People = new People() // 实例
-
-let People2: typeof People = People // 类
-```
-
-
-
-TypeScript 可以使用三种访问修饰符（Access Modifiers），分别是 `public`、`private` 和 `protected`。
+TypeScript 有三种访问修饰符， `public`、`private` 和 `protected`。
 
 - `public` 修饰的属性或方法是公有的，可以在任何地方被访问到，默认所有的属性和方法都是 `public` 的
 - `private` 修饰的属性或方法是私有的，不能在声明它的类的外部访问
@@ -653,20 +535,7 @@ class Animal {
         this.name = name;
     }
 }
-
-// 可以改写为以下代码
-
-class Animal {
-    // public name: string;
-    public constructor (public name) {
-        // this.name = name;
-    }
-}
 ```
-
-
-
-只读属性关键字`readonly`，只允许出现在属性声明或索引签名或构造函数中。
 
 ```ts
 class Animal {
@@ -675,41 +544,17 @@ class Animal {
         this.name = name;
     }
 }
-
-let a = new Animal('Jack');
-console.log(a.name); // Jack
-a.name = 'Tom';
-// 报错
-```
-
-注意如果 `readonly` 和其他访问修饰符同时存在的话，需要写在其后面。
-
-```tsx
-class Animal {
-    // public readonly name;
-    public constructor(public readonly name) {
-        // this.name = name;
-    }
-}
 ```
 
 ##### 抽象类
 
-`abstract` 用于定义抽象类和其中的抽象方法。
-
-什么是抽象类？
-
-首先，抽象类是不允许被实例化的；其次，抽象类中的抽象方法必须被子类实现。
-
-下面是一个正确使用抽象类的例子
-
 ```tsx
 abstract class Animal {
     public name;
-    public constructor(name) {
+    public constructor(name: string) {
         this.name = name;
     }
-    public abstract sayHi();
+    public abstract sayHi(): void;
 }
 
 class Cat extends Animal {
@@ -746,6 +591,55 @@ class Car implements Alarm, Light {
         console.log('Car light off');
     }
 }
+```
+
+
+
+
+
+以及一些代码例子以供参考：
+
+``` tsx
+// 如果在TypeScript中使用construct function的方式创建类，感觉很多问题
+
+
+// 错误
+// 'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.
+function A() {}
+new A()
+
+// 错误
+// Type '() => void' is not assignable to type 'new () => void'.
+// Type '() => void' provides no match for the signature 'new (): void'.
+const A: new() => void = function() {}
+
+
+// 错误！
+// 'this' implicitly has type 'any' because it does not have a type annotation.
+function People (name: string, id: number) {
+    this.name = name 
+    this.id = id 
+}
+```
+
+
+
+
+
+
+
+
+
+另外，当我们用`class`来声明一个类，这个类名也可以被当成类型！也就是这个类的实例的类型
+
+``` tsx
+class People {
+    name = 'akara'
+}
+
+let p: People = new People() // 实例
+
+let People2: typeof People = People // 类
 ```
 
 
@@ -888,75 +782,6 @@ let target: source[number] = 0 // number
 ```
 
 ### 值得注意的问题
-
-##### string 和 literal string
-
-``` typescript
-// 报错
-let fruits1 = 'apple'
-const Fruits1: 'orange' | 'apple' = fruits1
-
-// 仅仅把let改为const，就不报错了
-const fruits1 = 'apple'
-const Fruits1: 'orange' | 'apple' = fruits1
-```
-
-发现直接用let声明的字符串的类型为string，而通过const声明的字符串的类型为字符串字面量（本例中为字符串字面量'apple'）
-
-
-
-##### const 断言
-
-``` typescript
-const o = {
-    name: 'akara' // type为string
-} 
-
-const o = {
-    name: 'akara' // type为'akara'，并且为readonly
-} as const
-
-
-const o = {
-    age: 20
-} as const
-let b: typeof o.age = 30
-// error: Type '30' is not assignable to type '20'
-
-const o = {
-    age: 20
-} as const
-o.age = 30
-// error: Cannot assign to 'age' because it is a read-only property
-```
-
-
-
-以下代码会报错
-
-``` typescript
-function sum<T extends number>(a: T, b: T): T {
-    return (a + b) as T
-}
-
-let arr = [1, 2]
-sum(...arr) // error: Expected 2 arguments, but got 0 or more
-```
-
-这是因为数组`arr`的长度是为止的，而`sum`函数只接受两个参数。可以使用`const`断言解决这个问题。
-
-``` typescript
-function sum<T extends number>(a: T, b: T): T {
-    return (a + b) as T
-}
-
-let arr = [1, 2] as const
-sum(...arr)
-```
-
-此时，arr的类型为 `readonly [1, 2]`（元组）
-
-
 
 
 
@@ -1328,5 +1153,11 @@ class Button extends React.Component {
     }
 }
  
+```
+
+``` tsx
+function sum<T extends number>(a: T, b: T): T {
+    return (a + b) as T // 不加T报错
+}
 ```
 
