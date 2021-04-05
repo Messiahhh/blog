@@ -5,17 +5,117 @@ sidebarDepth: 4
 
 ### 跨域
 
-同源：协议，域名，端口号三者都相同，我们称之为同源。
+当**协议**、**域名**、**端口**三者都相同，我们将其称为同源。
 
-同源策略：只有浏览器才受到同源策略的限制。即不同源的脚本在没有授权的情况下，不能读写对方的资源。比如我们打开了`A.com`，之后又在没有许可的情况下向`B.com`发送请求，通常这个请求是失败的。想要摆脱同源策略的限制，就得使用下面介绍的跨域手段了。
+**浏览器**受到同源策略的限制，所谓**同源策略**，即指在**没有授权的情况下**，不同的源无法读写对方的资源。比如，当我们处于`A.com`时向`B.com`发送`ajax`或`fetch`请求是会失败的。当然，如同`<script src="">`或`form`表单之类的操作不受同源策略的限制，因此可以请求到对方的资源。
 
 
 
-下面介绍了许多种跨域手段，最常用的是`CORS`和反向代理。
+很多时候我们希望即使处在`A.com`也能向`B.com`发送请求，也就是脱离同源策略，我们有许多手段可以实现该目的，而这些手段我们统一称为**跨域**。
+
+跨域的手段有很多，最常用的是`CORS`、代理服务器等，下面也会顺便介绍一些平时用不上的手段，权当开拓视野。
+
+
+
+在讲解跨域的手段之前，先普及Cookie的一个知识点。Cookie拥有`domain`属性，比如当我们访问`A.com`拿到的Cookie，那么这个Cookie它是只能发送给`A.com`，不能发送给其他域名。
+
+
+
+##### 跨域资源共享（CORS）
+
+可以说是最简单的一种实现跨域的手段。
+
+只需要添加一个响应头部`Access-Control-Allow-Origin`
+
+``` js
+ctx.set('Access-Control-Allow-Origin', '*') // *代表任意源
+// 或者
+ctx.set('Access-Control-Allow-Origin', 'http://localhost:3000') // 指定源
+```
+
+另外使用`CORS`的时候默认不会发送Cookie，如果想要发送对应的Cookie，需要两个条件：
+
+1. 再添加一个响应头部`Access-Control-Allow-Credentials`
+
+   ``` js
+   ctx.set('Access-Control-Allow-Credentials', true)
+   ```
+   
+2. 此时第一个响应头不能使用`*`，必须指定一个源。
+
+   如果任意源都可以向我们的接口发送带Cookie的请求，那这瞬间就满足了`CSRF`攻击的条件了，所以通过指定源可以很好的规避这个风险。
+
+
+
+那么按理来说，加上了这两个响应头后我们就可以跨域发带Cookie的请求了，比如我们可以从`localhost:3000`向`localhost:8000`发送带Cookie的请求。
+
+但是可能当你从`A.com:3000`向`B.com:8000`发送请求时，你发现你的Cookie仍然没有被发过去。
+
+
+
+事实上，在Chrome的80版本后，Cookie新增了一个叫做`sameSite`的属性。
+
+`sameSite`有三个模式，`strict`，`lax`,  `none`。它的默认值是`lax`。
+
+- `strict`是极其严格的，它表示着任何非同站（`a.qq.com`和`b.qq.com`也是同站）的请求都不能带上对应的Cookie
+- `lax`是默认值，但其实它也挺严格的，它表示着只有部分请求可以带上Cookie，诸如`AJAX`发送的请求是无法带上Cookie的
+- `none`没有任何限制，`A`发给`B`的请求能够代码Cookie。然而把`sameSite`设置成`none`时，Cookie必须带上`secure`属性，也就是必须使用HTTPS才行。
+
+
+
+很明显`sameSite`是作为一种`CSRF`防御手段出现的，但它的出现同样给我们的正常开发带来了一点麻烦，非同站的情况下即使加上CORS的两个响应头，我们的Cookie也不能发过去了。
+
+而且似乎没有很完美的解决方案，除了要求两个站是同站，把`lax`改成`none`也要求我们使用`https`，不管怎么看都十分的严格。
+
+
+
+###### 预检请求
+
+回归正题。再介绍一下，在CORS中浏览器把请求分为**简单请求**和**非简单请求**。
+
+简单请求需要同时满足几个条件，比如：
+
+1. 请求方法为 `HEAD`或`GET`或`POST`
+
+2. HTTP头部也有许多限制，比如：
+
+   `Content-Type`只限：`application/x-www-form-urlencoded`、`multipart/form-data`、`text/plain`
+
+   只能有像`Accept`、`Accept-Language`、`Content-Language`、`Last-Event-ID`这类的请求头部。
+
+   比如一旦使用自定义头部，那么这么请求就会被视为**非简单请求**。
+
+
+
+把请求根据类型进行划分之后，在CORS中针对**非简单请求**的通信，会在实际通信之前增加一次HTTP通信，也就是所谓的**预检请求**，这个请求的请求方法为`OPTIONS`。
+
+假设我们发送了一个请求方法是`PUT`，有一个自定义请求头部`x-my-header`，很明显这是一个非简单请求。
+
+那么此时会在实际请求前自动发出一个预检请求，请求方法为`OPTIONS`，含有以下两个请求头：
+
+``` http
+Access-Origin-Request-Method: PUT 
+Access-Origin-Request-Headers: x-my-header 
+```
+
+当后端收到该预检请求时，返回的响应里要**手动添加**两个响应头部：
+
+``` http
+Access-Control-Allow-Method: PUT
+Access-Control-Allow-Headers: x-my-header
+```
+
+这样子，当前端受到响应后，就视为通过了预检，之后再发送实际的通信请求。
+
+
+
+
 
 ##### JSONP
 
-客户端
+简单来讲，JSONP是利用了`<script>`加载资源时不受同源策略限制。以往我们在`src`里写的是资源的地址，但这里我们是在给接口发请求，同时接口返回的文本会被我们当成JS解析。
+
+当然，正是因为如此JSONP只支持GET请求。
 
 ```html
 <script>
@@ -27,13 +127,19 @@ sidebarDepth: 4
 <script src="http://api.example.com/data?callback=doSomething&parma=a"></script>
 ```
 
-服务端
-
 ``` js
 ctx.body = `doSomething(${myJson})` // 传参
 ```
 
-缺点：**仅支持GET请求**，安全性低
+
+
+##### 代理服务器
+
+由于同源策略是浏览器的策略。
+
+`A.com:80`不能向`B.com:3000`发送请求。那我们可以在`A.com:8080`设置一个代理服务器来代理请求，之后发请求就是`A.com:80 -> A.com:8080 -> B.com:3000`，此时请求可以成功发过去。
+
+通常我们本地开发项目是使用`webpack-dev-server`，而它自带了代理服务器的功能（只需要我们在配置文件中加上`proxy`），所以可以轻松解决跨域问题。除此之外我们也可以使用`nginx`来进行反向代理。
 
 
 
@@ -132,41 +238,6 @@ window.onhashchange = function () {}
 
 
 
-##### CORS
-
-CORS（Cross-Origin ResourceSharing）跨域资源共享
-
-只需要后端在响应头设置`Access-Control-Allow-Origin: *`， * 为任意Origin，也可以指定Origin
-
-使用CORS时默认不发送Cookie，想要发送Cookie需要:
-
-1. 设置`Access-Control-Allow-Credentials: true`
-2. 此时`Access-Control-Allow-Origin`不能设置为 * ，必须指定Origin
-
-浏览器把请求分为简单请求与非简单请求
-
-简单请求必须满足以下两大条件
-
-1. 请求方法为 HEAD / GET / POST
-2. HTTP头部不超过以下几种
-   1. Accept
-   2. Accept-Language
-   3. Content-Language
-   4. Last-Event-ID
-   5. Content-Type：只限于三个值`application/x-www-form-urlencoded`、`multipart/form-data`、`text/plain`
-
-不满足的就为非简单请求。
-
-非简单请求的CORS请求，会在正式通信之前，增加一次HTTP查询请求，称为"预检"请求。
-
-这个请求的请求方法为`OPTIONS` ，预检请求的头部还会包括以下几个字段
-
-`Origin` 
-
-`Access-Control-Request-Method` 用来表示非简单请求的请求方法
-
-`Access-Control-Request-Headers`  用来表示非简单请求的额外头部，例如自定义头部
-
 
 
 
@@ -185,13 +256,7 @@ window.on('message', function (e) {
 
 
 
-##### 反向代理
 
-由于同源策略是浏览器的策略。
-
-`A.com:80`不能向`B.com:3000`发送请求。那我们可以在`A.com:8080`设置一个代理服务器来代理请求，之后发请求就是`A.com:80 -> A.com:8080 -> B.com:3000`，此时请求可以成功发过去。
-
-通常我们本地开发项目是使用`webpack-dev-server`，而它自带了代理服务器的功能（只需要我们在配置文件中加上`proxy`），所以可以轻松解决跨域问题。除此之外我们也可以使用`nginx`来进行反向代理。
 
 
 
@@ -204,9 +269,13 @@ window.on('message', function (e) {
 5. 绘制：将计算好的像素点绘制到屏幕。
 6. 渲染层合成：多个绘制后的渲染层按照恰当的重叠顺序进行合并，而后生成位图，最终通过显卡展示到屏幕上。
 
-##### 回流/重排
 
-​	**当渲染对象的位置，尺寸，或某些属性发生改变时，浏览器重新渲染部分或全部文档的过程。**
+
+##### 回流
+
+重新布局，即回流（也叫重排）
+
+定义：**当渲染对象的位置，尺寸，或某些属性发生改变时，浏览器重新渲染部分或全部文档的过程。**
 
 导致回流的操作：
 
@@ -236,7 +305,9 @@ window.on('message', function (e) {
 
 ##### 重绘
 
-​	**样式的改变不改变渲染对象在文档流中的位置时（如：color, background-color的改变）浏览器重新绘制。**
+重新绘制，即重绘
+
+定义：**样式的改变不改变渲染对象在文档流中的位置时（如：color, background-color的改变）浏览器重新绘制。**
 
 
 
@@ -391,7 +462,7 @@ Cookie参与和服务器的通信，Storage则一般不用于。
 
 
 
-##### JWT （JSON Web Token）
+##### JWT 
 
 同样是用来做鉴权。Session的一个缺点就是由于会话数据保存在服务端，所以在使用服务器集群的时候处理起来很麻烦。而使用JWT的话，会话数据都保存在客户端，就没有这种问题了。
 
@@ -433,105 +504,4 @@ secret
 
 ![JWT鉴权原理](https://pic3.zhimg.com/v2-f1556c71042566d4a6f69ee20c2870ae_r.jpg)
 
-
-
-### CORS与CSRF与sameSite
-
-> 一点小的思考
-
-案例：
-
-a.com（下文简称a域）用于提供网站静态资源，b.com（下文简称b域）用于提供API接口。
-
-访问b域的某个接口后，浏览器被种下值为`name=akara`的Cookie，此Cookie的Domain属性为b.com，表示该Cookie只能被发给b域。
-
-
-
-**CORS**
-
-因为浏览器的同源策略的限制，a域无法直接向b域发送请求。为解决跨域问题，最方便的方式是CORS（跨域资源共享）。
-
-通过设置`Access-Control-Allow-Origin`的响应头部，简单的请求就会被允许从a域送达b域，不过此时请求不会自动带上b域的Cookie。
-
-通过设置`Access-Control-Allow-Credentials`响应头部，Cookie才能被一起发过去。
-
-而对于复杂请求，在正式发送请求时需要发送一次请求方式为OPTION的报文，称之为预检（preflight）。
-
-预检请求会带上一下两个请求头部，头部的值为正式请求的方法和头部。
-
-``` http
-Access-Control-Request-Headers: content-type
-Access-Control-Request-Method: POST
-```
-
-而预检响应会带上四个响应头部
-
-``` http
-Access-Control-Allow-Credentials: true
-Access-Control-Allow-Origin: http://a.com
-Access-Control-Allow-Headers: content-type
-Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS
-```
-
-多出来的两个响应头也是需要后端进行设置的。
-
-在预检请求通过之后，正式请求才能被发给后端。
-
-
-
-**CSRF**
-
-现在假设a域是一个恶意的网站，b域是一个正常的网站。
-
-当我们访问过b域，可以得到b域的Cookie；此时当我们访问a域，在a域给b域发送请求，这个请求会带上b域的Cookie，因此b域收到请求后会执行某些危险操作。
-
-
-
-先停一下。
-
-因为我上文讲了CORS，那当读者看到这一段的时候，有可能误以为b域名也使用了CORS，然后就以为CORS会带来CSRF的安全问题。
-
-CSRF攻击成功的一大关键就是a域发送给b域的请求必须携带b域的Cookie，而CORS的`access-control-allow-credentials`确实可以让我们带上Cookie，但是注意到一个使用CORS的规定，我们无法同时设置以下两个头部
-
-``` 
-access-control-allow-origin: *
-access-control-allow-credentials: true
-```
-
-有权携带Cookie的域必须是特定的域，因此通过这个规定，CORS并不会带来CSRF的危险。
-
-
-
-回到我们的例子，实际上这里所说的请求并不是跨域AJAX请求，比如它可以是通过表单发送的请求，而通过表单发送的请求是不受同源策略所限制的，因此即使b域没有设置任何东西，a域也可以把带有b域的请求发送给b域，从而达到攻击的目的。
-
-
-
-**sameSite**
-
-我们以前有一些防御CSRF的手段，而chrome80版本之后也给cookie新增了一个属性，`sameSite`。
-
-`sameSite`有三个属性，`strict`，`lax`,  `none`。
-
-- `strict`表示非同站的请求不能带上Cookie，比如a域发给b域的任何请求都无法带上Cookie。
-- `none`则没有任何限制，a域发给b域的请求都可以带上Cookie，不过使用这个值的时候Cookie也必须带上secure属性，表示b域使用的HTTPS协议。
-- `lax`只允许部分第三方请求带上Cookie，比如AJAX和表单提交的POST请求都无法发给b域。
-
-
-
-现代浏览器设置的Cookie的samesite属性默认为`lax`，主要目的是帮我们抵御CSRF攻击。
-
-但是问题也随之而来，当我们使用CORS实现跨域发送带Cookie的请求，在以前应该是没有问题的，而现在因为`samesite`这个属性，跨域的请求无法带上Cookie。
-
-那我们应该如何处理这个问题呢？第一反应是设置Cookie的时候，将SameSite属性设置为None。但是很多公司内部的站点都是用的HTTP协议，特意去弄一个证书感觉有点麻烦。
-
-一种比较方便的方式是让两个站点是同站，比如a.qq.com与b.qq.com，因为是samesite，请求就可以带上Cookie了。
-
-
-
-**总结**
-
-- CORS可以让我们轻松处理跨域问题。
-- CSRF是普遍存在的问题。
-- 借助sameSite的防御CSRF。
-- CORS + Samesite 可能使得请求无法带上Cookie，我们可以让站点同站，比如a.qq.com和b.qq.com。
 
