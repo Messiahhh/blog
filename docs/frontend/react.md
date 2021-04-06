@@ -7,59 +7,27 @@ sidebarDepth: 4
 
 ##### JSX
 
-JSX是JavaScript的一种语法扩展，JSX可以生成React元素。
-
 ``` jsx
 const element = <h1>hello, world!</h1>
 ```
 
-实际上Babel会把JSX转译为`React.createElement()`函数调用，下面代码是一样的。
+以上的JSX代码会被Babel编译成`React.createElement`函数并调用
 
-``` javascript
-const element = (
-  <h1 className="greeting">
-    Hello, world!
-  </h1>
-);
-
-// 等价于
-
-const element = React.createElement(
-  'h1',
-  {className: 'greeting'},
-  'Hello, world!'
-);
+``` jsx
+const element = React.createElement('h1', null, 'hello, world')
 ```
 
-```js
-<App />
-    
-// 等价于
-    
-React.createElement(App, null)
-```
+由此可见当我们写JSX代码时必须提前引入React库。
 
-**这也是为什么你必须引入React库，因为使用JSX就需要React库。**
 
-`React.createElement()`会创建这样的对象，也叫做React元素，其实就是**虚拟DOM**
-
-``` javascript
-// 注意：这是简化过的结构
-const element = {
-  type: 'h1',
-  props: {
-    className: 'greeting',
-    children: 'Hello, world!'
-  }
-};
-```
 
 ##### 组件
 
-组件名一定要大写，因为在JSX中小写的会当成html标签。
+组件名必须大写，因为小写会被当成HTML标签。
 
-- `<todo /> ` 编译为 React.createElement('todo')
-- `<Todo /> ` 编译为 React.createElement(Todo)
+如`<app />`会被编译成`React.createElement('app')`；而`<App />`会被编译成`React.createElement(App)`
+
+
 
 React的组件分为**函数组件**和**class组件**
 
@@ -371,75 +339,33 @@ function App(props) {
 
 ##### 表单
 
-``` javascript
-class App extends React.Component {
-    constructor(props) {
-        super(props)
-        this.state = {
-            value: ''
-        }
-    }
-    handleChange = (e) => {
-        this.setState({
-            value: e.target.value
-        })
-    }
-    render() {
-        return (
-            <div>
-                {this.state.value}
-                <input type="text" value={this.state.value} onChange={this.handleChange}/>
-            </div>
-        )
-    }
+React把`input`元素分为**受控组件**和**非受控组件**，受控组件的意思是`input`元素的内部值完全由我们的`state`控制。
+
+比如在`input`中，我们可以使用`value`或`defaultValue`，但不能同时使用这两个。使用前者时为受控组件，使用后者时为非受控组件。
+
+``` jsx
+// 受控组件
+handleChange = (e) => {
+    this.setState({
+        name: e.target.value.toUpperCase()
+    })
+}
+
+render() {
+    return <input type="text" value={name} onChange={this.handleChange}/>
 }
 ```
 
-**受控组件**
 
-通常表单内部拥有自己的状态，状态会被用户的输入改变。而React中，用户的输入会被劫持（个人理解），实际上的数据源完全由React提供。
-
-React的state成为组件/表单的唯一数据源，渲染表单的组件还控制着用户输入过程中表单发生的操作。被 React 以这种方式控制取值的表单输入元素就叫做“受控组件”。当然，与之对应的成为“非受控组件”。
-
-我们可以把用户输入的小写字符转化为大写
-
-``` javascript
-class MyInput extends React.Component {
-    constructor(props) {
-        super(props)
-        this.state = {
-            value: ""
-        }
-    }
-    handlerChange = (e) => {
-        this.setState({
-            value: e.target.value.toUpperCase()
-        })
-    }
-
-    render() {
-        return (
-            <input value={this.state.value} onChange={handlerChange} />
-        )
-    }
-}
-```
 
 ##### Refs
 
-何时使用 Refs
-
-- 管理焦点，文本选择或媒体交换
-- 继承第三方DOM库
-- 触发强制动画
-
-使用refs
+现代框架的原则是不直接操作DOM，不过在某些特定情况我们希望打破该原则，比如当我们希望管理输入框的焦点，这个时候我们可以使用`ref`来获取对应的DOM元素。
 
 ``` javascript
 class App extends React.Component {
     constructor(props) {
         super(props)
-        // 创建
         this.myRef = React.createRef()
     }
 
@@ -450,7 +376,6 @@ class App extends React.Component {
     render() {
         return (
             <div>
-            	// 绑定
                 <input type="text" ref={this.myRef} />
                 <button onClick={this.handleClick}>点我</button>
             </div>
@@ -458,6 +383,32 @@ class App extends React.Component {
     }
 }
 ```
+
+###### forwardRef
+
+正常函数组件不能被分配`refs`，比如以下代码会报错。
+
+``` jsx
+const FancyButton = () => <button>aka</button>
+
+<FancyButton ref={myRef}></FancyButton>
+```
+
+此时可以使用`forwardRef`来把`refs`向下传递。
+
+``` jsx
+const FancyButton = React.forwardRef((props, ref) => {
+    return <button ref={ref}>aka</button>
+})
+
+<FancyButton ref={myRef}></FancyButton>
+```
+
+
+
+
+
+
 
 
 

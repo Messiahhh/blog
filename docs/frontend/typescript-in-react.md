@@ -6,6 +6,39 @@ sidebarDepth: 4
 
 > 参考https://react-typescript-cheatsheet.netlify.app/
 
+### 函数组件
+
+``` tsx
+type myProps = {
+    count: number
+}
+const App = ({ count }: myProps) => <div>{count}</div>
+```
+
+### 类组件
+
+``` tsx
+type myProps = {
+    count: number;
+}
+
+type myState = {
+    name: string;
+}
+class Parent extends React.Component<myProps, myState> {
+    state: myState = {
+        name: 'akara'
+    }
+    render() {
+        const { name } = this.state 
+        return <div>{name}</div>
+    }
+}
+
+```
+
+
+
 ### 常见类型
 
 ##### `React.ReactElement`
@@ -97,6 +130,48 @@ function Child(props: ChildProps) {
     } = props
     return <input style={style} {...rest} />
 }
+```
+
+### 表单
+
+``` tsx
+handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {}
+handleChange = (e: React.FormEvent<HTMLInputElement>) => {}
+
+// or
+
+handleChange: React.ChangeEventHandler = (e) => {}
+```
+
+### Ref
+
+``` tsx
+export default class App extends React.Component<appProps, appState> {
+    myRef = React.createRef<HTMLButtonElement>()
+    render() {
+        return (
+            <>
+                <FancyButton ref={this.myRef} style={{color: 'red'}}>
+                    akara
+                </FancyButton>     
+                <button onClick={() => console.log(this.myRef.current)}>点我</button>           
+            </>
+        )
+    }
+}
+
+type myProps = {
+    style?: React.CSSProperties;
+    children: React.ReactNode;
+} 
+
+const FancyButton = React.forwardRef<HTMLButtonElement, myProps>((props, ref) => {
+    const {
+        style,
+        children,
+    } = props
+    return <button style={style} ref={ref}>{children}</button>
+})
 ```
 
 
