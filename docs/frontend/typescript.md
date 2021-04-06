@@ -231,7 +231,7 @@ function infiniteLoop(): never {
 
 ##### object
 
-我们通常会使用`interface`来描述对象的类型，但此时对象的属性会被严格的限制住，很多时候我们并不知道对象的结构如何，此时可以使用`object`
+可以用来表示对象的类型
 
 ``` tsx
 let obj: object = {
@@ -241,21 +241,30 @@ let obj: object = {
 
 ##### Object
 
-> object和Object不同，我们应该总是使用object
+看起来`object`和`Object`只有大小写的区别，`Object`实际上表示的范围更加的广泛，除了表示对象还可以表示数字、字符串、布尔值等基本类型（但不包括`Null`和`Undefined`）。
 
 ``` tsx
-const d: Date = new Date()
-const e: Error = new Error('wrong')
-const obj: Object = {}
-
-
-class People {
-    name = 'aka'
+const obj: Object = {
+    name: 'aka'
 }
-
-const p: People = new People()
-const People2: typeof People = People
+const obj: Object = 'aka'
+const obj: Object = 100
+const obj: Object = true
 ```
+
+另外，有的时候会看到这种写法`{}`，这和`Object`是完全等价的。
+
+``` tsx
+const obj: {} = { 
+    name: 'akara'
+}
+```
+
+通常表示对象建议使用`object`而不是`Object`
+
+
+
+
 
 
 
@@ -513,6 +522,18 @@ type B = A & {
 
 
 ### 类
+
+``` tsx
+const d: Date = new Date()
+const e: Error = new Error('wrong')
+
+class People {
+    name = 'aka'
+}
+
+const p: People = new People()
+const People2: typeof People = People
+```
 
 在TypeScript中，强烈建议只使用`class`而不是构造函数来声明类，推荐写法：
 
