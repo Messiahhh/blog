@@ -70,7 +70,7 @@ module.exports = {
                 'vue',
                 'react-vs-vue',
                 'typescript',
-                'ts-in-react',
+                'typescript-in-react',
                 'browser',
                 '前端工程化',
                 '计算机网络',
