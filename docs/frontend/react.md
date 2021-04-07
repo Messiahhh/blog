@@ -21,7 +21,56 @@ const element = React.createElement('h1', null, 'hello, world')
 
 
 
-##### State
+
+
+
+
+##### 组件
+
+组件名必须大写，因为小写会被当成HTML标签，如`<app />`会被编译成`React.createElement('app')`；而`<App />`会被编译成`React.createElement(App)`。
+
+
+
+当通过`setState`操作数据时，又或者`props`改变时（通过浅对比），组件会重新渲染。另外对于非纯组件来说，只要父组件渲染了，子组件也会跟着重新渲染。
+
+
+
+React的组件分为**函数组件**和**class组件**，函数组件没有内部状态和生命周期。
+
+``` javascript
+function Hello(props) {
+    return (
+        <div>
+        	// 函数组件使用props
+            hello world {props.name}
+        </div>
+    )
+}
+```
+
+``` js
+class Count extends React.Component {
+    state = {
+        count: 0
+    }
+    constructor(props) {
+        super(props)
+    }
+
+    render() {
+        return (
+            <div>
+                {this.props.name}
+                {this.state.count}
+            </div>
+        )
+    }
+}
+```
+
+
+
+##### 状态
 
 在Class组件中通过调用`this.setState`来操作`State`。只有通过该方式操作数据后，组件才会重新渲染。
 
@@ -32,7 +81,7 @@ this.setState({name: 'aka'})
 `setState`实际上是把我们提供的对象合并进原本的对象中，调用`setState`之后，**`this.state`的地址实际上改变了**，而不仅仅是修改了内部的值。
 
 ``` jsx
-state = Object.assign(state, { name: 'aka' }) // 等价于
+state = Object.assign(state, { name: 'aka' }) // 相当于
 ```
 
 另外**State的更新通常是异步的**。
@@ -71,49 +120,6 @@ this.setState((state, props) => {
 这是因为，React内部维护了一个标识：`isBatchingUpdates`。在**合成事件**和**组件的生命周期**中，该值为`true`，那么`setState`会被缓存进队列，最后才批量更新；而在**原生事件**和**定时器**中，该值为`false`，调用`setState`时会直接同步更新。
 
 
-
-##### 组件
-
-组件名必须大写，因为小写会被当成HTML标签，如`<app />`会被编译成`React.createElement('app')`；而`<App />`会被编译成`React.createElement(App)`。
-
-
-
-当通过`setState`操作数据时，又或者`props`改变时（通过前对比），组件会重新渲染。另外对于非纯组件来说，只要父组件渲染了，子组件也会跟着重新渲染。
-
-
-
-React的组件分为**函数组件**和**class组件**，函数组件没有内部状态和生命周期。
-
-``` javascript
-function Hello(props) {
-    return (
-        <div>
-        	// 函数组件使用props
-            hello world {props.name}
-        </div>
-    )
-}
-```
-
-``` js
-class Count extends React.Component {
-    state = {
-        count: 0
-    }
-    constructor(props) {
-        super(props)
-    }
-
-    render() {
-        return (
-            <div>
-                {this.props.name}
-                {this.state.count}
-            </div>
-        )
-    }
-}
-```
 
 ##### 事件
 
@@ -213,8 +219,6 @@ class App extends React.Component {
 }
 ```
 
-###### forwardRef
-
 正常函数组件不能被分配`refs`，比如以下代码会报错。
 
 ``` jsx
@@ -223,7 +227,7 @@ const FancyButton = () => <button>aka</button>
 <FancyButton ref={myRef}></FancyButton>
 ```
 
-此时可以使用`forwardRef`来把`refs`向下传递。
+此时可以使用**`forwardRef`**来把`refs`向下传递。
 
 ``` jsx
 const FancyButton = React.forwardRef((props, ref) => {
@@ -282,51 +286,18 @@ class ThemedButton extends React.Component {
 
 ##### Fragment
 
-``` js
-function App () {
+``` jsx
+function App() {
     return (
-        <table>
-            <tr>
-                <Todos />
-            </tr>
-        </table>
-    )
-}
-
-function Todos() {
-    return (
-        <React.Fragment>
-            <td>111</td>
-            <td>222</td>
-            <td>333</td>
-        </React.Fragment>
-    )
-}
-```
-
-可以使用短语法：
-
-``` js
-function Todos() {
-    return (
-        <>
-            <td>111</td>
-            <td>222</td>
-            <td>333</td>
+    	<>
+            <React.Fragment>
+        		<div></div>
+            	<div></div>
+        	</React.Fragment>
         </>
     )
 }
 ```
-
-
-
-### 状态逻辑复用
-
-通常有三种方式
-
-1. 高阶组件（HOC）
-2. Render props
-3. Hook
 
 
 
@@ -415,12 +386,6 @@ function Mouse(props) {
     )
 }
 ```
-
-##### Hook
-
-在下一节重点介绍。
-
-
 
 
 
@@ -958,32 +923,41 @@ React在它的V16版本推出了Fiber架构，在弄清楚什么是Fiber之前�
 
 
 
+### 服务端渲染(SSR)
 
+我们可以通过`react-dom/server`提供的`renderToString`和`react-dom`提供的`hydrate`来实现服务端渲染。
 
+简单来说，页面的渲染发生在服务端——即后端使用`renderToString`根据组件生成对应的静态标记。此时前端获取完整的页面，但是静态的标记并没有绑定任何事件，这时候我们需要使用`hydrate`来附加事件等信息。
 
+``` jsx
+// app.js 后端
+import { renderToString } from 'react-dom/server'
 
-### UI组件和容器组件
-
-React-Redux中的Connect所返回的函数就是一个高阶组件，它会接收我们输入的UI组件，生成新的容器组件。
-
-``` js
-export default connect(
-	mapStateToProps,
-	mapDispatchToProps,
-)(App)
+const content = renderToString(<App />)
+ctx.body = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>React App</title>
+    </head>
+    <body>
+        <div id="root">${content}</div>
+        <script src="/client.js"></script>
+    </body>
+    </html>
+`
 ```
 
-那么，UI组件和容器组件有什么不同呢？
+``` jsx
+// client.js 
+import { hydrate } from 'react-dom'
 
-##### UI组件
+hydrate(<App />, document.querySelector('#root'))
+```
 
-- 只负责UI的呈现，没有任何业务逻辑
-- 没有State，参数由Props提供
 
-##### 容器组件
-
-- 不负责UI的呈现，负责处理业务逻辑
-- 带有内部状态
 
 
 
