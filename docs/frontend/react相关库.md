@@ -4,15 +4,15 @@ sidebarDepth: 4
 
 ## React相关库
 
-> 记录一些官方或第三方的React库
+> 记录一些React相关的类库
 
 ### redux
 
-##### 基本原理
+##### 基础
 
 ``` javascript
 import { createStore } from 'redux'
-// reducer 是个函数，参数为state（设置初始值）和action，返回值为新的state
+
 const reducer = (state = 0, action) => {
     switch(action.type) {
     	case 'add':
@@ -23,35 +23,33 @@ const reducer = (state = 0, action) => {
         	return state
     }
 }
-// 生成store
+
 let store = createStore(reducer)
 
-// 获取状态
+
 store.getState()
-// action是个对象，通常有type属性
+
 const action1 = {
 	type: 'add',
 	payload: 2,
 }
-// 我们也可以用一个action生成函数
+
 const createAction = (val) => ({
 	type: 'add',
 	payload: val
 })
 
-// 使用store.dispatch(action)来分发action
 store.dispatch(action1)
 store.dispatch(createAction(111))
 
-
-// store还可以订阅监听器
-// 当我们dispatch了action后，会触发函数
 store.subscribe(() => {
 	console.log('change state')
 })
 ```
 
-##### createStore的简单实现
+
+
+##### [简单实现](https://github.com/Messiahhh/redux-core)
 
 ``` javascript
 const createStore = (reducer) => {
@@ -85,17 +83,25 @@ const createStore = (reducer) => {
 
 
 
-##### 实战代码
+##### redux-thunk
+
+> TODO; 可以让我们的action写成函数的形式
+
+
+
+##### react-redux
+
+`redux`只是一个独立的状态管理库，为了在React中使用它我们还需要一个库`react-redux`。
+
+
 
 ```javascript
 // action.js
 export const CHANGE_CHANNEL = 'CHANGE_CHANNEL'
-// action 生成函数
 export const changeChannel = (channel) => ({
     type: CHANGE_CHANNEL,
     channel
 })
-
 ```
 
 ``` javascript
@@ -103,7 +109,7 @@ export const changeChannel = (channel) => ({
 import {
 	CHANGE_CHANNEL
 } from './action.js'
-// combineReducers用来分隔reducer
+
 import { combineReducers } from 'redux'
 
 const channel = (state = "nintendo", action) => {
@@ -124,9 +130,9 @@ const rootReducer = combineReducers({
   	name,
 })
 
-
 export default rootReducer
 ```
+
 
 ``` javascript
 // index.js
@@ -139,16 +145,16 @@ import App from './app.js'
 let store = createStore(reducer)
 
 ReactDOM.render(
-  	// 把store注入进组件
 	<Provider store={store}>
         <App />
     </Provider>,
     document.querySelector('#root')
 )
-
 ```
 
 
+
+###### HOC用法
 
 ``` javascript
 // app.js
@@ -185,22 +191,26 @@ const mapDispatchToProps = (dispatch) => {
         }
     }
 }
-// mapDispatchToProps 也可以是个对象
-const mapDispatchToProps = {
-  	// 这里的函数是个action creator
-	handlerClick: () => {
-		type: 'add'
-    }
-}
+// or mapDispatchToProps 也可以是个对象
+// const mapDispatchToProps = {
+//   	// 这里的函数是个action creator
+// 	handlerClick: () => {
+// 		type: 'add'
+//     }
+// }
 
 export default connect(
 	mapStateToProps,
 	mapDispatchToProps,
 )(App)
 
-// connect本质是高阶组件，我们可以使用react-redux自带的hook代替connect
-import { useSelector, useDispatch } from 'react-redux' // 应该放开头，这里为了方便把import放在这里
-// 使用起来很简单
+```
+
+###### Hook用法
+
+``` jsx
+import { useSelector, useDispatch } from 'react-redux' 
+
 const App = () => {
 	const channel = useSelector(state => state.channel)
     const postsByChannel = useSelector(state => state.postsByChannel)
@@ -212,6 +222,10 @@ const App = () => {
     )
 }
 ```
+
+
+
+
 
 
 

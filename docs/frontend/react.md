@@ -951,11 +951,62 @@ ctx.body = `
 ```
 
 ``` jsx
-// client.js 
+// client.js 前端
 import { hydrate } from 'react-dom'
 
 hydrate(<App />, document.querySelector('#root'))
 ```
+
+
+
+##### 同步redux
+
+由上述代码可知，在前端和后端`App`组件都会被用到。那么当我们使用`react-redux`时，势必需要在前后端的代码中都加上`Provider`，并提供初始的数据。
+
+``` js
+// app.js 后端
+const store = configureStore(initialState)
+    
+const content = renderToString(
+    <Provider store={store}>
+        <App />
+    </Provider>
+)
+
+ctx.body = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>React App</title>
+        </head>
+        <body>
+            <div id="root">${content}</div>
+            <script>window.__STATE__ = ${JSON.stringify(store.getState())}</script>
+            <script src="/client.js"></script>
+        </body>
+        </html>
+    `
+```
+
+``` js
+// client.js 前端
+const state = window.__STATE__
+
+delete window.__STATE__
+
+const store = configureStore(state)
+
+hydrate(
+    <Provider store={store}>
+        <App />
+    </Provider>, 
+    document.querySelector('#root')
+)
+```
+
+
 
 
 
