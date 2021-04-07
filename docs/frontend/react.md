@@ -11,30 +11,80 @@ sidebarDepth: 4
 const element = <h1>hello, world!</h1>
 ```
 
-以上的JSX代码会被Babel编译成`React.createElement`函数并调用
+该JSX代码会被Babel编译成`React.createElement`函数并调用，它等价于：
 
 ``` jsx
 const element = React.createElement('h1', null, 'hello, world')
 ```
 
-由此可见当我们写JSX代码时必须提前引入React库。
+这也是为什么写JSX代码时必须提前引入React库。
+
+
+
+##### State
+
+在Class组件中通过调用`this.setState`来操作`State`。只有通过该方式操作数据后，组件才会重新渲染。
+
+``` javascript
+this.setState({name: 'aka'})
+```
+
+`setState`实际上是把我们提供的对象合并进原本的对象中，调用`setState`之后，**`this.state`的地址实际上改变了**，而不仅仅是修改了内部的值。
+
+``` jsx
+state = Object.assign(state, { name: 'aka' }) // 等价于
+```
+
+另外**State的更新通常是异步的**。
+
+``` tsx
+this.setState({
+    count: 1 // 初始值为0
+})
+console.log(this.state.count) // 输出0
+```
+
+想要获取修改后的值，我们可以传一个回调函数给`setState`
+
+``` javascript
+this.setState({
+    count: 1
+}, () => {
+    console.log(this.state.count) // 输出1
+})
+```
+
+如果`setState`依赖之前的State，`setState`的参数可以为函数
+
+``` jsx
+this.setState((state, props) => {
+    return {
+        count: state.count + 1
+    }
+})
+```
+
+
+
+事实上，在**合成事件**和**组件的生命周期**中`setState`是异步的；而在**原生事件**和**定时器**中`setState`是同步的。
+
+这是因为，React内部维护了一个标识：`isBatchingUpdates`。在**合成事件**和**组件的生命周期**中，该值为`true`，那么`setState`会被缓存进队列，最后才批量更新；而在**原生事件**和**定时器**中，该值为`false`，调用`setState`时会直接同步更新。
 
 
 
 ##### 组件
 
-组件名必须大写，因为小写会被当成HTML标签。
-
-如`<app />`会被编译成`React.createElement('app')`；而`<App />`会被编译成`React.createElement(App)`
+组件名必须大写，因为小写会被当成HTML标签，如`<app />`会被编译成`React.createElement('app')`；而`<App />`会被编译成`React.createElement(App)`。
 
 
 
-React的组件分为**函数组件**和**class组件**
+当通过`setState`操作数据时，又或者`props`改变时（通过前对比），组件会重新渲染。另外对于非纯组件来说，只要父组件渲染了，子组件也会跟着重新渲染。
 
-**函数组件**没有内部的**状态**，也没有**生命周期**。
+
+
+React的组件分为**函数组件**和**class组件**，函数组件没有内部状态和生命周期。
 
 ``` javascript
-// 函数组件
 function Hello(props) {
     return (
         <div>
@@ -45,10 +95,11 @@ function Hello(props) {
 }
 ```
 
-**Class组件**则拥有**状态**，**生命周期**
-
 ``` js
 class Count extends React.Component {
+    state = {
+        count: 0
+    }
     constructor(props) {
         super(props)
     }
@@ -56,286 +107,64 @@ class Count extends React.Component {
     render() {
         return (
             <div>
-            	// class组件使用props
-                {this.props.count}
-            </div>
-        )
-    }
-}
-
-
-class App extends React.Component {
-    constructor(props) {
-        super(props)
-        // 根组件的状态
-        this.state = {
-            count: 0,
-            name: 'akara'
-        }
-    }
-
-    render() {
-        return (
-            <div>
+                {this.props.name}
                 {this.state.count}
-                <button onClick={this.handlerClick}>click me</button>
-				// 根组件传值给子组件的props
-                <Hello name={this.state.name}/>
-                <Count count={this.state.count}/>
             </div>
         )
     }
-
-    // 根组件的方法，已绑定this
-    handlerClick = () => {
-        this.setState({
-            count: this.state.count + 1
-        })
-    }
-
-
 }
 ```
 
-##### 事件处理
+##### 事件
 
-传统的HTML使用的纯小写`onclick`，React使用的驼峰式`onClick`
-
-``` html
-// html
-<button onclick='func'></button>
-```
+React使用驼峰式`onClick`来进行事件处理：
 
 ``` jsx
-// react
-<button onClick={activateLasers}>
-	Activate Lasers
+<button onClick={handleClick}>
+	aka
 </button>
 ```
 
-传统的HTML可以通过`return false`来阻止默认行为，React不行，必须使用`event.preventDefault`
+React中的`event`是**合成事件**，我们无需担心任何浏览器的兼容性问题。
 
-``` html
-<a href="#" onclick="console.log('The link was clicked.'); return false">
-  Click me
-</a>
-```
+另外要注意一下Class组件中的`this`问题
 
-``` javascript
-function ActionLink() {
-  function handleClick(e) {
-    e.preventDefault();
-    console.log('The link was clicked.');
-  }
-
-  return (
-    <a href="#" onClick={handleClick}>
-      Click me
-    </a>
-  );
+``` tsx
+// 方法一
+constructor() {
+    this.handlerClick = this.handlerClick.bind(this)
 }
-```
 
-React中的e为**合成事件**，因此无需担心浏览器的兼容性问题。
+// 方法二
+<button onClick={(e) => this.handleClick(e)}>
+    Click me
+</button>
 
-当我们使用`onClick={this.handleClick}`时，我们需要给handleClick绑定this。
-
-1. ``` javascript
-   constructor() {
-       this.handlerClick = this.handlerClick.bind(this)
-   }
-   ```
-
-2. 使用箭头函数
-
-   ``` jsx
-    <button onClick={(e) => this.handleClick(e)}>
-       Click me
-     </button>
-   ```
-
-3. ``` javascript
-   // 实验性语法
-   // Create-React-App 默认支持
-   class Btn extends React.component {
-       handlerClick = (e) => {
-           console.log(this)
-       }
-
-       render() {
-           return (
-           	 <button onClick={this.handlerClick}>
-                   Click me
-                </button>
-           )
-       }
-   }
-   ```
-
-##### [组件生命周期](http://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/)
-
-###### 挂载
-
-- **constructor()**
-- static getDerivedStateFromProps()
-- **render()**
-- **componetDidMount()**
-
-###### 更新
-
-- static getDerivedStateFromProps()
-- shouldComponentUpdate()
-- **render()**
-- getSnapshotBeforeUpdate()
-- **componetDidUpdate()**
-
-###### 卸载
-
-- **componentWillUnmount()**
-
-##### setState
-
-**不要直接修改State**
-
-``` javascript
-// Wrong
-// 此代码不会重新渲染组件
-this.state.comment = 'Hello';
-```
-
-而是应该使用`setState()`
-
-``` javascript
-// Correct
-this.setState({comment: 'hello'})
-```
-
-**State的更新可能/通常是异步的**
-
-``` javascript
-class App ..{
-    ..() {
-        this.state = {
-            count: 0
-        }
+// 方法三
+class Btn extends React.component {
+    handlerClick = (e) => {
+        console.log(this)
     }
 
-    ..() {
-        this.setState({
-        	count: 1
-    	})
-        console.log(this.state.count) // 输出0
+    render() {
+        return (
+        	 <button onClick={this.handlerClick}>
+                Click me
+             </button>
+        )
     }
 }
 ```
 
-想要获取修改后的值，我们可以传一个回调函数给setState
-
-``` javascript
-this.setState({
-    count: 1
-}, () => {
-    console.log(this.state.count) // 输出1
-})
-```
-
-如果setState依赖于之前的state，如
-
-``` javascript
-this.setState({
-    count: 1
-}, () => {
-    console.log(this.state.count);
-})
-
-this.setState({
-    count: this.state.count + 1
-})
-```
-
-由于setState是异步的，那么第二个setState中获取到的`this.state.count`为初始的0
-
-为了解决这个问题，setState的参数可以设置为函数
-
-``` javascript
-this.setState({
-    count: 1
-}, () => {
-    console.log(this.state.count);
-})
-
-this.setState((state, props) => {
-    return {
-        count: state.count + 1
-    }
-})
-```
 
 
 
-**setState何时是异步的**
 
-一句话描述，在**合成事件**和**组件的生命周期**中`setState`是异步的；在**原生事件**和**定时器**中`setState`是同步的。
+##### 生命周期
 
-React内部维护了一个标识`isBatchingUpdates`，当这个值为`true`表示把setState缓存进队列，最后进行批量更新；当这个值为`false`表示直接进行更新。
-
-**合成事件**和**组件的生命周期**中，会把`isBatchingUpdates`设置为true
-
-**原生事件**和**定时器**中，会把`isBatchingUpdates`设置为false
+详细的生命周期可以参考[该链接](http://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/)
 
 
-
-当你调用 `setState()` 的时候，React 会把你提供的对象合并到当前的 state。
-
-
-
-##### 条件渲染
-
-&&运算符
-
-``` jsx
-function App(props) {
-    return (
-    	<div>
-        	{ props.count > 0 &&
-            	<span>hello world</span>
-            }
-        </div>
-    )
-}
-```
-
-三目运算符
-
-``` javascript
-render() {
-  const isLoggedIn = this.state.isLoggedIn;
-  return (
-    <div>
-      The user is <b>{isLoggedIn ? 'currently' : 'not'}</b> logged in.
-    </div>
-  );
-}
-```
-
-阻止组件渲染
-
-``` javascript
-function App(props) {
-    if(props.flag) return null
-    ...
-}
-```
-
-##### 列表渲染
-
-``` javascript
-{
-    props.todos.map((todo) => {
-        return <Todo todo={todo} key={todo.id}/>
-    })
-}
-```
 
 ##### 表单
 
@@ -403,147 +232,6 @@ const FancyButton = React.forwardRef((props, ref) => {
 
 <FancyButton ref={myRef}></FancyButton>
 ```
-
-
-
-
-
-
-
-
-
-##### 组件通信
-
-###### 父子组件通信
-
-父组件通过props传递数据给子组件。
-
-父组件通过props把自己的函数传递给子组件，子组件内部可直接调用，实现子组件向父组件通信。
-
-
-
-``` js
-class Parent extends React.Component {
-    state = {
-        name: 'akara'
-    }
-
-	obj = {
-        user: 'aaa',
-        psw: 123456
-    }
-    render() {
-        return (
-        	<Child p1={this} p2={this.state} p3={this.obj}/> // 用来测试所以放了三个prop..
-        )
-    }
-}
-
-class Child extends React.Component {
-    // ...
-}
-```
-
-父组件可以通过Props传值给子组件使用，子组件后拿到Props后**可以直接操作父组件的数据**，但此时即使修改了父组件的数据也**不会触发父组件的重新渲染**。
-
-``` js
-// 子组件中修改props，父组件的obj.user会被修改，但不会重渲染
-this.props.p2.name = 'bbb'
-```
-
-所以在子组件想**修改父组件数据的同时触发父组件的渲染**，应该用下面这种常用的方法。
-
-``` jsx
-// 父组件
-class Parent extends React.Component {
-	handleChange = () => {
-        this.setState({name: 'bbb'})
-    }
-    render() {
-        return (
-            <Child p1={this} p2={this.state} p3={this.obj} handleChange={this.handleChange}/>
-        )
-    }
-}
-
-// 子组件
-this.props.handleChange()
-```
-
-> 一个组件什么时候会重新渲染？基本只有两种情况，一个是通过调用setState修改state时会重新渲染；还有一个是当父组件重新渲染时（如果子组件是纯组件则还需要浅对比一次props，如果前后浅对比发生了变化，则重新渲染）
-
-
-
-
-
-> 来观察一个代码例子。这里把state作为props传下去，并通过调用了this.setState。实际上这个this.state的引用会被改变！所以实际上哪怕Child组件是纯组件也会重新渲染，因为props.p 前后的引用不一致了！！！
->
-> 类似于
->
-> this.state = Object.assign(this.state, {name: 'aaa'}) 
->
-> 一个要点是this.state被重新赋值了，另一个要点是Object.assign的浅合并
-
-
-
-``` js
-state = {
-    name: 'aaa'
-}
-
-this.setState({name: 'aaa'}) // this.state重新被赋值，所以会重新渲染
-
-<Child p={this.state} /> 
-    
-// -------- 分割 -------
-state = {
-    o: {
-        name: 'aaa'
-    }
-}
-
-this.setState({o: {name: 'aaa'}}) // 浅合并，this.state.o得到新的引用，所以也会重新渲染 
-<Child p={this.state.o} /> 
-```
-
-> 另外，如果父组件只是改了要传给子组件的值，但父组件没有重新渲染时，此时是不符合上面所说的第二个条件，因此子组件并不会重新渲染（不过子组件拿到的props确实发生了变化，毕竟引用类型）。比如：
-
-``` jsx
-// 父组件
-// 子组件通过props handleChange修改父组件的实例数据（不是state数据），没有触发父组件的重渲染
-class Parent extends React.Component {
-    obj = {
-        user: 'akara'
-    }
-	handleChange = () => {
-        this.obj.user 
-    }
-    render() {
-        return (
-            <Child p1={this} p2={this.state} p3={this.obj} handleChange={this.handleChange}/>
-        )
-    }
-}
-
-// 子组件
-this.props.handleChange()
-```
-
-
-
-
-
-
-
-
-
-###### 非父子组件通信
-
-可以通过`events`实现发布-订阅。也可以借助于Context。
-
-
-
-复杂的情况可以考虑使用Redux。
 
 
 
