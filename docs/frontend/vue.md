@@ -287,9 +287,7 @@ const router = new VueRouter({
 
 ##### nextTick
 
-当我们修改`State`会重新渲染真实DOM，而这一步操作实际上是**异步的**。当我们修改`State`，它会把数据的改变缓存进一个队列当中，当一个事件循环结束（在Vue中把一个事件循环阶段称为`tick`）后，再渲染真实的DOM。
-
-通过这种方式，即使我们在一个事件循环中修改多次数据，也只会渲染一次，提高了整体的性能。
+当我们修改`State`会重新渲染真实DOM，而这一步操作实际上是**异步的**。当我们修改`State`，它会把数据的改变缓存进一个队列当中，当一个`tick`（可以把宏任务和微任务阶段都当成一个`tick`）结束时，再渲染真实的DOM。
 
 如果我们需要在代码中获取更新后的DOM的值，需要使用`this.$nextTick`
 
@@ -298,28 +296,50 @@ const router = new VueRouter({
 ``` vue
 <template>
 	<div>
-        {{ state }}
+        {{ count }}
     </div>
 </template>
 <script>
     export default {
         data() {
             return {
-                state: '没更新'
+                count: 0
             }
         },
-        methods() {
+        methods: {
             onClick() {
-                this.state = '已更新'
+                this.count++
+                this.count++
+                
+                new Promise((resolve) => {
+                  	resolve(100)
+                }).then(() => {
+                  	this.count++
+                  	this.count++
+                  	this.$nextTick(() => {
+                      	console.log(this.$el.textContent); // 4
+                  	})
+                })
                 // 尝试获取DOM的值
-                console.log(this.$el.textContent) // 没更新
+                console.log(this.$el.textContent) // 0
                 this.$nextTick(() => {
-                    console.log(this.$el.textContent) // 已更新
+                    console.log(this.$el.textContent) // 2
                 })
             }
-        } 
+        },
+        updated() {
+            console.log('已更新') // 输出两次
+        }
     }
 </script>
+```
+
+``` markdown
+0
+已更新
+2
+已更新
+4
 ```
 
 
@@ -390,8 +410,6 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
          2. 新老VNode都有children，则使用updateChildren对子节点进行diff
 
             1. 对于oldVnode的children，用oldCh表示。对于newVnode的children，用newCh表示
-
-
             2. 首先定义 oldStartIdx、newStartIdx、oldEndIdx 以及 newEndIdx 分别是新老两个 children 的两边的索引，同时 oldStartVnode、newStartVnode、oldEndVnode 以及 newEndVnode 分别指向这几个索引对应的VNode 节点。
             3. while循环，循环中oldStartIdx和oldEndIdx不断靠拢，newStartIdx和newEndIdx也不断靠拢。
             4. 比较，oldStartVnode和newStartVnode，oldEndVnode和newEndVnode   ，  oldStartVnode和newEndVnode  ， oldEndVnode和newStartVnode。如果两个是sameVnode则进行patchVnode, 不是就进行下一个的比较
@@ -400,11 +418,11 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
                2. 如果没有key，则通过循环，一个个的调用sameVnode函数比较。（体现了**key能够提高diff算法的效率**）
                3. 如果找不到相同的Vnode，则新建一个Vnode
             6. 循环结束。处理多余的或者不够的真实节点。oldStartIdx > oldEndIdx 新增节点 或者 newStartIdx > newEndIdx 删除节点。
-    
+   
          3. 如果oldVnode没有children，newVnode有，则先清空老节点的文本内容，再为DOM加入子节点
-    
+   
          4. 如果oldVnode有children，newVnode没有，则删除该节点所有子节点
-    
+   
          5. 如果新老节点都没有子节点，替换DOM的文本
 
 10. 调用updated生命周期函数
