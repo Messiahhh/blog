@@ -959,7 +959,7 @@ hydrate(<App />, document.querySelector('#root'))
 
 
 
-##### 同步redux
+##### redux
 
 由上述代码可知，在前端和后端`App`组件都会被用到。那么当我们使用`react-redux`时，势必需要在前后端的代码中都加上`Provider`，并提供初始的数据。
 
@@ -1006,7 +1006,20 @@ hydrate(
 )
 ```
 
+##### react-router-dom
 
+使用`react-router-dom`时需要注意服务端代码需要使用`StaticRouter`而不是`BrowserRouter`
+
+``` js
+// app.js 后端
+const content = renderToString(
+    <Provider store={store}>
+        <StaticRouter>
+            <App />
+        </StaticRouter>
+    </Provider>
+)
+```
 
 
 

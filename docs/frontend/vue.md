@@ -283,7 +283,52 @@ const router = new VueRouter({
 
 
 
-### Vue双向绑定的原理
+### 底层原理
+
+##### nextTick
+
+当我们修改`State`会重新渲染真实DOM，而这一步操作实际上是**异步的**。当我们修改`State`，它会把数据的改变缓存进一个队列当中，当一个事件循环结束（在Vue中把一个事件循环阶段称为`tick`）后，再渲染真实的DOM。
+
+通过这种方式，即使我们在一个事件循环中修改多次数据，也只会渲染一次，提高了整体的性能。
+
+如果我们需要在代码中获取更新后的DOM的值，需要使用`this.$nextTick`
+
+
+
+``` vue
+<template>
+	<div>
+        {{ state }}
+    </div>
+</template>
+<script>
+    export default {
+        data() {
+            return {
+                state: '没更新'
+            }
+        },
+        methods() {
+            onClick() {
+                this.state = '已更新'
+                // 尝试获取DOM的值
+                console.log(this.$el.textContent) // 没更新
+                this.$nextTick(() => {
+                    console.log(this.$el.textContent) // 已更新
+                })
+            }
+        } 
+    }
+</script>
+```
+
+
+
+
+
+
+
+##### 双向绑定
 
 Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑定。通过Object.defineProperty()来劫持属性的，使用属性的时候触发getter函数，收集依赖；修改属性的时候触发setter函数，触发相应的回调。
 
@@ -297,7 +342,9 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
    2. 当数据修改时，调用setter函数，调用deps.notify，执行watch的update函数
    3. 执行watch的update函数，重新生成虚拟DOM，并进行Diff对页面进行修改
 
-##### 流水线的解释
+
+
+###### 流水线解释
 
 当我们使用`new Vue()  `生成Vue实例的时候，先会调用Vue._init 进行初始化。
 
@@ -365,6 +412,8 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
 12. 调用beforeDestroy生命周期函数
 13. 删除组件（包括watchers和事件监听器等）
 14. 调用destroyed生命周期函数
+
+
 
 
 
