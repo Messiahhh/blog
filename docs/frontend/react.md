@@ -981,7 +981,7 @@ hydrate(<App />, document.querySelector('#root'))
 
 ``` js
 export const loadData = () => (dispatch) => {
-    dispatchEvent(setFetching(true))
+    dispatch(setFetching(true))
     return axios.get('http://localhost:3000/getData')
         .then(res => {
             dispatch(setLists(res.data.lists))
@@ -1078,6 +1078,34 @@ hydrate(
     document.querySelector('#root')
 )
 ```
+
+##### 服务端加载CSS
+
+在`App`组件中需要使用`import 'index.css'`来加载样式，通过`style-loader`来调用`document.createElement('style')`创建标签，那么很明显这在服务端是行不通的，因为`document`在Node环境中是不存在的。
+
+那么我们切换一下思路，与其`import 'index.css'`时自动调用`document.createElement('style')`，我们实际上可以在引入`index.css`后，获取对应的样式信息，再手动的在模板HTML中添加这段信息，就像我们之前手动添加`CONTENT`和`STATE`一样。
+
+
+
+为了实现该目的，我们首先需要安装`isomorphic-style-loader`，并在`webpack`配置中替换掉原本用来转换CSS的`style-loader`。此时，我们引入样式文件时不会创建标签。
+
+``` js
+import style from './index.css'
+```
+
+通过使用该Loader，我们的`style`变量会被带上三个方法：`_getContent`、`_getCSS`、`_insertCSS`。很明显我们可以通过`_getCSS`获取样式信息，那么接下来的问题就是如何给模板添加这段信息。
+
+
+
+这时候我们需要使用`StaticRouter`的一个属性`context`来实现该目的。
+
+> TODO
+
+
+
+
+
+
 
 
 
