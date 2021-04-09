@@ -925,12 +925,16 @@ React在它的V16版本推出了Fiber架构，在弄清楚什么是Fiber之前�
 
 ### 服务端渲染(SSR)
 
-我们可以通过`react-dom/server`提供的`renderToString`和`react-dom`提供的`hydrate`来实现服务端渲染。
+[完整代码例子](https://github.com/Messiahhh/react-ssr-demo)
 
-简单来说，页面的渲染发生在服务端——即后端使用`renderToString`根据组件生成对应的静态标记。此时前端获取完整的页面，但是静态的标记并没有绑定任何事件，这时候我们需要使用`hydrate`来附加事件等信息。
+通常进行客户端渲染时，先从后端获取**空页面**，通过代码渲染出**模板页面**，再从后端获取**动态数据**，之后再渲染出**完整页面**。
+
+那么当进行服务端渲染时，我们希望**在服务端获取动态数据**，并在**服务端渲染出完整页面返回给浏览器**。
+
+我们可以在后端使用`react-dom/server`提供的`renderToString`来生成静态页面，静态页面被返回给浏览器后，我们还需要在前端使用`react-dom`提供的`hydrate`来给静态标记附加事件、生命周期等信息。
 
 ``` jsx
-// app.js 后端
+// server.js 后端
 import { renderToString } from 'react-dom/server'
 
 const content = renderToString(<App />)
@@ -957,42 +961,109 @@ import { hydrate } from 'react-dom'
 hydrate(<App />, document.querySelector('#root'))
 ```
 
+##### 同构
+
+所谓同构，指的是一份代码可以分别在前端和后端运行。
+
+比如上述代码例子中的`App`组件，分别在前后端运行了一次。值得注意的是，只有在前端使用`hydrate`后才会触发对应的生命周期或事件，而仅在后端使用`renderToString`时并不会触发组件的生命周期，所以我们无法通过生命周期在后端获取动态数据。
 
 
-##### redux
 
-由上述代码可知，在前端和后端`App`组件都会被用到。那么当我们使用`react-redux`时，势必需要在前后端的代码中都加上`Provider`，并提供初始的数据。
+##### 服务端加载数据
+
+通常使用服务端渲染都会用到`react-router-dom`和`redux` ，要注意后端需要使用`StaticRouter`而不是`BrowserRouter`
+
+我们在服务端创建一个`store`，再调用指定的方法来获取动态数据，并更新`store`的值。在这之后再把`store`作为`Provider`的值，使用`renderToString`渲染完整的页面。
+
+
+
+浏览器收到静态页面后，使用`hydrate`给静态页面绑定事件时我们也需要给`Provider`指定`store`。所以在之前渲染完整页面时可以在页面插入一段`window.__STATE__ = XXX`，从而进行`store`在前后端的传递。
 
 ``` js
-// app.js 后端
-const store = configureStore(initialState)
-    
-const content = renderToString(
-    <Provider store={store}>
-        <App />
-    </Provider>
-)
+export const loadData = () => (dispatch) => {
+    dispatchEvent(setFetching(true))
+    return axios.get('http://localhost:3000/getData')
+        .then(res => {
+            dispatch(setLists(res.data.lists))
+        })
+        .catch(err => console.log(err))
+}
 
-ctx.body = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>React App</title>
-        </head>
-        <body>
-            <div id="root">${content}</div>
-            <script>window.__STATE__ = ${JSON.stringify(store.getState())}</script>
-            <script src="/client.js"></script>
-        </body>
-        </html>
-    `
+
+export const load = (store) => {
+    return store.dispatch(loadData())
+}
+
+export const routes = [
+    {
+        path: '/',
+        key: 'home',
+        component: Contain,
+        loadData: load, // 在这里加载数据
+        exact: true,
+    },
+    {
+        path: '/signup',
+        key: 'signup',
+        component: Signup
+    },
+]
 ```
 
 ``` js
+// server.js 后端
+app.use(async (ctx) => {
+    const store = configureStore(initialState) // 创建store
+    const promiseArr = []
+    routes.forEach(route => {
+        if (route.loadData) {
+            promiseArr.push(route.loadData(store)) // 加载数据
+        }
+    })
+    await Promise.all(promiseArr) // 需要等所有数据都加载完毕
+    const content = await renderToHTML(ctx.url, store) // 生成完整页面
+    ctx.body = content
+})
+
+export default async function renderToHTML(url, store) {
+    const template = await fs.readFileAsync((`./template/index.html`), 'utf8')
+      
+    const content = renderToString(
+        <Provider store={store}> // 此时store已经是最新值
+            <StaticRouter location={url}>
+                <App />
+            </StaticRouter>
+        </Provider>
+    )
+    
+    // 后端把store放在window里，从而向前端传递
+    const state = `
+        <script>
+            window.__STATE__ = ${JSON.stringify(store.getState())} 
+        </script>
+    `
+    return template
+    .replace(`<!-- CONTENT -->`, content)
+    .replace(`<!-- STATE -->`, state)
+}
+```
+
+
+``` js
 // client.js 前端
-const state = window.__STATE__
+export default function App() {
+    return (
+        <Switch>
+            {
+                routes.map(route => {
+                    return <Route  {...route}></Route> 
+                })
+            }
+        </Switch>
+    )
+}
+
+const state = window.__STATE__ // 获取后端传过来的store
 
 delete window.__STATE__
 
@@ -1000,28 +1071,13 @@ const store = configureStore(state)
 
 hydrate(
     <Provider store={store}>
-        <App />
+    	<Router>
+        	<App />
+        </Router>
     </Provider>, 
     document.querySelector('#root')
 )
 ```
-
-##### react-router-dom
-
-使用`react-router-dom`时需要注意服务端代码需要使用`StaticRouter`而不是`BrowserRouter`
-
-``` js
-// app.js 后端
-const content = renderToString(
-    <Provider store={store}>
-        <StaticRouter>
-            <App />
-        </StaticRouter>
-    </Provider>
-)
-```
-
-
 
 
 
