@@ -1171,6 +1171,8 @@ ReactDOM.hydrate(
 
 ### create-react-app
 
+##### 环境变量
+
 通常项目都会存在测试环境和正式环境，不同环境下接口请求的路径也是不同的。而`CRA`提供了`process.env`让我们在前端读取环境变量，从而可以根据环境的不同设置不同的接口参数。
 
 ``` json
@@ -1193,3 +1195,11 @@ ReactDOM.hydrate(
     "dev": "cross-env REACT_APP_MY_ENV=development react-scripts start"
 }
 ```
+
+
+
+##### rewired
+
+使用`create-react-app`创建的项目，其`webpack`配置等信息对我们是不可见的，也是不可直接修改的。
+
+然而在有些场合我们还是希望能适度修改配置，除了`eject`我们也可以使用像`react-app-rewired`这样的库来拓展配置信息。

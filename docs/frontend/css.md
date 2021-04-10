@@ -718,6 +718,30 @@ B站无法直接实现Ipad向移动端的适配，主要原因是页面的内容
 
 
 
+### css模块
+
+形如`xx.module.css`的文件通常称为css模块。
+
+``` css
+.Root {
+    color: pink;
+}
+```
+
+``` js
+import style from './style.module.css'
+
+function App() {
+    return <div className={style.Root}></div>
+}
+```
+
+
+
+
+
+
+
 ### Better-Scroll
 
 ``` bash
@@ -891,14 +915,6 @@ body, ul, li {
   transform: translateY(-100%)  translateZ(0)
 }
 ```
-
-
-
-
-
-
-
-### Swiper
 
 
 
