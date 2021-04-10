@@ -1081,31 +1081,89 @@ hydrate(
 
 ##### 服务端加载CSS
 
-在`App`组件中需要使用`import 'index.css'`来加载样式，通过`style-loader`来调用`document.createElement('style')`创建标签，那么很明显这在服务端是行不通的，因为`document`在Node环境中是不存在的。
+在`App`组件中需要使用`import 'index.css'`来加载样式，通过`style-loader`来调用`document.createElement('style')`创建标签，又因为Node环境中并不存在`document`变量，所以这种思路是行不通的。
 
-那么我们切换一下思路，与其`import 'index.css'`时自动调用`document.createElement('style')`，我们实际上可以在引入`index.css`后，获取对应的样式信息，再手动的在模板HTML中添加这段信息，就像我们之前手动添加`CONTENT`和`STATE`一样。
+那么我们切换一下思路，与其引入`index.css`时自动创建标签，我们实际上可以在引入`index.css`后，获取对应的样式信息，再手动的在模板HTML中添加这段信息，就像我们之前手动添加`CONTENT`和`STATE`一样。
 
 
 
-为了实现该目的，我们首先需要安装`isomorphic-style-loader`，并在`webpack`配置中替换掉原本用来转换CSS的`style-loader`。此时，我们引入样式文件时不会创建标签。
+为了实现该目的，我们首先需要安装`isomorphic-style-loader`，并在`webpack`配置中替换掉原本用来转换CSS的`style-loader`。此时，我们引入样式文件时不会自动创建标签。
 
 ``` js
-import style from './index.css'
+// webpack.config.js
+{
+    test: /\.module\.css$/,
+    use: ["isomorphic-style-loader", {
+        loader: "css-loader",
+        options: {
+            importLoaders: 1,
+            esModule: false, // 注意这里
+        }
+    },
+    "postcss-loader"
+],
 ```
 
-通过使用该Loader，我们的`style`变量会被带上三个方法：`_getContent`、`_getCSS`、`_insertCSS`。很明显我们可以通过`_getCSS`获取样式信息，那么接下来的问题就是如何给模板添加这段信息。
+值得注意的是，与[官网文档上的例子](https://github.com/kriasoft/isomorphic-style-loader)不同，我这里使用了`esModule: false`。这主要是`css-loader`版本的差异导致的，在一些老的教程和文档中可能使用的是`css-loader@3.x`，而最新的版本已经是`css-loader@5.x`了。[在最新的情况下](https://stackoverflow.com/questions/63458657/isomorphic-style-loader-doesnt-work-as-it-supposed-to/63983963#63983963)，`css-loader`会生成一个`es模块`，而`isomorphic-style-loader`需要一个`commonjs模块`。
+
+另外，有的教程使用`StaticRouter`的`context`来实现服务端中CSS的加载，而在`isomorphic-style-loader`的官网中，使用的是它自带的一些工具函数来实现，我可能更倾向于后者吧。
 
 
 
-这时候我们需要使用`StaticRouter`的一个属性`context`来实现该目的。
+总之，在配置好后，我们可以跟着官网的教程来实现服务端加载CSS了。
 
-> TODO
+``` js
+// server.js 后端
+const css = new Set() // CSS for all rendered React components
+const insertCss = (...styles) => styles.forEach(style => css.add(style._getCss()))
+const body = ReactDOM.renderToString(
+    <StyleContext.Provider value={{ insertCss }}>
+      <App />
+    </StyleContext.Provider>
+)
+const html = `<!doctype html>
+    <html>
+      <head>
+        <script src="client.js" defer></script>
+        <style>${[...css].join('')}</style>
+      </head>
+      <body>
+        <div id="root">${body}</div>
+      </body>
+    </html>
+`
+```
 
+``` js
+// client.js 前端
 
+import React from 'react'
+import withStyles from 'isomorphic-style-loader/withStyles'
+import s from './App.scss'
 
+function App(props, context) {
+  return (
+    <div className={s.root}>
+      <h1 className={s.title}>Hello, world!</h1>
+    </div>
+  )
+}
 
+export default withStyles(s)(App) // <--
 
+const insertCss = (...styles) => {
+  // 不过，这两行代码有必要么
+  const removeCss = styles.map(style => style._insertCss())
+  return () => removeCss.forEach(dispose => dispose())
+}
 
+ReactDOM.hydrate(
+  <StyleContext.Provider value={{ insertCss }}>
+    <App />
+  </StyleContext.Provider>,
+  document.getElementById('root')
+)
+```
 
 
 
