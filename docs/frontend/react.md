@@ -1171,19 +1171,25 @@ ReactDOM.hydrate(
 
 ### create-react-app
 
-通常项目存在测试环境和正式环境，这两个环境所对应的后端域名也是不同的。
+通常项目都会存在测试环境和正式环境，不同环境下接口请求的路径也是不同的。而`CRA`提供了`process.env`让我们在前端读取环境变量，从而可以根据环境的不同设置不同的接口参数。
 
-我们可以通过设置环境变量，代码中通过`process.env.xxx`读取该环境变量，从而实现根据环境的不同设置不同的接口域名。
-
-
-
-有个注意的点是`create-react-app`创建的项目，会根据执行的命令自动设置环境变量`NODE_ENV`，比如当我们使用`npm start`时的环境变量的值为`development`，当我们使用`npm test`时环境变量的值为`test`，当我们使用`npm build`时环境变量的值为`production`。
-
-除了这个点，还有个重要的地方是`react-script`只会读取到以`REACT_APP_`开头的环境变量，比如你的`package.json`可以这样写
-
-``` js
-"start:dev": "cross-env REACT_APP_NODE_ENV=development react-scripts start", // cross-env 用来跨操作系统设置环境变量
+``` json
+// process.env 默认值
+{
+    NODE_ENV: "development" | "production" | "test"
+    PUBLIC_URL: ""
+    WDS_SOCKET_HOST: undefined
+    WDS_SOCKET_PATH: undefined
+    WDS_SOCKET_PORT: undefined
+}
 ```
 
+我们用的最多的是`NODE_ENV`这个环境变量，通常当我们使用`npm start`、`npm build`或`npm test`时，`NODE_ENV`的值分别为`development`、`production`、`test`。另外`PUBLIC_URL`也可以在模板HTML中看到它的使用方式。
 
+我们也可以自己设置环境变量，不过需要注意的是我们设置的环境变量必须以`REACT_APP_`开头才能被`process.env`读取到，比如可以这么写：
 
+``` json
+{
+    "dev": "cross-env REACT_APP_MY_ENV=development react-scripts start"
+}
+```
