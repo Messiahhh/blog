@@ -21,11 +21,9 @@ sidebarDepth: 4
            "start": "pm2 list"
        }
    }
-   
-// shell
-   npm run start
-   ```
-   
+   // shell
+      npm run start
+   ```   
 3. ``` shell
    npx pm2 list
    ```

@@ -113,7 +113,7 @@ Doctype声明位于文档中的最前面，处于html标签之前。告知浏览
 
 ### 重定向
 
-mata标签的`http-equiv="refresh"`属性用来告诉浏览器进行页面的跳转，`content`属性告知在多少秒后进行跳转，以及跳转的地址。此处为2s后重定向。
+`meta`标签的`http-equiv="refresh"`属性用来告诉浏览器进行页面的跳转，`content`属性告知在多少秒后进行跳转，以及跳转的地址。此处为2s后重定向。
 
 ``` html
 <meta http-equiv="refresh" content='2;https://messiahhh.github.io/blog'>
