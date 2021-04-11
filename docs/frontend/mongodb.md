@@ -86,24 +86,50 @@ db.<集合名>.find({name: 'akara'}) # 根据条件查找
 ``` js
 const mongoose = require('mongoose')
 // mongodb默认运行在27017 port
-mongoose.connect('mongodb://localhost/test', {useNewUrlParser: true, useUnifiedTopology: true}) // test 表示mongodb中的某个具体数据库
-const db = mongoose.connection
-
-// 定义Schema
-const peopleSchema = new mongoose.Schema({ 
-    name: String,
-})
-
-// 定义Model
-const People = mongoose.model('people', peopleSchema) // Model { people }
-
-// p是一个Document
-const p = new People({ 
-    name: 'akara'
+mongoose.connect('mongodb://localhost/test', { // test为数据库名
+    useNewUrlParser: true,
+    useUnifiedTopology: true
 }) 
+const db = mongoose.connection
+db.once('open', function () {
+    // 定义Schema
+    const peopleSchema = new mongoose.Schema({ 
+        name: String,
+    })
 
-p.save()
+    // 定义Model
+    // 会建立一个名为peoples(复数)的Collection
+    const People = mongoose.model('people', peopleSchema) // Model { people }
 
+    // p是一个Document
+    const p = new People({ 
+        name: 'akara'
+    }) 
+
+    await p.save()
+})
+```
+
+
+
+##### 添加数据
+
+``` js
+const People = mongoose.model('people', peopleSchema)
+const p = new People({
+    name: 'www'
+})
+p.save() // Document的实例方法save
+```
+
+这里我们使用了`Document`的实例方法`save`，我们同样可以自定义实例方法。
+
+``` js
+peopleSchema.methods.say = function() {
+    console.log('say something')
+}
+const Model = mongoose.model('people', peopleSchema) 
+p.say()
 ```
 
 
@@ -147,33 +173,26 @@ const People = mongoose.model('people', peopleSchema)
 let data = await People.findByName('akara')
 ```
 
-顺便记录一些常用的`Model`静态方法
+常用API：
 
-- Model.find()
-- Model.findOne()
-- Model.count() 
+- `Model.find()`
+- `Model.findOne()`
+- `Model.count()` 
 
 
 
-##### 添加数据
+##### 更新数据
+
+在`mongoose`中更新数据很简单，我们需要先查询到目标Document，然后以纯JS的形式修改它的属性，最后调用`save`即可。
 
 ``` js
 const People = mongoose.model('people', peopleSchema)
-const p = new People({
-    name: 'www'
-})
-p.save() // Document的实例方法save
+let p = await People.findOne()
+p.name = 'newName'
+await p.save()
 ```
 
-这里我们使用了`Document`的实例方法`find`，我们同样可以自定义实例方法。
-
-``` js
-peopleSchema.methods.say = function() {
-    console.log('say something')
-}
-const Model = mongoose.model('people', peopleSchema) // 必须在这行代码前定义实例原型的方法
-p.say()
-```
+以上是大多数情况下我们应该用来更新数据的方式，只有少数情况下我们可以考虑使用`update()`、`updateOne()`、`updateMany()`、`findOneAndUpdate()`等方式来更新数据。
 
 
 
@@ -216,7 +235,7 @@ query.exec((err, data) => console.log(data))
 
 
 
-##### _id
+##### `_id`
 
 每个Document默认都会有一条`_id`的属性
 
@@ -228,17 +247,19 @@ await Model.findById('5ff59ae87b43e51eccf83237') // 可以找到对应的数据
 
 
 
+##### `createdAt`、`updatedAt`
 
-
-##### 其他
-
-从mongoose数据库随机选一条数据
+用于自动给字段添加创建时间和修改时间
 
 ``` js
-Article.statics.findByRandom = async function() {
- const count = await this.count();
- const random = Math.floor(Math.random() * count);
- return this.findOne()
-  .skip(random)
-};
+const peopleSchema = new mongoose.Schema({ 
+    name: String,
+}, {
+    timestamps: {},
+    // 也可以给字段改名
+    // timestamps: {
+    //     createdAt: 'created_at'
+    // }
+})
 ```
+
