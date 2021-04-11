@@ -5,7 +5,9 @@ sidebarDepth: 4
 
 ### NPM
 
-安装的npm包放在`node_modules`目录下，可以这样使用：
+##### 脚本执行
+
+我们安装的模块被放置在`node_modules`目录下，有多种方式去直接调用该包。
 
 1. ``` shell
    ./node_modules/.bin/pm2 list
@@ -19,21 +21,39 @@ sidebarDepth: 4
            "start": "pm2 list"
        }
    }
+   
+// shell
+   npm run start
    ```
-
+   
 3. ``` shell
    npx pm2 list
    ```
 
 
 
+##### package.json
+
+在`package.json`中我们经常能看见这种形式的版本号`"react": "^17.0.2"`、`"xx": "~0.10.0"`。这种类型的版本号表示法我们称之为`semver`表示法。
+
+- `^`: 只会执行不更改最左边非零数字的更新。 如果写入的是 `^0.13.0`，则当运行 `npm update` 时，可以更新到 `0.13.1`、`0.13.2` 等，但不能更新到 `0.14.0` 或更高版本。 如果写入的是 `^1.13.0`，则当运行 `npm update` 时，可以更新到 `1.13.1`、`1.14.0` 等，但不能更新到 `2.0.0` 或更高版本。
+- `~`: 如果写入的是 `〜0.13.0`，则当运行 `npm update` 时，会更新到补丁版本：即 `0.13.1` 可以，但 `0.14.0` 不可以。
+
+因此，哪怕对于同一个项目，在不同时机使用`npm install`来安装模块时，模板的版本也可能有些许差异。
 
 
 
+##### package-lock.json
+
+如上述所言，假设当我们依赖的某个模块偷偷地更新了一个小版本号，那么我们最初`npm install`时就会安装最新的该模块。一旦这个模块引入了巨大的缺陷，对于我们的项目将造成极大的影响。
+
+而`package-lock.json`就是用来固定下指定的版本号，此时我们使用`npm install`时，只会安装固定版本号的模块。
+
+`yarn`默认启用了`lock`，而`npm`在`5.x`版本之后才默认启用了`lock`。不过业界对于是否启用`lock`，还存在一些[争论](https://www.zhihu.com/question/65536076)
 
 
 
-##### npm lock
+##### node_modules
 
 在`NPM`的早期版本，安装模块时`node_modules`的结构是嵌套结构。比如当我们安装了一个依赖于模块B的模块A，我们的`node_modules`结构会如图所示：
 
@@ -77,25 +97,21 @@ sidebarDepth: 4
 
    
 
-再聊聊`package-lock.json`。
+##### npx
 
-我们经常可以在依赖模块的版本号中看到`^`或`~`，说明我们依赖的并不是一个指定版本的模块，如果我们依赖的这个模块更新了一个小版本，并产生了问题，就有可能影响到我们的项目。
+在`npx@5.2`之后引入了`npx`这个强大的命令。
 
-为了避免这样的事情发生，我们可以使用`lock`。对于`yarn`来说，默认就启动了`lock`的特性。而`NPM`是在`5.x`之后才默认启动`lock`特性。
-
-当我们使用`npm install`安装模块后，同时会生成`package-lock.json`（`5.x`版本之后）。如果我们之后没有变动`package.json`的依赖，再一次进行`npm install`安装模块时，会根据`package-lock.json`中安装指定版本的模块，版本锁住了，就不会出现依赖的模块偷偷推出一个有bug的小版本时，影响到我们项目的情况。如果我们之后变动了`package.json`，再一次进行`npm install`，会重新生成新的`package-lock.json`，来锁住更新后的版本信息。
+除了之前说过的`npx pm2`这样的脚本执行方式，`npx`的另一个特性是无需安装即可执行命令。
 
 
 
-不过关于是否启用`lock`特性，业界也有一些[争论](https://www.zhihu.com/question/65536076)。
+比如`npx create-react-app my-app`，我们无需提前安装`create-react-app`，借助`npx`会下载并使用该库来生成我们的项目，并在任务执行完成后删除下载好的`create-react-app`。
 
 
 
+##### 模块发布
 
-
-##### 发布模块
-
-通过npm发布包很简单，其实就两步
+通过`npm`发布包很简单，其实就两步
 
 1. `npm login`
 2. `npm publish`
@@ -126,7 +142,7 @@ npm publish --access public
 
 ### 事件循环
 
-##### 宏/微任务，队列
+##### 宏任务和微任务
 
 宏任务`macroTask`， 包括:  `setTimeout/setInterval`，`setImmediate`(Node专有)， I/O操作（包括读写文件/发送请求等）。宏任务放在宏队列中。
 
@@ -159,7 +175,7 @@ Node通过libuv来实现事件循环。
 
 执行宏队列中的第一个宏任务 => 执行微队列中的所有微任务 => 执行宏队列中的下一个宏任务 => 执行微队列中的所有微任务...如此往复。我们最初的同步脚本可以看作最初的宏任务。
 
-##### Node中的事件循环
+##### Node事件循环
 
 Node事件循环一共有**六个阶段**，**每个阶段中都有一个宏队列**，**总共只有一个微队列**
 
@@ -178,7 +194,7 @@ Node事件循环的六个阶段：
 
 
 
-##### 高低版本Node的差异
+###### 高低版本Node的差异
 
 高低版本的Node有着显著的差异，如以下代码，在高低版本的Node下的结果就会不同。
 
@@ -296,7 +312,7 @@ const server = http.createServer((req, res) => {
 
 ```
 
-##### 处理Post请求（文件上传）
+##### 处理Post请求
 
 ``` javascript
 // 前端 (省略部分代码)
@@ -656,11 +672,11 @@ cluster让我们不用亲自去管理进程通信的事情（process.on('message
 
 在windows系统下，通过以下代码来设置负载均衡策略为round-robin
 
-cluster.schedulingPolicy = cluster.SCHED_RR;
+`cluster.schedulingPolicy = cluster.SCHED_RR;`
 
 另外，pm2也自带cluster，比如可以靠以下代码创建8个子进程。
 
-pm2 start app.js -i 8
+`pm2 start app.js -i 8`
 
 
 
