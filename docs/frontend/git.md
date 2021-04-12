@@ -48,31 +48,65 @@ git cat-file -p 58c9 # 58c9为想找的object的值
 
 
 
-##### git merge VS git rebase 
+### 分支合并
 
-这两种方法通常都是用于分支的合并，不过其原理是不同的。
+> [参考](https://backlog.com/git-tutorial/cn/stepup/stepup1_4.html)
 
-![待合并项目](https://upload-images.jianshu.io/upload_images/305877-5dece524b7130343.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp)
+##### git merge
 
-比如该图，在Feature分支上改动，想要合并进Master分支。我们通常有两种方法:`git merge`和`git rebase`。
+如图一，当我们处于`master`分支使用`git merge test`时，这种合并称之为`fast-forward`（快进）
 
-``` shell
-git merge feature
-# 或者
-git rebase feature
-```
+![fast-forward](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_1.png)
 
 
 
+它的结果如图二所示：
+
+![fast-forward合并](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_2.png)
 
 
-![git merge](https://upload-images.jianshu.io/upload_images/305877-c4ddfcf679821e2f.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp)
+
+不过图三这种才是大部分情况可能的场景，我们通常从某个分支中新建一个`test`分支，而之后`master`分支可能已经被其他人更新过了。
+
+![分支合并](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_3.png)
 
 
 
-![git rebase](https://upload-images.jianshu.io/upload_images/305877-467ba180733adca1.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp)
+此时当我们在`master`分支使用`git merge test`，会产生一个新的分支。
 
-git merge 保存了完成的历史记录，而git rebase 则尽量简化了历史记录（重写了历史记录）。
+![分支合并结果](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_4.png)
+
+
+
+##### git rebase
+
+使用`git merge`的好处是保持了原先的`commit`记录，但是历史记录会很复杂；而`git rebase`的好处是历史记录简单，但是会修改原先的`commit`记录。
+
+![git-rebase](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_6.png)
+
+我们处于`master`分支时使用`git rebase test`来合并分支，结果如图二：
+
+![git-rebase结果](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_7.png)
+
+
+
+
+
+##### 补充
+
+`commit`节点通过`tree`节点记录着某个时刻对应的文件信息，这些对应的文件保存在索引区域中（严格来说，这些文件被当作`object`节点存于`git`仓库中，索引指向着这些文件），当我们切换到某个`commit`时，会根据索引把对应的文件同步到工作目录中。
+
+通常当我们修改工作目录中的文件后，通过`git add`把更新同步到索引中（即在`git`仓库中创建一个新的`object`结点，并更新索引的指向），然后使用`git commit`来生成一个新的`commit`节点（即先根据索引的指向生成一个`tree`节点，再生成`commit`节点），新的`commit`节点记录着新的文件信息。
+
+
+
+假设`commitA`和`commitB`都记录着文件`test`，那么当我们处于`commitA`时并修改工作目录的文件后，或者已经同步到索引区域，只要还没有提交记录的话，这时候如果我们切换到`commitB`，那我们的本地修改会同步到`commitB`当中。
+
+不过，如果我们在`commitA`记录着文件`a`，而`commitB`中不存在文件`a`，然后我们处于`commitA`时修改文件`a`，这时候直接切换到`commitB`就会失败，并且会提醒我们应该先提交我们的修改，或者可以使用`git stash`来把我们的修改暂存到`commitA`中。
+
+比如我们可以先使用`git stash`暂存修改，然后就可以直接切换到`commitB`了，未来回到`commitA`时又可以使用`git stash pop`把暂存的修改内容拿出来。
+
+
 
 
 
@@ -86,3 +120,4 @@ git rebase -i HEAD~3 # 或者这种写法
 ```
 
 之后在Vim里把对应的pick字段改成squash，再之后修改`commit msg`即可。
+
