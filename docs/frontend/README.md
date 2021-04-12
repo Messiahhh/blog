@@ -2,7 +2,11 @@
 sidebarDepth: 4
 ---
 ## HTML
-JavaScript脚本的**执行**会阻塞HTML的解析
+##### 渲染流程
+
+浏览器收到响应后将其内容解码成HTML，下一步要做的就是把HTML解析成DOM。
+
+我们知道在JavaScript中可以操作DOM，因此为了避免冲突**JavaScript代码的执行会阻塞后续HTML的解析**。
 
 ``` html
 <script>
@@ -13,105 +17,80 @@ JavaScript脚本的**执行**会阻塞HTML的解析
 </div>
 ```
 
-因此，外链脚本的**加载**也会阻塞HTML的解析
+因此，JavaScript代码的加载也会阻塞后续HTML的解析。
 
 ``` html
 <script src="./index.js"></script>
 <div>
-    <!-- 先加载脚本，再执行脚本，才进行html的解析 -->
+    <!-- 先加载脚本，再执行脚本，再进行HTML的解析 -->
 </div>
 ```
 
-不过，多个外链script的**加载是并行的**。
+但是我们可以观察到多个外链脚本的加载是并行的，这是因为现代浏览器会对**资源进行预加载**
 
 ``` html
-<script src="1.js"></script>
-<script src="2.js"></script>
-<script src="3.js"></script>
-<script src="3.js"></script>
+<!-- a.js 的加载并不会阻塞b.js的加载 -->
+<script src="a.js"></script>
+<script src="b.js"></script> 
+<script src="c.js"></script>
+<script src="d.js"></script>
+<div>
+    <!-- 我的解析仍然要先等所有脚本加载和执行完成 -->
+</div>
 ```
 
-按理来说，因为加载会阻塞接下来HTML的解析，所以加载第一个脚本的时候还未解析到下一句HTML代码，因此加载按理来说是串行的。
+又因为JavaScript是单线程的，在该例中如果`a.js`的加载耗时很长，即使`b.js`已经加载完成了，`b.js`也需要等待`a.js`的代码执行完成后才能执行。
 
-但实际上现代浏览器会对资源进行**预解析**，提前把html中要引用到的资源放进请求队列中。
 
-### async和defer的区别
+
+###### async和defer
+
+通过给`script`加上这两个属性，**脚本的加载就不会阻塞后续HTML的解析**了。
 
 ``` html
 <script async></script>
 <script defer></script>
 ```
 
-**共同点**
+而二者的不同点在于：
 
-加上`async`或`defer`属性的脚本的**加载过程 **都不会阻塞HTML的解析。
-
-**不同点**
-
-- async属性。脚本加载完后会立刻开始脚本的执行，并停止对HTML的解析，待脚本执行完再继续HTML的解析。
-- defer属性。等整个HTML文档都解析完（DOMContentLoaded事件发生），脚本才开始执行。
-- 具体过程可见下图
+- `async`的脚本在加载完成时，会立刻开始脚本的执行，并停止HTML的解析
+- `defer`的脚本会在整个文档都被加载完（即`DOMContentLoaded`）之后才开始执行。
 
 ![defer and async](https://image-static.segmentfault.com/215/179/2151798436-59da4801c6772_articlex)
 
 
 
+###### DOMContentLoaded和Load
+
+- `DOMContentLoaded`: 当HTML文档被解析完成。
+- `Load`：当所有的资源都加载完成，即包括文档、图片、样式、脚本等资源。
+
+在`chrome`的`network`一栏中，蓝色的竖线表示`DOMContentLoaded`的时间点，红色的竖线表示`Load`的时间点，`Load`耗时总是大于等于前者的。
 
 
 
-
-### DOMContentLoaded和Load的区别
-
-##### DOMContentLoaded
-
-当初始的 **HTML** 文档被完全加载和解析完成之后，**`DOMContentLoaded`** 事件被触发，而无需等待样式表、图像和子框架的完成加载。
-
-
-
-##### Load
-
-当一个资源及其依赖资源已完成加载时，将触发load事件。
-
-
-
-当 HTML 文档解析完成就会触发 DOMContentLoaded，而所有资源加载完成之后，load 事件才会被触发。
-
-在chrome的network一栏中，蓝色的竖线指示着`DOMContentLoaded`的时间点，红色的竖线指示着`Load`的时间点。
-
-
-
-
-### href和src的区别
-
-**href**
-
-用于在当前文档和指定资源间确定联系
+###### preload
 
 ``` html
-<a href="http://www.baidu.com"></a>
-<link type="text/css" rel="stylesheet" href="common.css">
+<link rel="preload" as="script" href="/main.js" >
+<link rel="preload" as="style" href="/common.css">
 ```
 
-**src**
+`<link>`标签中可以使用`preload`来实现资源的预加载，但此时加载的资源并不会应用到页面中，比如预加载的`css`并不会被解析。
 
-下载资源并替换当前内容
 
-``` html
-<img src="img/girl.jpg">
-<iframe src="top.html">
-<script src="show.js">
-```
 
-### link和@import的区别
+###### link和@import的区别
 
 1. link是XHTML提供的标签，不仅可以加载CSS。@import是CSS提供的语法规则，只能加载CSS
 2. 加载页面时，`link`标签引入的 CSS 被同时加载；`@import`引入的 CSS 将在页面加载完毕后被加载。
 
-### doctype
+###### doctype
 
 Doctype声明位于文档中的最前面，处于html标签之前。告知浏览器的解析器，用什么文档类型规范来解析这个文档
 
-### 重定向
+##### 重定向
 
 `meta`标签的`http-equiv="refresh"`属性用来告诉浏览器进行页面的跳转，`content`属性告知在多少秒后进行跳转，以及跳转的地址。此处为2s后重定向。
 
@@ -133,11 +112,11 @@ res.statusCode = 301 // or 302
 res.setHeader('Location', 'https://messiahhh.github.io/blog')
 ```
 
-### HTML5
+##### HTML5
 
 > 介绍一些HTML5的用法
 
-##### 元素拖拽
+###### 元素拖拽
 
 ``` html
 <div class="contain"></div>
@@ -163,7 +142,7 @@ res.setHeader('Location', 'https://messiahhh.github.io/blog')
 <!-- 事件触发了两次，两次的e.target不同，使用e.dataTransfer来传输数据 -->
 ```
 
-##### 地理位置
+###### 地理位置
 
 ``` js
 navigator.geolocation.getCurrentPosition((position) => {
@@ -178,7 +157,26 @@ navigator.geolocation.getCurrentPosition((position) => {
 
 
 
+##### 解析markdown
 
+我们的常见需求是把`markdown`文件解析成页面，有很多种工具可以实现这一目的，比如可以使用`gray-matter`、`remark`、`remark-html`、`remark-prism`来实现。
+
+其中`gray-matter`可以用来获取`markdown`的内容和`yaml`元数据。
+
+``` js
+import matter from 'gray-matter'
+import remark from 'remark'
+import html from 'remark-html'
+import prism from 'remark-prism'
+
+const markdown = fs.readFileSync(path, 'utf8')
+const matterResult = matter(markdown)
+const processedContent = await remark()
+	.use(html)
+	.use(prism)
+	.process(matterResult.content)
+const contentHtml = processedContent.toString()
+```
 
 
 
