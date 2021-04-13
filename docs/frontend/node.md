@@ -23,7 +23,7 @@ sidebarDepth: 4
    }
    // shell
       npm run start
-   ```   
+   ```
 3. ``` shell
    npx pm2 list
    ```
@@ -364,13 +364,15 @@ server.listen(3000, () => {
 })
 ```
 
+
+
 ### fs模块
 
 ``` javascript
 const fs = require('fs')
 ```
 
-##### readFile
+##### `readFile`
 
 ``` javascript
 fs.readFile('./image.png', (err, buffer) => {
@@ -379,7 +381,7 @@ fs.readFile('./image.png', (err, buffer) => {
 })
 ```
 
-##### writeFile
+##### `writeFile`
 
 ``` javascript
 // 写入文本
@@ -388,9 +390,9 @@ fs.writeFile('index.txt', 'hello world', 'utf8')
 fs.writeFile('image.png', buffer)
 ```
 
-##### createReadStream
+##### `createReadStream`
 
-##### createWriteStream
+##### `createWriteStream`
 
 ``` javascript
 const reader = fs.createReadStream(data.path)
@@ -404,118 +406,60 @@ reader.pipe(stream)
 const path = require('path')
 ```
 
-##### __dirname
+##### `__dirname`
 
 返回当前文件所在的**绝对路径**
 
-##### path.resolve
-
-将一个路径解析成绝对路径
-
-``` javascript
-const path1 = path.resolve('static')
-console.log(path1)
-// 输出
-C:\Users\Messiah\test\static
-```
-
-##### path.join
-
-用平台特定的分割符号(Linux为`/`， Window为`\`)对路径进行拼接
-
-``` javascript
-const path1 = path.join(__dirname, 'a')
-const path2 = path.join(__dirname, 'a/b')
-const path3 = path.join('/a', 'b', 'c/d', 'e', '..')
-
-console.log(path1)
-console.log(path2)
-console.log(path3)
-// 输出
-C:\Users\Messiah\test\a
-C:\Users\Messiah\test\a\b
-\a\b\c\d
-
-const path4 = path.join(__dirname, '/static')
-const path5 = path.join(path.resolve('.'), '/static')
-```
-
-### os模块
-
-获取操作系统相关信息。
+##### `path.resolve`
 
 ``` js
-const os = require('os')
-const homedir = os.homedir() // 获取用户目录
+const url = path.resolve('static')
+```
+
+根据传入的参数解析出对应的**绝对路径**。
+
+- 当传入的参数是相对路径，如`index`、`../index`，会算出相对**`process.cwd()`**的绝对路径
+
+  ``` js
+  const url = path.resolve('.') // 等于process.cwd()
+  ```
+
+- 当传入的参数是绝对路径，如`/index`，会算出相对**根路径**的绝对路径
+
+##### `path.join`
+
+用来拼接传入的参数得到一个**相对路径**，它的好处是可以抹平不同平台的分割符号的差异（如Linux环境下分隔符为`/`，而Windows环境下分隔符为`\`）
+
+``` javascript
+const path1 = path.join('a', 'b') // 'a/b'
+const path2 = path.join('a', 'b', '../c') // 'a/c'
+const path3 = path.join(__dirname, '..', 'b') 
 ```
 
 
 
 ### process模块
 
-##### process.cwd()
+##### `process.cwd()`
 
-获取执行node脚本时所在的目录
+获得执行脚本时所处的**绝对路径**。
 
 
 
-假设有以下目录结构，把`a.js`看作我们的业务代码，把`folder`文件夹看作外部库，会发现这是个很常见的场景。
+###### 相对路径
 
-``` js
-- root
-    - a.js
-    - folder
-        - b.js
-        - test.txt
-```
+之前我们有介绍过`fs.readFile`和`path.resolve`，通常我们会传入类似`./index.html`形式的相对路径，这个路径自然是相对于执行脚本时所在的目录路径，也就是相对于`process.cwd()`。
+
+所以当我们给这些方法传入相对路径时，根据执行脚本时所处的路径不同，结果可能有很大的差异。所以很多使用我们会传入绝对路径，比如搭配`__dirname`传入参数：
 
 ``` js
-// a.js 
-const b = require('./folder/b.js')
-
-// b.js
-const fs = require('fs')
-fs.readFile('./test.txt', 'utf8', (err, data) => {
-    console.log(data)
-})
-
-// test.txt
-12345
+fs.readFile(`${__dirname}/../index.html`)
+fs.readFile(path.join(__dirname, '../index.html'))
 ```
 
 
 
-当我们在`root`目录执行`node a.js`时，输出`undefined`，并非我们想要的结果；而当我们进入`folder`目录执行`node ../a.js`输出`12345`。
-
-也就是说，我们执行了相同的代码，却得到了不同的结果。原因是`b.js`中的相对路径可以看成是相对于`process.cwd()`，因此当我们在`root`目录运行node时，路径为`root/test.txt`；当我们在folder目录运行node时，路径为`root/folder/test.txt`。
-
-由此可见以上代码的路径写法是有问题的，实际上大部分库都借助了`__dirname`，从而拿到绝对路径的文件资源
-
-``` js
-// 合理的写法 b.js 
-const fs = require('fs')
-fs.readFile(`${__dirname}/test.txt`, 'utf8', (err, data) => { 
-    console.log(data)
-})
-
-// 两种写法都行
-`${__dirname}/test.txt`
-path.join(__dirname, 'txt.txt')
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-##### process.argv
+##### `process.argv`
 
 获取执行脚本时命令行输入的参数
 
@@ -525,12 +469,12 @@ $node index.js abc
     'node',
     'index.js',
     'abc'
-]
+] // process.argv
 ```
 
 
 
-##### process.stdout
+##### `process.stdout`
 
 标准输出流
 
@@ -540,7 +484,7 @@ process.stdout.write('Hello world')
 
 
 
-##### process.stdin
+##### `process.stdin`
 
 标准输入流
 
@@ -553,83 +497,65 @@ process.stdin.on('data', (chunk) => {
 
 ### child_process模块
 
-##### fork/exec/execFile/spawn
+Node的`child_process`模块提供了创建子进程的四种方式，分别是`folk`、`exec`、`execFile`、`spawn`。
 
-node的child_process提供了创建子进程的方式。一共有四种，分别是spawn，execFile，exec，fork。
+其中，只有`fork`是用来创建Node程序的子进程，其他三种可以用来创建`shell`子进程。
 
-其中，只有fork是用来创建node程序的子进程，而前三个用来创建shell程序的子进程。
-
-至于spawn，execFile和exec的区别。
-
-首先，spawn是基于流的形式，而后两者是基于回调的形式。
-
-而spawn和execFile的调用方式相同，与exec的调用方式不同。
+##### `fork`
 
 ``` js
-spawn('cat', ['a.txt'])
-execFile('cat', ['a.txt'])
-exec('cat a.txt')
-```
-
-另外，使用exec执行一些危险的脚本（如rm -rf）是会直接执行的；而execFile碰到一些危险的操作会爆出异常。因此execFile的安全性更高。
-
-使用方式如下（用到了util.promisify，从而使用async/await形式的exec）
-
-``` js
+// parent.js
 const cp = require('child_process')
 const path = require('path')
-const util = require('util')
-// text.txt 有四行
-// a
-// c
-// b
-// a
-const file = path.join(__dirname, 'text.txt')
+const child = cp.fork('./child.js')
 
+child.on('message', (msg) => { // 进程通信
+  	console.log(msg);
+  	child.disconnect()
+})
+child.send('hello')
 
-// exec
+// child.js
+process.on('message', (msg) => {
+  	console.log(msg);
+  	process.send('akara')
+})
+```
+
+`exec`可以直接在Node代码中写入`shell`命令，并且在执行一些危险的脚本（如`rm / -rf`）是不会提示的；而`execFile`和`spawn`的参数都是文件的名字，并且`execFile`在执行危险操作时会爆出异常，因此更加的安全。
+
+##### `exec`
+
+``` js
 const exec = util.promisify(cp.exec)
 
 (async function () {
   const res = await exec(cat ${file})
   console.log(res.stdout);
 })()
+```
 
-// execFile
+##### `execFile`
+
+``` js
 const exec = util.promisify(cp.execFile)
 
 (async function () {
-  const res = await exec('cat', [file])
-  console.log(res.stdout);
+  	const res = await exec('cat', [file])
+  	console.log(res.stdout);
 })()
+```
 
-// spawn
+##### `spawn`
+
+`spawn`的特点是基于流的，因此可以使用`pipe`显得更加灵活
+
+``` js
 const cat = cp.spawn('cat', [file])
 const sort = cp.spawn('sort')
 
 cat.stdout.pipe(sort.stdin)
 sort.stdout.pipe(process.stdout)
-
-// fork
-
-// parent.js
-const cp = require('child_process')
-const path = require('path')
-
-const child = cp.fork('./child.js')
-
-// IPC
-child.on('message', (msg) => {
-  console.log(msg);
-  child.disconnect()
-})
-child.send('hello')
-
-// child.js
-process.on('message', (msg) => {
-  console.log(msg);
-  process.send('akara')
-})
 ```
 
 
@@ -700,6 +626,17 @@ var str = 'foo=bar&abc=xyz&abc=123';
 querystring.parse(str)
 // { foo: 'bar', abc: [ 'xyz', '123' ] }
 ```
+
+### os模块
+
+获取操作系统相关信息。
+
+``` js
+const os = require('os')
+const homedir = os.homedir() // 获取用户目录
+```
+
+
 
 ### event模块
 
