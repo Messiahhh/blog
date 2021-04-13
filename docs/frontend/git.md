@@ -3,50 +3,33 @@ sidebarDepth: 4
 ---
 ## Git
 
-##### 常用命令
+### 常用命令
 
 ``` shell
 git init # 初始化git仓库
-git add # 将改动添加到缓存区（index）
+git add # 将改动添加到索引区域
 git commit # 提交commit
 git push # 推送给远程仓库
 git pull # 拉远程仓库代码并合并(fetch + merge)
 git clone # 拉仓库
-git branch # 创建分支
+git branch # 显示所有分支
+git branch <name> # 创建分支
 git checkout <file> # 切换分支
 git checkout -b <file> # 创建分支并切换过去
 git checkout -d <file> # 删除分支
 git merge # 分支合并
 git rebase # 分支合并
 git log # 查看 commit 记录
+git reflog # 查看历史命令
 git status # 查看当前状态
-
-# 其他命令
+git stash # 缓存当前的本地修改
+git stash list # 查看缓存的本地修改
+git stash pop # 取出缓存的本地修改
 git rm --cached <file> # 若我们git add 一个文件，通过该命令可以取消该文件的追踪
-
 git checkout -- <file>
 # a文件若缓存区有缓存。当我们工作目录中修改a的内容，可以使用该命令删除我们的更改
-
 git reset --hard HEAD^ # 撤销一个commit，HEAD^^为撤销两个
 ```
-
-
-
-##### git object
-
-``` shell
-# 显示所有object
-ls .git/objects/
-10/ ea/ 1c/ ... /info /pack
-
-# 查看object类型/值，常见类型：blob(git add 后创建), tree和commit(git commit 后创建)
-git cat-file -t 58c9 
-git cat-file -p 58c9 # 58c9为想找的object的值
-```
-
-[参考](https://zhuanlan.zhihu.com/p/96631135)
-
-
 
 ### 分支合并
 
@@ -108,7 +91,7 @@ git reset --hard <commitID> # 回退到某个具体commit
 
 ##### 版本前进
 
-有的时候当我们回退了版本之后，又希望恢复到之前的版本，这时候我们就需要知道原先的`commitID`，比如我们可以使用`git reflog`来查看之前自己输入的命令，从中可以找到原本的`commitID`
+有的时候当我们回退了版本之后，又希望恢复到之前的版本，这时候我们就需要知道原先的`commitID`，比如我们可以使用`git reflog`来查看历史命令，以及当时所处在的`commitID`
 
 ``` bash
 git reset --hard <commitID> # 前进到某个具体commit
@@ -118,11 +101,31 @@ git reset --hard <commitID> # 前进到某个具体commit
 
 
 
+### 合并Commit
+
+很多时候我们会提交很多次`commit`，显得十分的杂乱，这时候可以使用`git rebase -i`来合并`commit`记录，实现美化的效果。
+
+比如，我们现在分别有`A -> B -> C -> D -> E`这五个`commit`记录，我们希望把`C、D、E`合并成一个记录：
+
+``` bash
+git rebase -i <commit_B>
+```
+
+然后会出现可编辑的页面
+
+``` bash
+pick <commit_C> 我是commitC的message
+pick <commit_D> 我是commitD的message
+pick <commit_E> 我是commitE的message
+```
+
+我们可以把`commit_D`和`commit_E`的`pick`改成`squash`，再保存就会把这三个`commit`合并成一个新的`commit`，并在下一步可以手动更改新的`commit`的`message`。
 
 
 
+### git原理
 
-### 补充
+> [参考](https://zhuanlan.zhihu.com/p/96631135)
 
 `commit`节点通过`tree`节点记录着某个时刻对应的文件信息，这些对应的文件保存在索引区域中（严格来说，这些文件被当作`object`节点存于`git`仓库中，索引指向着这些文件），当我们切换到某个`commit`时，会根据索引把对应的文件同步到工作目录中。
 
@@ -136,18 +139,15 @@ git reset --hard <commitID> # 前进到某个具体commit
 
 比如我们可以先使用`git stash`暂存修改，然后就可以直接切换到`commitB`了，未来回到`commitA`时又可以使用`git stash pop`把暂存的修改内容拿出来。
 
+##### git object
 
+``` bash
+# 显示所有object
+ls .git/objects/
+10/ ea/ 1c/ ... /info /pack
 
-
-
-##### 合并commit
-
-依靠`git rebase -i`来合并美化`commit`记录
-
-``` shell
-git rebase -i xxxx # commit 号
-git rebase -i HEAD~3 # 或者这种写法
+# 查看object类型/值，常见类型：blob(git add 后创建), tree和commit(git commit 后创建)
+git cat-file -t 58c9 
+git cat-file -p 58c9 # 58c9为想找的object的值
 ```
-
-之后在Vim里把对应的pick字段改成squash，再之后修改`commit msg`即可。
 
