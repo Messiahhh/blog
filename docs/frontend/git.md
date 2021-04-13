@@ -92,7 +92,37 @@ git cat-file -p 58c9 # 58c9为想找的object的值
 
 
 
-##### 补充
+### 版本回退和前进
+
+通常我们使用`git reset --hard <commitID>`来实现对版本的控制
+
+##### 版本回退
+
+``` bash
+git reset --hard Head^ # 回退到上个commit
+git reset --hard Head^^ # 回退到上上个commit
+git reset --hard <commitID> # 回退到某个具体commit
+```
+
+
+
+##### 版本前进
+
+有的时候当我们回退了版本之后，又希望恢复到之前的版本，这时候我们就需要知道原先的`commitID`，比如我们可以使用`git reflog`来查看之前自己输入的命令，从中可以找到原本的`commitID`
+
+``` bash
+git reset --hard <commitID> # 前进到某个具体commit
+```
+
+
+
+
+
+
+
+
+
+### 补充
 
 `commit`节点通过`tree`节点记录着某个时刻对应的文件信息，这些对应的文件保存在索引区域中（严格来说，这些文件被当作`object`节点存于`git`仓库中，索引指向着这些文件），当我们切换到某个`commit`时，会根据索引把对应的文件同步到工作目录中。
 
