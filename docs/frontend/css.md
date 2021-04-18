@@ -4,8 +4,6 @@ sidebarDepth: 4
 ## CSS
 ### 基础
 
-
-
 ##### 选择器
 
 1. 标签选择器，如`div`
@@ -71,13 +69,7 @@ sidebarDepth: 4
 2. `visibility`
 3. `line-height`
 
-
-
 > 注意：`background` 和 `opacity`不是继承属性。
-
-
-
-
 
 
 
@@ -179,8 +171,6 @@ sidebarDepth: 4
 
 
 
-
-
 ##### 盒模型
 
 讨论到盒模型，除了核心的`content -> padding -> border -> margin`，另一个要点就是元素的`box-sizing`属性。
@@ -188,37 +178,6 @@ sidebarDepth: 4
 浏览器默认的`box-sizing: content-box`，这意味着当我们设置元素的`width`，实际上是在设置`content`的长度。此时盒子的实际长度等于`content(width) + padding + border `
 
 我们可以修改`box-sizing`为`border-box`，此时我们的`width`等于`content + padding + border`
-
-
-
-##### border
-
-###### 画三角形
-
-``` css
-.container::after {
-    content: '';
-    position: absolute;
-    border: 10px solid transparent;
-    border-bottom-color: pink;
-}
-```
-
-
-
-##### border-radius
-
-圆角，可用于画圆形
-
-``` css
-.app {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-}
-```
-
-
 
 
 
@@ -270,6 +229,37 @@ sidebarDepth: 4
 }
 
 ```
+
+
+
+### CSS3
+
+> 本节介绍一些有意思的CSS3属性，个别属性可能需要使用`-webkit-`前缀
+>
+> TODO
+
+
+
+##### `background-clip`
+
+表示图片裁剪范围，默认值是`border-box`，有意思的是我们可以把它的值设置为`text`，即把背景裁剪到字体身上。
+
+``` html
+<style media="screen">
+    .gradient-text {
+        background: -webkit-linear-gradient(pink, red);
+        -webkit-background-clip: text;
+        color: transparent;
+    }
+</style>
+<p class="gradient-text">Gradient text</p>
+```
+
+
+
+##### `clip-path`
+
+
 
 
 
@@ -350,10 +340,6 @@ sidebarDepth: 4
 
 
 ### 布局
-
-> 
-
-
 
 ##### 水平垂直居中
 

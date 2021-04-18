@@ -132,69 +132,83 @@ npm publish --access public
 
 
 
-
-
-
-
-
-
 ### 事件循环
 
-##### 宏任务和微任务
+浏览器和Node环境都存在事件循环这一概念，但因为它们基于不同的架构所以实现原理也有些许不同，比如浏览器环境的事件循环是通过主线程和工作线程之间的调度实现的。另外，在Node的`11.0`版本的发布之后，同一段代码在两个不同环境的表现也越来越相似了，所以在这里我会主要以浏览器环境介绍事件循环的原理。
 
-宏任务`macroTask`， 包括:  `setTimeout/setInterval`，`setImmediate`(Node专有)， I/O操作（包括读写文件/发送请求等）。宏任务放在宏队列中。
+众所周知浏览器是基于多线程的，除了用来渲染页面的GUI渲染线程，还有执行JavaScript代码的主线程和各种工作线程，不同的工作线程分别用来处理定时器任务、I/O操作、事件等操作。
 
-微任务`microTask`， 包括:  `promise.then`等。微任务放在微队列中。
+当我们在主线程执行一段代码时，通常会使用`fetch`来发出一个请求，发请求的这个操作是交给专门的工作线程来执行的，因此该操作本身并不会阻塞后续代码的执行。而当我们收到了对应的响应时，该工作线程会把一个**任务**交给主线程执行，这就是所谓的**异步**。
 
+当然了，此时我们的主线程可能还在执行代码中，所以实际上任务并不会立刻被交给主线程执行，与之对应的是该任务会被添加进一个专门的**任务队列**当中，主线程执行完代码后会从任务队列中取出任务来执行。不仅如此，根据不同的类型我们又把任务分为**宏任务**和**微任务**，因此我们的队列也有两个：**宏任务队列**和**微任务队列**。
 
+那么先让我们明确哪些任务属于宏任务和微任务，首先我们可以把最初交给主线程执行的代码视为一个宏任务，其他的宏任务包括：`setTimeout`或`setInterval`、`I/O`操作（如`ajax`或文件读取）、事件（如点击事件）、`setImmediate`（Node专有）。而最常见的微任务有`promise.then()`。
 
-除此之外，`process.nextTick`的回调函数是放进`nextTick`队列的。该队列类似微队列，但其执行总在微队列之前。
+事件循环的基本规则就是，执行完一个宏任务，再执行微任务队列中的所有微任务，再执行下一个宏任务...如此往复。因此一个事件循环可以视为一个宏任务+所有微任务，另外也可以把执行一个宏任务的阶段，或着执行所有微任务的阶段，称作一个`tick`，由此可见一个事件循环由两个`tick`组成。无论是对于Node中的`process.nextTick`还是`Vue`中的`$.nextTick`，理解何为`tick`都是很有帮助的。
+
+##### nextTick
+
+`process.nextTick`是Node独有的一个方法，顾名思义我们可以知道这个方法的目的是让某个任务在下一个`tick`的最开始执行。比如，当我们处在一个宏任务阶段调用`process.nextTick`，那么会在当前宏任务执行结束后，在后续的微任务阶段执行前执行`nextTick`接受的回调函数。
+
+事实上在Node中专门维护了一个`nextTick`队列，每当我们执行完一个`tick`，就会执行`nextTick`队列中的所有任务（行为很像微任务队列）。
 
 ``` js
-Promise.resolve('promise').then(v => console.log(v))
-process.nextTick(() => {
-    console.log('nextTick');
+// 可以想一想这个代码的结果
+setTimeout(() => {
+    console.log(1)
+    process.nextTick(() => {
+        console.log(2)
+    })
+}, 0)
+
+new Promise((resolve) => resolve())
+.then(() => {
+    console.log(3)
+    process.nextTick(() => {
+        console.log(4)
+    })
 })
-// nextTick
-// promise
+
+process.nextTick(() => {
+    console.log(5)
+    process.nextTick(() => {
+        console.log(6)
+    })
+    setImmediate(function () {
+        console.log(7)
+    })
+})
+
+process.nextTick(function () {
+    console.log(8)
+    process.nextTick(() => {
+        console.log(9)
+    })
+})
 ```
 
 
 
-浏览器通过主线程和工作线程实现事件循环。
 
-Node通过libuv来实现事件循环。
-
-
-
-##### 浏览器事件循环
-
-浏览器内维持着**一个宏任务队列，一个微任务队列**。
-
-执行宏队列中的第一个宏任务 => 执行微队列中的所有微任务 => 执行宏队列中的下一个宏任务 => 执行微队列中的所有微任务...如此往复。我们最初的同步脚本可以看作最初的宏任务。
 
 ##### Node事件循环
 
-Node事件循环一共有**六个阶段**，**每个阶段中都有一个宏队列**，**总共只有一个微队列**
+Node的架构和浏览器有很大不同，因此它实现事件循环的方式也大相径庭。Node的事件循环中有**六个阶段**，**每个阶段中都有一个宏队列，总共只有一个微队列和一个`nextTick`队列**。
 
-在高版本Node（v11以后），Node的行为与浏览器表现一致，即执行完一个宏任务就执行所有的微任务。
+1. `Timer`: `SetTimeout`和`SetInterval`的回调放进该阶段的任务队列。
+2. `pending callback`: 执行一些系统操作的回调，例如TCP的错误。
+3. `idle, prepare`: 处理一些内部调用。
+4. `poll`: **大部分其他回调会被仿佛该阶段的任务队列**
+5. `check`: `SetImmediate`的回调放进该阶段的任务队列。
+6. `close callback`: 一些结束时的回调，例如`Socket.on("close")`
 
-在旧版本Node（v11以前）：必须执行完一个阶段中宏队列内的全部宏任务，才回去执行所有微任务。
-
-Node事件循环的六个阶段：
-
-1. Timer: `SetTimeout`和`SetInterval`的回调放进该阶段的队列。
-2. pending callback: 执行一些系统操作的回调，例如TCP的错误。
-3. idle, prepare: 处理一些内部调用。
-4. poll: **大部分回调在这里调用。**
-5. check: `SetImmediate`的任务放进这个阶段的宏队列执行。
-6. close callback: 一些结束时的回调，例如`Socket.on("close")`
+我们可以只重点关注三个阶段，`Timer`、`poll`、`check`。
 
 
 
-###### 高低版本Node的差异
+低版本（`v11.0`以前）的Node表现的行为和浏览器环境有很大的不同，是因为低版本下的Node在执行完**一个阶段的所有宏任务**再执行微任务；而**高版本的Node表现和浏览器一致**，即执行完一个宏任务再执行微任务。
 
-高低版本的Node有着显著的差异，如以下代码，在高低版本的Node下的结果就会不同。
+以下的这段代码在不同版本的Node下表现的行为就会有所不同
 
 ``` js
 setImmediate(function(){

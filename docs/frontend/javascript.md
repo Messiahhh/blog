@@ -2254,6 +2254,8 @@ function co(gen){
 }
 ```
 
+
+
 ##### Async封装
 
 其实async可以看成Generator + co的集成，不同的是关键字分别用async和await代替了*和yield，更加的语义化。除此之外，async函数会返回一个Promise对象。
@@ -2306,6 +2308,39 @@ async function use() {
 
 use()
 ```
+
+
+
+补充一个常见的问题
+
+``` js
+async function A() { // 这代码一看就有问题
+    let arr = []
+    await fetch()
+    arr.forEach(async item => { 
+        await fetch(item)
+    })
+    console.log(1)
+}
+
+async function A() { // 应该写成这样
+    let arr = []
+    let pArr = []
+    await fetch()
+	for (let item of arr) {
+        pArr.push(fetch(item))
+    }    
+    const data = await Promise.all(pArr)
+}
+```
+
+
+
+
+
+
+
+
 
 
 
