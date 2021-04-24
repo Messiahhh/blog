@@ -391,27 +391,123 @@ ul.addEventListener("click", (e) => {
 
 
 
+### HTTP缓存
+
+HTTP缓存分为**强制缓存**和**协商缓存**。
+
+当浏览器向服务器请求资源时：
+
+1. 首先查看浏览器是否有资源的缓存，若不存在缓存则直接向服务器请求资源
+
+2. 若存在缓存，根据**资源对应的响应头部**`Cache-Control: max-age`或 `Expires` 判断资源是否过期。
+
+   其中`Cache-Control: max-age`使用的相对的时间，而`Expires`指的是某一个具体的时刻，为了避免不同机器中时间误差来带的问题，使用前者更好。
+
+   1. 若缓存没过期，则浏览器不会向服务器发请求，而是直接读取缓存中的资源，这叫做**强制缓存**。 此时在`Network`一栏中看到资源对应的状态码为200（虽然实际上并不存在HTTP请求）。如果我们是直接刷新页面，资源会从内存缓存中读取：`200(from memory cache)`；如果我们是打开了新的页面，资源会从硬盘缓存中读取: `200(from disk cache)`
+   2. 若缓存已过期，我们需要向服务器查看服务器中的该资源是否有被修改，如果服务器中的资源没有被修改，我们会直接读取本地的缓存资源，这叫做协商缓存，状态码为`304(Not Modify)`；如果服务器中的资源被改动了，那么服务器需要把改动后的资源作为响应体发给浏览器，状态码为`200(OK)`。
+      1. 如果资源对应的响应头部有`Etag`，那么我们发送的请求需要带上`If-None-Match`
+      2. 如果资源对应的响应头部有`Last-Modified`，那么我们发送的请求需要带上`If-Modified-Since`
+      3. 服务器收到我们的请求后，根据这两个请求头部来判断资源是否修改过，进而决定是响应304还是200。
+
+
+
+另外，通常我们不能用HTTP缓存来缓存一个非常大的资源。这种情况或许可以考虑使用`IndexedDB`来实现本地的存储。
+
+
+
+
+##### 强制缓存
+
+``` js
+const Koa = require("koa")
+const app = new Koa()
+const bluebird = require('bluebird')
+const fs = bluebird.promisifyAll(require('fs'))
+app.use(async ctx => {
+    if (ctx.url === '/') {
+        console.log(111);
+        const file = await fs.readFileAsync('./dist/index.html')
+        ctx.type = 'text/html'
+        ctx.body = file
+    }
+    if (ctx.url === '/image.png') {
+        console.log(222);
+        const file = await fs.readFileAsync('./dist/image.png')
+        ctx.set('Cache-Control', 'max-age=10')
+        ctx.type = 'image/png'
+        ctx.body = file
+    }
+})
+app.listen(3000)
+```
+
+
+
+##### 协商缓存
+
+``` js
+const getEtag = require('etag')
+app.use(async ctx => {
+    if (ctx.url === '/') {
+        const file = await fs.readFileAsync('./dist/index.html')
+        ctx.type = 'text/html'
+        ctx.body = file
+    }
+    if (ctx.url === '/image.png') {
+        const file = await fs.readFileAsync('./dist/image.png')
+        const hash = getEtag(file)
+        const etag = ctx.get('If-None-Match')
+        if (etag && etag == hash) {
+            ctx.status = 304
+            ctx.body = ''
+        } else {
+            if (!etag) ctx.set('ETag', hash)
+            ctx.type = 'image/png'
+            ctx.body = file
+        }
+    }
+})
+```
+
+
+
+
+
 ### 浏览器客户端存储
 
 ##### LocalStorage
 
-​	**持久化的本地存储，除非主动删除，否则数据不会过期。**
+持久化的本地存储，除非主动删除否则数据将一直存在。一般最大的存储量为5Mb。
+
+``` js
+localStorage.setItem('my_key', 'my_value')
+localStorage.getItem('my_key')
+localStorage.removeItem('my_key')
+localStorage.clear()
+```
 
 ##### SessionStorage
 
-​	**会话结束（关闭页面）后，数据清除。**
+会话级的本地存储，一旦页面被关闭，数据就会被清除。一般最大的存储量为5Mb。
+
+
+
+
 
 ##### Cookie
 
-浏览器发送HTTP请求时，先检查是否有相应的Cookie，如果有则将Cookie放在请求头中的Cookie字段中发送。
+通常服务器使用`Set-Cookie`头部从而在浏览器种下Cookie，Cookie存放的数据不能大于4Kb。
 
-1. expires: 设置Cookie的过期时间
-2. secure: 当secure为true时只能使用https
-3. httpOnly: 设置浏览器能否读取Cookie
-4. domain和path: 限制Cookie能被哪些URL访问
-5. SameSite
+一些常见的Cookie属性：
 
-**封装Cookie**
+1. `expires`：Cookie的过期时间
+2. `domain`：只能访问该域名时才会带上Cookie
+3. `path`：表明只有访问该路径时才会带上Cookie
+4. `httpOnly`：为`true`时，浏览器不能通过代码读取Cookie
+5. `secure`: 为`true`时，只有发送HTTPS请求时才会带上Cookie
+6. `SameSite`：默认为`lax`，详细解释见本章第一节
+
+**简易封装Cookie**
 
 ``` js
 const cookieUtil = {
@@ -442,19 +538,19 @@ const cookieUtil = {
 
 
 
-Cookie和Storage的对比
+**Cookie和Storage的对比**
 
-Cookie存放数据小，4KB左右；而Storage可以存放5MB左右。
+`Cookie`最大可存储4KB；而`Storage`最大可存储5MB。
 
-Cookie可以设置过期时间，SessionStorage会在会话关闭时清除，LocalStorage必须要手动清除。
+`Cookie`可以设置过期时间，`SessionStorage`会在会话关闭时清除，`LocalStorage`必须要手动清除。
 
-Cookie参与和服务器的通信，Storage则一般不用于。
+`Cookie`参与和服务器之间的通信，而`Storage`通常并不参与。
 
 
 
 ##### Session
 
-通常使用Cookie时，会话数据都存在Cookie中。使用Session时，Cookie中只存放一个Session_id，会话数据放在服务端的内存或数据库中。
+通常使用`Session`时需要搭配上`Cookie`。通常单独使用`Cookie`时，会话数据都储存在`Cookie`中；使用`Session`时，`Cookie`中只存放一个`Session_id`这样的键，实际的会话数据存放在服务端中，比如可能存放在服务端的`redis`数据库中。
 
 
 
@@ -464,7 +560,9 @@ Cookie参与和服务器的通信，Storage则一般不用于。
 
 ##### JWT 
 
-同样是用来做鉴权。Session的一个缺点就是由于会话数据保存在服务端，所以在使用服务器集群的时候处理起来很麻烦。而使用JWT的话，会话数据都保存在客户端，就没有这种问题了。
+严格来说JWT并不是一种客户端存储手段，考虑到和Cookie、Session都是用来做鉴权的，所以放在一起。
+
+Session的一个缺点就是由于会话数据保存在服务端，所以在使用服务器集群的时候处理起来很麻烦。而使用JWT的话，会话数据都保存在客户端，就没有这种问题了。
 
 JWT是个很长的字符串，中间用两个`.`分割为三个部分，三个部分依次如下：Header（头部）， Payload（负载），Signature（签名）
 
@@ -504,4 +602,24 @@ secret
 
 ![JWT鉴权原理](https://pic3.zhimg.com/v2-f1556c71042566d4a6f69ee20c2870ae_r.jpg)
 
+##### IndexedDB
+
+某些情况下，比如在`WebGL`的使用场景中，我们希望在本地缓存一个体积巨大的资源。而无论是HTTP缓存还是`LocalStorage`都无法实现巨大本地存储，这个时候或许可以考虑一下`IndexedDB`。
+
+简单来说它是一个浏览器中的非关系数据库，并且可以储存大体积的资源。
+
+当然`IndexedDB`的使用并不是太简单，网络也有各式各样的教程，好在我们也可以使用一些封装好的类库，比如一个叫做`localforage`的库，它可以让我们以类似于`localStorage`的写法来实现在`IndexedDB`中数据的存储和读取。
+
+``` js
+const keys = await localforage.keys()
+const hasLocalCache = keys.includes('my_key') // 自定义键名
+if (hasLocalCache) {
+    console.log('读取本地缓存');
+    data = await localforage.getItem('my_key')
+} else {
+    console.log('读取后端数据');
+    data = await fetch('./getData').then(res => res.json())
+    localforage.setItem('my_key', data)
+}
+```
 
