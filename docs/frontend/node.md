@@ -5,7 +5,7 @@ sidebarDepth: 4
 
 ### NPM
 
-##### 脚本执行
+##### 模块调用
 
 我们安装的模块被放置在`node_modules`目录下，有多种方式去直接调用该包。
 
@@ -508,6 +508,37 @@ process.stdin.on('data', (chunk) => {
     process.exit()
 })
 ```
+
+### util模块
+
+这个模块提供了诸多很有用的小工具。
+
+##### `deprecate`
+
+``` js
+function A() {
+    console.log('aaa');
+}
+
+module.exports = util.deprecate(A, 'A() is deprecated. Use B() instead.')
+```
+
+
+
+##### `promisify`
+
+``` js
+const fs = require('fs')
+const readFile = util.promisify(fs.readFile)
+
+async function A() {
+    const data = await readFile('./index.html') 
+}
+```
+
+
+
+
 
 ### child_process模块
 

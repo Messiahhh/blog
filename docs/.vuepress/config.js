@@ -64,6 +64,7 @@ module.exports = {
                 'css',
                 'javascript',
                 'node',
+                'stream',
                 'koa',
                 'react',
                 'react相关库',
