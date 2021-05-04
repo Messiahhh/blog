@@ -124,7 +124,7 @@ reader.readAsXXX(blob)
 
 ### ArrayBuffer
 
-简单来说`ArrayBuffer`是一块内存，但是我们不能直接去操作这块内存，必须通过`Typed Array`来操作这块内存，`Typed Array`有`Int8Array`、`Unt8Array`、`Int16Array()`等等。
+简单来说`ArrayBuffer`是一块内存，但是我们不能直接去操作这块内存，必须通过`Typed Array`来操作这块内存，`Typed Array`有`Int8Array`、`Unt8Array`、`Int16Array`等等。
 
 
 

@@ -19,7 +19,7 @@ function getSidebar(dir) {
 module.exports = {
     base: '/blog/',
     logo: '/assets/img/logo.jpg',
-    title: '菜鸟向前端指南',
+    title: 'Akara的前端笔记',
     description: 'Fooly Cooly',
     head: [
         ['link', { rel: 'icon', href: '/favicon.ico' }]
