@@ -516,6 +516,7 @@ process.stdin.on('data', (chunk) => {
 ##### `deprecate`
 
 ``` js
+const util = require('util')
 function A() {
     console.log('aaa');
 }
@@ -528,6 +529,7 @@ module.exports = util.deprecate(A, 'A() is deprecated. Use B() instead.')
 ##### `promisify`
 
 ``` js
+const util = require('util')
 const fs = require('fs')
 const readFile = util.promisify(fs.readFile)
 

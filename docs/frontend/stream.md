@@ -128,7 +128,103 @@ reader.readAsXXX(blob)
 
 
 
-### Stream
+### stream
 
-> TODO
+流对象用来处理Node中的流式数据，`Stream`继承于`eventEmitter`，因此实例存在`on`方法，除此之外流对象的实例存在`pipe`方法来实现流式数据的传输。
+
+流对象有四种类型：
+
+- `Writable`，比如`fs.createWriteStream`、`process.stdout`、`res`
+- `Readable`，比如`fs.createReadStream`、`process.stdin`、`req`
+- `Duplex`，可以当成`Writable`和`Readable`的结合
+- `Transform`
+
+
+
+##### Writable
+
+对于`Writable`类型的流对象，实例存在`write()`和`end()`方法。
+
+
+
+##### Readable
+
+对于`Readable`类型的流对象，实例存在`on('data')`和`on('end')`方法。
+
+
+
+##### `pipeline`
+
+``` js
+const { stdout, stdin } = require('process')
+const { pipeline } = require('stream')
+
+// 写法一
+stdin.on('data', chunk => {
+    stdout.write(chunk)
+})
+
+// 写法二
+stdin.pipe(stdout)
+
+// 写法三
+pipeline(stdin, stdout)
+```
+
+
+
+### zlib
+
+Node的`Zlib`模块提供了基于`Stream`的API来实现`gzip`等格式的压缩或解压缩。
+
+``` js
+const zlib = require('zlib')
+const { pipeline } = require('stream')
+const gzip = zlib.createGzip() // 创建一个流对象
+const source = fs.createReadStream('./a.txt')
+const target = fs.createWriteStream('./a.txt.gz')
+
+pipeline(source, gzip, target, err => console.log(err)) // 生成压缩文件a.txt.gz
+```
+
+
+
+当然我们也可以使用基于回调函数的写法来直接对文件进行压缩，经过测试可以把160Kb的页面压缩至4Kb，当浏览器识别到响应头部的`Content-Encoding: gzip`，浏览器就会**自动对响应的内容进行解压缩**。
+
+``` js
+// server.js
+const { promisify } = require('util')
+const fs = require('fs')
+const zlib = require('zlib')
+const readFile = promisify(fs.readFile)
+const gzip = promisify(zlib.gzip)
+const http = require('http')
+
+http.createServer(async (req, res) => {
+    if (req.url === '/') {
+        const page = await readFile('./index.html')
+        const data = await gzip(page)
+        res.setHeader('Content-Encoding', 'gzip')
+        res.end(data)
+    } 
+    else if (req.url === '/test') {
+        let obj = {}
+        for (let i = 0; i < 10000; i++) {
+            obj[i] = i
+        }
+        const data = await gzip(JSON.stringify(obj))
+        res.setHeader('Content-Encoding', 'gzip')
+        res.end(data)
+    }
+}).listen(3000)
+
+// client.js
+fetch('/test')
+.then(res => res.json())
+.then(data => console.log(data)) // 拿到obj
+```
+
+
+
+
 
