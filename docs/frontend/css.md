@@ -106,13 +106,70 @@ sidebarDepth: 4
 
 
 
-
-
 由此我们可以知道，对于一个`block`元素，如果我们没有手动设置它的宽，那么它的宽将会**由父元素决定**；而对于一个`inline-block`元素，如果我们没有手动设置它的宽，那么它的宽将会由**子元素决定**。
 
-
-
 > 补充：`inline`和`inline-block`可以设置`padding`和`margin`，但无法通过像`block`一样使用`margin: 0 auto`做到水平居中。
+
+
+
+
+
+##### 盒模型
+
+ 讨论到盒模型，除了核心的`content -> padding -> border -> margin`，另一个要点就是元素的`box-sizing`属性。
+
+浏览器默认的`box-sizing: content-box`，这意味着当我们设置元素的`width`，实际上是在设置`content`的长度。此时盒子的实际长度等于`content(width) + padding + border `
+
+我们可以修改`box-sizing`为`border-box`，此时我们的`width`等于`content + padding + border`
+
+
+
+##### transition
+
+``` css
+.app {
+    transition-property: width;
+    transition-duration: 3s;
+    transition-timing-function: ease-in;
+    transition-delay: 1s;
+}
+```
+
+
+
+##### animation
+
+``` css
+@keyframes anime {
+    from {
+        background: pink;
+    }
+
+    to {
+        background: yellow;
+    }
+}
+
+.app {
+    <!-- 动画名 -->
+    animation-name: anime;
+    <!-- 动画持续时间 -->
+    animation-duration: 3s;
+    <!-- 动画曲线--> 
+    animation-timing-function: ease-in-out;
+    <!-- 延迟 --> 
+    animation-delay: 1s;
+    <!-- 动画播放次数--> 
+    animation-iteration-count: 2;
+    <!-- 动画是否在下一周期逆向地播放--> 
+    animation-direction: alternate;
+    <!-- 动画是在运行还是暂停--> 
+    animation-play-state: paused;
+    <!-- 动画的结束状态--> 
+    animation-fill-mode: forwards;
+}
+
+```
 
 
 
@@ -171,74 +228,11 @@ sidebarDepth: 4
 
 
 
-##### 盒模型
-
-讨论到盒模型，除了核心的`content -> padding -> border -> margin`，另一个要点就是元素的`box-sizing`属性。
-
-浏览器默认的`box-sizing: content-box`，这意味着当我们设置元素的`width`，实际上是在设置`content`的长度。此时盒子的实际长度等于`content(width) + padding + border `
-
-我们可以修改`box-sizing`为`border-box`，此时我们的`width`等于`content + padding + border`
-
-
-
-
-
-##### transition
-
-``` css
-.app {
-    transition-property: width;
-    transition-duration: 3s;
-    transition-timing-function: ease-in;
-    transition-delay: 1s;
-}
-```
-
-
-
-##### animation
-
-``` css
-@keyframes anime {
-    from {
-        background: pink;
-    }
-
-    to {
-        background: yellow;
-    }
-}
-
-.app {
-    <!-- 动画名 -->
-    animation-name: anime;
-    <!-- 动画持续时间 -->
-    animation-duration: 3s;
-    <!-- 动画曲线--> 
-    animation-timing-function: ease-in-out;
-    <!-- 延迟 --> 
-    animation-delay: 1s;
-    <!-- 动画播放次数--> 
-    animation-iteration-count: 2;
-    <!-- 动画是否在下一周期逆向地播放--> 
-    animation-direction: alternate;
-    <!-- 动画是在运行还是暂停--> 
-    animation-play-state: paused;
-    <!-- 动画的结束状态--> 
-    animation-fill-mode: forwards;
-}
-
-```
-
 
 
 ### CSS3
 
-> 本节介绍一些有意思的CSS3属性，个别属性可能需要使用`-webkit-`前缀
->
-> TODO
-
-
+> 计划今后逐渐在本节介绍一些有意思的CSS3属性，个别属性可能需要使用`-webkit-`前缀
 
 ##### `background-clip`
 
@@ -337,9 +331,29 @@ sidebarDepth: 4
 
 
 
+### Grid
+
+`Flex`是通用的一维布局方案，可以解决绝大多数布局问题。`Grid`是二维布局方案，在某些场景下使用可能有奇效。
+
+我们通常使用`grid-template-rows`、`grid-template-columns`来划分网格轨道，从而把项目分割成一个个的网格，同时可以使用`grid-template-area`把多个不同网格用同一个符号标识。这三个属性的缩写为`grid-template`。对于这样的网格，我们称之为**显式网格**。
+
+某些时候，比如当实际的网格数量大于预设的显式数量，又或者当某个网格项被放置在显式网格之外，这时候就会自动生成新的网格轨道，这就是**隐式网格**。对于隐式网格我们可以使用`grid-auto-row`、`grid-auto-column`来指定网格轨道的宽高，还可以使用`grid-auto-flow`控制网格的排序方式。
+
+对于以上介绍的六个属性，我们可以使用`grid`进行简写。它的值有三种写法：①和`grid-template`一致，只用来表示显式网格。②`grid-template-rows / [auto-flow && dense?] grid-auto-column`。③`[auto-flow && dense?] grid-auto-row / grid-template-columns`。这里的`auto-flow`指的是`grid-auto-flow`的值，当`auto-flow`写在`/`号前面表示`grid-auto-flow: row`，当`auto-flow`写在`/`号后面表示`grid-auto-flow: column`。
 
 
-### 布局
+
+
+
+
+
+
+
+
+
+
+
+### 常见布局方案
 
 ##### 水平垂直居中
 
@@ -704,7 +718,57 @@ B站无法直接实现Ipad向移动端的适配，主要原因是页面的内容
 
 
 
-### css模块
+### 主流站点布局
+
+> 通过观察各大主流网站的布局，熟悉流行的布局方案
+>
+> 待更新...
+
+##### B站
+
+头部借助`flex`实现弹性伸缩：内容小于容器（即`viewport`）时，因为使用了`space-between`，可以看到很多空白内容；内容大于容器时，使用`flex-shrink: 1`使搜索框宽度变小。
+
+主体使用了`margin: 0 auto`；除此之外还借助媒体查询，当`viewport`越来越小，首页的内容也会动态删减，并且会逐步减小内容的宽度。
+
+``` css
+@media screen and (max-width: 1438px)
+.b-wrap {
+    width: 999px;
+}
+
+@media screen and (max-width: 1654px)
+.b-wrap {
+    width: 1198px;
+}
+
+@media screen and (max-width: 1870px)
+.b-wrap {
+    width: 1414px;
+}
+
+.b-wrap {
+    width: 1630px;
+    margin: 0 auto;
+}
+```
+
+
+
+页面设置了`min-width`，因此当`viewport`小于`1030px`左右时，会出现横向的滚动条。手机端使用的是另一套代码。
+
+##### 知乎
+
+头部使用`margin: 0 auto`，同时借助`flex`实现弹性伸缩：内容小于容器（即`viewport`）时，使用`flex-grow: 1`占据剩余空间；内容大于容器时，使用`flex-shrink: 1`使搜索框宽度变小。
+
+主体使用定宽加上`margin: 0 auto`
+
+##### V2ex
+
+头部和主体都使用`margin: 0 auto`，同时主体使用`max-width`搭配`min-width`实现右边栏定宽的两列布局
+
+
+
+### CSS模块
 
 形如`xx.module.css`的文件通常称为css模块。
 
@@ -904,53 +968,7 @@ body, ul, li {
 
 
 
-### 常见网站布局
 
-> 通过观察各大主流网站的布局，熟悉流行的布局方案
->
-> 待更新...
-
-##### B站
-
-头部借助`flex`实现弹性伸缩：内容小于容器（即`viewport`）时，因为使用了`space-between`，可以看到很多空白内容；内容大于容器时，使用`flex-shrink: 1`使搜索框宽度变小。
-
-主体使用了`margin: 0 auto`；除此之外还借助媒体查询，当`viewport`越来越小，首页的内容也会动态删减，并且会逐步减小内容的宽度。
-
-``` css
-@media screen and (max-width: 1438px)
-.b-wrap {
-    width: 999px;
-}
-
-@media screen and (max-width: 1654px)
-.b-wrap {
-    width: 1198px;
-}
-
-@media screen and (max-width: 1870px)
-.b-wrap {
-    width: 1414px;
-}
-
-.b-wrap {
-    width: 1630px;
-    margin: 0 auto;
-}
-```
-
-
-
-页面设置了`min-width`，因此当`viewport`小于`1030px`左右时，会出现横向的滚动条。手机端使用的是另一套代码。
-
-##### 知乎
-
-头部使用`margin: 0 auto`，同时借助`flex`实现弹性伸缩：内容小于容器（即`viewport`）时，使用`flex-grow: 1`占据剩余空间；内容大于容器时，使用`flex-shrink: 1`使搜索框宽度变小。
-
-主体使用定宽加上`margin: 0 auto`
-
-##### V2ex
-
-头部和主体都使用`margin: 0 auto`，同时主体使用`max-width`搭配`min-width`实现右边栏定宽的两列布局
 
 
 
