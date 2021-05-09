@@ -2653,7 +2653,7 @@ console.log(date.toLocaleTimeString()) // 上午12:59:35
 
 `moment.js`和`date-fns`都是用来处理时间格式的，后者的性能要好上不少。
 
-``` 
+``` js
 const { format } = require('date-fns')
 const zhCN = require('date-fns/locale/zh-CN')
 

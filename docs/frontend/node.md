@@ -3,34 +3,85 @@ sidebarDepth: 4
 ---
 ## Node
 
-### NPM
+### pakeage.json
 
-##### 模块调用
+##### main
 
-我们安装的模块被放置在`node_modules`目录下，有多种方式去直接调用该包。
+用来规定模块的默认入口，默认值为`index.js`。
 
-1. ``` shell
-   ./node_modules/.bin/pm2 list
-   ```
-
-2. ``` json
-   // package.json
-   {
-       "script": {
-           // npm run start
-           "start": "pm2 list"
-       }
-   }
-   // shell
-      npm run start
-   ```
-3. ``` shell
-   npx pm2 list
-   ```
+``` js
+const test = require('mymodule') // 引入mymodule根目录的index.js文件
+```
 
 
 
-##### package.json
+##### files
+
+用来约束模块中的哪些文件能够被外部应用引入，默认值为`[*]`，代表着默认整个模块的所有文件都能被直接引用。
+
+``` js
+// mymodule/public/test.js
+module.exports = function() {
+    console.log('我是模块的内部文件')
+}
+
+// app.js
+const test = require('mymodule/public/test')
+import 'antd/dist/antd.css'
+```
+
+##### bin
+
+我们可以借助`bin`字段来开发命令行工具。
+
+``` json
+{
+    "name": "myapp",
+    "bin": {
+        "myapp": "./cli.js"
+    }
+}
+```
+
+``` js
+#!/usr/bin/env node
+console.log('aka')
+```
+
+``` bash
+npm i myapp 
+npx myapp
+```
+
+当我们成功安装好一个模块，NPM会自动根据`package.json`的`bin`字段来添加对应的符号链接。我们从而可以使用`./node_module/.bin/myapp`或`npx myapp`，又或是`package.json`的`script`字段来直接执行脚本。
+
+如果我们需要本地开发一个命令行工具，那么在添加`bin`字段后需要自行使用`npm link`来创建符号链接。
+
+
+
+##### script
+
+``` json
+{
+    "script": {
+        "start": "xxx",
+        "dev": "xxx"
+    }
+}
+```
+
+``` bash
+npm run start # npm start
+npm run test
+```
+
+
+
+
+
+
+
+### package-lock.json
 
 在`package.json`中我们经常能看见这种形式的版本号`"react": "^17.0.2"`、`"xx": "~0.10.0"`。这种类型的版本号表示法我们称之为`semver`表示法。
 
@@ -41,8 +92,6 @@ sidebarDepth: 4
 
 
 
-##### package-lock.json
-
 如上述所言，假设当我们依赖的某个模块偷偷地更新了一个小版本号，那么我们最初`npm install`时就会安装最新的该模块。一旦这个模块引入了巨大的缺陷，对于我们的项目将造成极大的影响。
 
 而`package-lock.json`就是用来固定下指定的版本号，此时我们使用`npm install`时，只会安装固定版本号的模块。
@@ -50,6 +99,8 @@ sidebarDepth: 4
 `yarn`默认启用了`lock`，而`npm`在`5.x`版本之后才默认启用了`lock`。不过业界对于是否启用`lock`，还存在一些[争论](https://www.zhihu.com/question/65536076)
 
 
+
+### NPM
 
 ##### node_modules
 
