@@ -73,7 +73,7 @@ blob.text().then(text => console.log(text))
 
 ``` js
 const url = URL.createObjectURL(blob)
-a.url = url // 结构类似于 blob:http://localhost:3000/486ef892-d4fc-485f-b4ab-fae272d35e55
+a.href = url // 结构类似于 blob:http://localhost:3000/486ef892-d4fc-485f-b4ab-fae272d35e55
 a.download = '下载文件.txt' // 文件名
 
 const url2 = URL.createObjectURL(blob)

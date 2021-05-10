@@ -560,45 +560,52 @@ const cookieUtil = {
 
 ##### JWT 
 
-严格来说JWT并不是一种客户端存储手段，考虑到和Cookie、Session都是用来做鉴权的，所以放在一起。
+JSON Web Token（缩写JWT）并不是客户端存储方案，放在这一节是因为它和Cookie、Session都是一种用户身份认证的手段。
 
-Session的一个缺点就是由于会话数据保存在服务端，所以在使用服务器集群的时候处理起来很麻烦。而使用JWT的话，会话数据都保存在客户端，就没有这种问题了。
+基于Cookie的认证最大的缺陷就是对于跨域场景的无力，特别是现在浏览器对Cookie加上的`sameSite`属性，这个属性加强了对于`CSRF`攻击的防范，但让我们携带Cookie进行跨域变得困难无比。
 
-JWT是个很长的字符串，中间用两个`.`分割为三个部分，三个部分依次如下：Header（头部）， Payload（负载），Signature（签名）
+另外Session的一个缺点是由于会话数据都保存在服务端，当使用服务器集群的时候我们必须让会话共享，比如将Session写入数据库等等。而JWT由于会话数据都保存在客户端，自然不会有这样的问题。
 
-###### Header
 
-头部是个JSON对象，结构通常如下
 
-``` json
-{
-  "alg": "HS256",
-  "typ": "JWT"
-}
+使用JWT来进行用户身份认证时，当我们输入用户名和密码进行登录时，服务器会将用户数据使用`Base64`转化成一个`token`字符串返回给前端，通常前端将这个`token`字符串保存在`localStorage`或`Cookie`中以供以后时候，在这之后发请求时会将`token`提取出来，或是放在`Authorization: Bearer ${token}`请求头部中，又或是直接作为请求的参数字段发送给后端，以供后端解析鉴权。
+
+实际上`token`字符串由两个`.`分割三个部分：Header、Payload、Signature（签名）。
+
+- Header字符串是由一个JSON对象通过`Base64`编码而来，这个JSON的结构如下：
+
+  ``` json
+  {
+      "alg": "HS256",
+      "typ": "JWT"
+  }
+  ```
+
+  在这里`alg`表示的是签名是所使用的算法，默认值为`HMAC SHA256`。`typ`表示`token`的类型，默认为`JWT`。
+
+- Payload是由我们的**会话数据**通过`Base64`编码得到的
+
+- Signature是对前两个部分的签名，服务端通过前两个部分的值以及密钥生成该签名。
+
+  ``` js
+  HMACSHA256(
+  	Base64URL(header) + "." + Base64URL(payload),
+  	secretOrPrivateKey
+  )
+  ```
+
+
+
+我们也可以使用Node的`jsonwebtoken`模块来实现该功能。
+
+``` js
+ const token = jwt.sign({ name: 'akara'}, 'key')
+ const data = jwt.verify(token, 'key')
 ```
 
-alg属性表示签名的算法，默认为HMAC SHA256(写成HS256)。
 
-typ属性表示这个token的类型，通常为“JWT”
 
-最后使用Base64URL把这个JSON对象转化为字符串
 
-###### Payload
-
-负载也是个JSON对象，存放需要传输的数据。除去官方字段，可以在这里定义私有字段。
-
-###### Signature
-
-Signature 部分是对前两部分的签名，防止数据篡改
-
-``` javascript
-HMACSHA256(
-Base64URL(header) + "." + Base64URL(payload),
-secret
-)
-```
-
-其中secret为服务端指定的密钥。
 
 ![JWT鉴权原理](https://pic3.zhimg.com/v2-f1556c71042566d4a6f69ee20c2870ae_r.jpg)
 

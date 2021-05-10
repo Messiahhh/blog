@@ -2686,6 +2686,32 @@ encodeURIComponent('https://www.bilibili.com/') // "https%3A%2F%2Fwww.bilibili.c
 
 
 
+##### `window.btoa()`
+
+浏览器自带的`Base64`编码工具，对应的解码工具为`window.atob()`
+
+``` js
+window.btoa('hello akara') // aGVsbG8gYWthcmE=
+window.atob('aGVsbG8gYWthcmE=') // hello akara
+```
+
+不过该工具无法解析中文字符，这时候我们可以借助`encodeURIComponent()`来实现
+
+``` js
+function utoa(str) {
+    return window.btoa(encodeURIComponent(str))
+}
+
+function atou(str) {
+    return decodeURIComponent(window.atob(str))
+}
+
+utoa('你好') // JUU0JUJEJUEwJUU1JUE1JUJE
+atou('JUU0JUJEJUEwJUU1JUE1JUJE') // 你好
+```
+
+
+
 ##### URLSearchParams
 
 用于处理查询字符串
