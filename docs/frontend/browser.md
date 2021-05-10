@@ -599,8 +599,9 @@ JSON Web Token（缩写JWT）并不是客户端存储方案，放在这一节是
 我们也可以使用Node的`jsonwebtoken`模块来实现该功能。
 
 ``` js
- const token = jwt.sign({ name: 'akara'}, 'key')
- const data = jwt.verify(token, 'key')
+const jwt = require('jsonwebtoken')
+const token = jwt.sign({ name: 'akara'}, 'key')
+const data = jwt.verify(token, 'key')
 ```
 
 
