@@ -568,7 +568,7 @@ JSON Web Token（缩写JWT）并不是客户端存储方案，放在这一节是
 
 
 
-使用JWT来进行用户身份认证时，当我们输入用户名和密码进行登录时，服务器会将用户数据使用`Base64`转化成一个`token`字符串返回给前端，通常前端将这个`token`字符串保存在`localStorage`或`Cookie`中以供以后时候，在这之后发请求时会将`token`提取出来，或是放在`Authorization: Bearer ${token}`请求头部中，又或是直接作为请求的参数字段发送给后端，以供后端解析鉴权。
+使用JWT来进行用户身份认证时，当我们输入用户名和密码进行登录时，服务器会将用户数据使用`Base64`转化成一个`token`字符串返回给前端，通常前端将这个`token`字符串保存在`localStorage`或`Cookie`中以供以后使用，在这之后发请求时会将`token`提取出来，或是放在`Authorization: Bearer ${token}`请求头部中，又或是直接作为请求的参数字段发送给后端，以供后端解析鉴权。
 
 实际上`token`字符串由两个`.`分割三个部分：Header、Payload、Signature（签名）。
 

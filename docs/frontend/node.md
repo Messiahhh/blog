@@ -3,32 +3,204 @@ sidebarDepth: 4
 ---
 ## Node
 
-### pakeage.json
+### 模块化
 
-##### main
+**在Node中引入模块，会发生什么？**
 
-用来规定模块的默认入口，默认值为`index.js`。
+在Node中，模块分为两类：一类是node提供的**核心模块**，一类是用户编写的**文件模块**
 
-``` js
-const test = require('mymodule') // 引入mymodule模块的根目录的index.js文件
+- 路径分析
+
+  如果发现引入的是核心模块，则不用进行接下来的两步了，因为核心模块早已编译为二进制，当node进程启动时，部分核心代码已经直接加载进内存中。
+
+- 文件定位
+
+- 编译执行
+
+
+
+##### 立即执行函数
+
+立即执行函数（IIFE）是以前主流的模块化方案，比如`Jquery`就使用该方案。
+
+``` javascript
+// 定义模块
+(function (window) {
+    function A() {
+        return 'aaa'
+    }
+
+    function B() {
+        return 'bbb'
+    }
+
+    window.myModule = {A, B}
+})(window)
+
+// 使用模块
+myModule.A()
 ```
 
 
 
-##### files
+##### AMD
 
-用来约束模块中的哪些文件能够被外部应用引入，默认值为`[*]`，代表着默认整个模块的所有文件都能被直接引用。
+很久以前的一种模块化方案，类似的方案还有CMD。需要额外安装`require.js`库，使用`define`定义模块，使用`require`加载模块。
+
+现在基本不用。
+
+
+
+##### CommonJS
+
+最主流的模块化方案。
+
+``` javascript
+// a.js
+function getName() {
+    return 'Akara'
+}
+module.exports = getName
+
+// b.js
+const getName = require('./a')
+getName() // 'Akara'
+```
+
+`require`可以简单看作包了一层立即执行函数，该立即执行函数返回了那个模块的`module.exports`
+
+``` javascript
+const getName = require('./a')
+// 等价于
+const getName = (function () {
+    function getName() {
+        return 'Akara'
+    }
+
+    module.exports = getName
+
+    // 返回module.exports
+    return module.exports
+})()
+```
+
+
+
+模块内部有`module`和`exports`两个变量，其中`module.exports`和`exports`指向同一片内存。
+
+又因为我们模块实际返回的是`module.exports`，所以如果直接对`exports`变量重新赋值肯定是错误的操作。
 
 ``` js
-// mymodule/public/test.js
-module.exports = function() {
-    console.log('我是模块的内部文件')
+module: {
+    id: '.'
+	exports: {}
+}
+```
+
+
+
+##### UMD 
+
+`UMD`是上诉三种模块化方案`IIFE`、`AMD`、`CommonJS`的结合，即用来兼容多套模块化系统。
+
+``` js
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // 如果支持AMD模块化
+        define(['b'], factory);
+    } else if (typeof module === 'object' && module.exports) {
+        // 如果支持CommonJS模块化
+        module.exports = factory(require('b'));
+    } else {
+        // 如果以上两种都不支持，设置全局变量来保存模块内容
+        root.returnExports = factory(root.b);
+    }
+}(this, function (b) {
+    // 模块的业务代码放在这
+    return {}
+}));
+```
+
+
+
+##### ES6模块
+
+ES6模块使用`import`和`export`来导入和导出模块，目前浏览器和Node都不直接支持`ES`模块的写法，为了使用`ES`模块，我们通常需要使用`babel`，或者使用`node --experimental-modules app.mjs`，此时文件后缀为`.mjs`
+
+``` js
+// a.js
+const name = 'aka'
+export default name // 等价于 export { name as default }
+export function getName() { // 等价于 export { getName as getName }
+    return name
 }
 
-// app.js
-const test = require('mymodule/public/test')
-import 'antd/dist/antd.css'
+// b.js
+import name from './a.js' // 等价于 import { default as name }
+import { getName } from './a.js' // 等价于 import { getName as getName }
 ```
+
+我们也可以自行定义模块接口的名字
+
+``` js
+// a.js
+const name = 'aka'
+export { name as alias }
+
+// b.js
+import { alias as myName } from './a.js'
+```
+
+我们还可以使用`import * as xx from`的写法来加载整个模块。
+
+``` js
+// a.js
+export const name = 'aka'
+export const age = 20
+
+// b.js
+import * as m from './a.js'
+console.log(m)
+// Module {
+//   age: 20
+//   name: "aka"
+//   Symbol(Symbol.toStringTag): "Module"
+//   __esModule: true
+// }
+```
+
+
+
+事实上，在`ES`模块中我们可以加载`CommonJS`模块。
+
+``` js
+// a.js
+module.exports = function() {
+    console.log('common模块')
+}
+
+// b.mjs
+import a from './a.js' // 默认导入了a.js文件的module.exports
+a()
+```
+
+只不过现在大家更倾向于使用`import`语法来开发模块，比如为了使用`tree shaking`的特性我们需要使用`ES`模块。
+
+
+
+###### import和require
+
+`import`命令会在**其他所有代码执行前**就被JavaScript引擎静态分析，可以说它是在**编译时加载模块**。
+
+所以我们通常只能把`import`放在模块的顶层，并且不能放在如`if`之类的代码块中。
+
+并且由于这个特性，我们不能在JS代码执行中根据条件来动态加载模块，而`require`可以做到这一点，`require`是**运行时加载模块**。
+
+好在，我们可以使用`import()`来实现**运行时加载模块**，组件的懒加载通常就是使用`import()`搭配代码分割来实现的。
+
+
+
+### pakeage.json
 
 ##### bin
 
@@ -73,6 +245,64 @@ npx myapp
 ``` bash
 npm run start # npm start
 npm run test
+```
+
+
+
+##### dependencies
+
+项目的依赖。
+
+
+
+##### devDependencies
+
+项目的开发依赖。如果我们在NPM发布了一个模块A，之后当我们`npm install A`时会自动安装模块A的依赖，但不会安装模块A的开发依赖。
+
+
+
+##### files
+
+`files`字段用来规定模块的哪些文件能够被外部下载引入，默认值为`[*]`，即模块的所有文件都能被外部下载引用。
+
+``` js
+// my-module/public/test.js
+module.exports = function() {
+    console.log('我是模块的内部文件')
+}
+
+// app.js
+const test = require('my-module/public/test')
+import 'antd/dist/antd.css'
+```
+
+我们能够通过修改`files`字段来限制模块能够被下载的文件，不过需要注意的是模块以下文件永远都会被外部下载`package.json`、`README`、`CHANGE / CHANGELOG / HISTORY 	`、`LICENSE / LICENCE`、`NOTICE`、`main`字段指向的文件。
+
+
+
+##### main
+
+用来规定模块的默认入口，默认值为`index.js`。
+
+``` js
+const test = require('my-module') // 引入my-module模块的根目录的index.js文件
+```
+
+
+
+##### module
+
+对于通常的模块开发来说，我们可能会根据源代码构建出两份产物：`CommonJS`模块和`ES`模块。`main`通常指向`CommonJS`模块，`module`通常指向`ES`模块。
+
+当使用`webpack`来进行打包时，在配置项`resolve.mainFields`中设置想要加载的模块种类，如：
+
+``` js
+// webpack.config.js
+module.exports = {
+    resolve: {
+        mainFields: ['browser', 'module', 'main']
+    }
+}
 ```
 
 
