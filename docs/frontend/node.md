@@ -290,20 +290,39 @@ const test = require('my-module') // 引入my-module模块的根目录的index.j
 
 
 
-##### module
+##### browser | module
 
-对于通常的模块开发来说，我们可能会根据源代码构建出两份产物：`CommonJS`模块和`ES`模块。`main`通常指向`CommonJS`模块，`module`通常指向`ES`模块。
+许多模块的`package.json`中除了`main`字段可能还存在`browser`和`module`字段，这是由于模块可能被使用在不同的环境下（浏览器环境或`node`环境），此时`browser`和`module`指向了不同的构建后文件。
 
-当使用`webpack`来进行打包时，在配置项`resolve.mainFields`中设置想要加载的模块种类，如：
+具体的情况要稍微复杂一些，[参考](https://github.com/SunshowerC/blog/issues/8)。
+
+``` json
+{
+    "main": "./main.js",
+    "browser": "./browser.js",
+    "module": "./module.js"
+}
+```
+
+
+
+如果我们只是简单的使用模块，会根据`main`字段进行导入。
+
+而如果我们使用`webpack`作为项目的构建工具，此时会根据`webpack.config.js#target`设置从哪个入口导入模块。`target`默认值为`web`，即根据`browser`导入模块；通过设置`target`为`node`，会根据`module`导入模块。
+
+另外，当`package.json`不存在对应的入口字段，会根据`browser -> module -> main`的优先级导入模块。这个优先级是根据`webpack.config.js#resolve.mainFields`字段指定的，我们可以通过修改该字段来调整优先级：
 
 ``` js
 // webpack.config.js
 module.exports = {
+    target: 'node', // 默认值web
     resolve: {
-        mainFields: ['browser', 'module', 'main']
+        mainFields: ['main', 'module', 'browser'] // 默认值 ['browser', 'module', 'main']
     }
 }
 ```
+
+
 
 
 
@@ -384,11 +403,15 @@ module.exports = {
 
 ##### 模块发布
 
-在使用`npm login`登陆自己的NPM账号之后，我们可以在项目目录使用`npm publish`发布模块，需要注意的时NPM的镜像源需要是官方镜像`npm config set registry https://registry.npmjs.org`
+在使用`npm login`登陆自己的NPM账号之后，我们可以在项目目录使用`npm publish`发布模块，使用`npm unpublish --force`来删除发布的模块，需要注意的时NPM的镜像源需要是官方镜像`npm config set registry https://registry.npmjs.org`
 
 NPM的模块分为公共模块和私有模块，发布私有模块是需要付费的。除此之外NPM的模块还存在形如`@akara/my-package`这样子的，属于用户作用域的模块。
 
 想要发布这样的模块，首先需要确保模块的名字形如`@akara/my-package`，并且由于这种模块默认是私有的，为了不花钱我们需要使用`npm publish --access public`来发布公共的作用域模块。
+
+
+
+
 
 
 
