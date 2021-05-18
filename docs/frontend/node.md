@@ -101,7 +101,7 @@ module: {
 
 ##### UMD 
 
-`UMD`是上诉三种模块化方案`IIFE`、`AMD`、`CommonJS`的结合，即用来兼容多套模块化系统。
+`UMD`是上述三种模块化方案`IIFE`、`AMD`、`CommonJS`的结合，即用来兼容多套模块化系统。
 
 ``` js
 (function (root, factory) {
@@ -125,7 +125,11 @@ module: {
 
 ##### ES6模块
 
-ES6模块使用`import`和`export`来导入和导出模块，目前浏览器和Node都不直接支持`ES`模块的写法，为了使用`ES`模块，我们通常需要使用`babel`，或者使用`node --experimental-modules app.mjs`，此时文件后缀为`.mjs`
+ES6模块使用`import`和`export`来导入和导出模块。
+
+新版本Node已经支持`node app.mjs`的写法，老版本Node需要开启`--experimental-modules`使用该特性。
+
+除了通过文件后缀名来区分`ES`模块，我们也可以设置`package.json`的`type`字段为`module`来表示这是一个`ES`模块，此时文件可以是`.js`后缀。
 
 ``` js
 // a.js
@@ -321,6 +325,41 @@ module.exports = {
     }
 }
 ```
+
+
+
+##### exports
+
+`exports`字段在功能上和`main`相近，使用起来更加灵活。如果同时存在`exports`和`main`，`exports`的优先级更高。
+
+``` json
+{
+    "exports": {
+        ".": "./index.js", // 需要加上./
+        "./test": "./src/test.js" 
+    }
+}
+```
+
+``` js
+const test = require('my-module') // ./index.js
+const test2 = require('my-module/test') // ./src/test.js
+```
+
+`exports`最大的特性是能够根据导入模块时使用的是`require`还是`import`选择不同的导出。
+
+``` json
+{
+    "exports": {
+        ".": {
+            "require": "./a.js",
+            "import": "./b.mjs"
+        }
+    }
+}
+```
+
+
 
 
 
