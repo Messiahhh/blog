@@ -25,10 +25,11 @@ git status # 查看当前状态
 git stash # 缓存当前的本地修改
 git stash list # 查看缓存的本地修改
 git stash pop # 取出缓存的本地修改
-git rm --cached <file> # 若我们git add 一个文件，通过该命令可以取消该文件的追踪
-git checkout -- <file>
-# a文件若缓存区有缓存。当我们工作目录中修改a的内容，可以使用该命令删除我们的更改
+git checkout -- <file> # 用来丢弃工作目录中的修改
+git reset HEAD <file> # 当我们不小心git add了文件，可以用该命令撤回
 git reset --hard HEAD^ # 撤销一个commit，HEAD^^为撤销两个
+
+git rm --cached <file> # 若我们git add 一个文件，通过该命令可以取消该文件的追踪
 ```
 
 ### 分支合并
