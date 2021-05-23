@@ -5,32 +5,60 @@ sidebarDepth: 4
 
 ### 常用命令
 
-``` shell
+``` bash
 git init # 初始化git仓库
-git add # 将改动添加到索引区域
-git commit # 提交commit
-git push # 推送给远程仓库
-git pull # 拉远程仓库代码并合并(fetch + merge)
-git clone # 拉仓库
+git add . # 工作目录内容添加进索引区域
+git commit -m '' # 生成新的commit，commit对应某个时刻的内容
+git reset --hard HEAD^ # 撤销一个commit，HEAD^^为撤销两个
 git branch # 显示所有分支
 git branch <name> # 创建分支
-git checkout <file> # 切换分支
-git checkout -b <file> # 创建分支并切换过去
-git checkout -d <file> # 删除分支
-git merge # 分支合并
-git rebase # 分支合并
-git log # 查看 commit 记录
-git reflog # 查看历史命令
-git status # 查看当前状态
-git stash # 缓存当前的本地修改
-git stash list # 查看缓存的本地修改
-git stash pop # 取出缓存的本地修改
-git checkout -- <file> # 用来丢弃工作目录中的修改
-git reset HEAD <file> # 当我们不小心git add了文件，可以用该命令撤回
-git reset --hard HEAD^ # 撤销一个commit，HEAD^^为撤销两个
+git branch -D # 删除分支
+git checkout <name> # 切换分支
+git checkout - # 切换到上一个分支
+git checkout -b <name> # 创建分支并切换过去
+git merge <name> # 合并目标分支
+git rebase <name> # 合并目标分支
 
-git rm --cached <file> # 若我们git add 一个文件，通过该命令可以取消该文件的追踪
+git log # 查看commit记录
+git reflog # 查看历史git命令
+git status # 看到当前状态
 ```
+
+当我们新建文件`akara.txt`，并使用`git add .`添加进缓存区。此时我们可以：
+
+1. `git commit -m ''`： 提交记录。
+2. `git reset HEAD <file>`: 释放缓存。类似的还有`git rm --cached <file>`用来删除缓存区的内容
+
+当我们新建文件`akara.txt`，并使用`git add .`添加进缓存区，之后修改该文件的内容。此时我们可以：
+
+1. `git add .`：缓存修改后的内容。
+2. `git checkout -- <file> `：丢弃修改的内容。本质是用原本缓存区的内容替代工作目录中的文件内容。
+
+
+
+##### repo交互
+
+``` bash
+git remote # 查看远程仓库的信息
+git clone # 拉取远程仓库到本地
+git push # 推送给远程仓库
+git fetch # 拉取远程仓库的更新
+git pull # 拉取远程仓库的更新，并且和本地仓库的内容合并（相当于git fetch + git merge）
+```
+
+##### git stash
+
+大部分情况我们都能够随意的进行分支的切换。现在假设这样的情况，存在`main`分支拥有`akara.txt`文件，而`test`分支不存在该文件。此时当我们在`main`分支修改该文件，由于`test`分支不存在该文件，我们无法顺利切换过去。
+
+为此我们需要先提交我们的修改，或者使用`git stash`来缓存内容的修改，并在未来合适的时候释放缓存的内容。
+
+``` bash
+git stash # 缓存内容的修改
+git stash list # 查看缓存的记录
+git stash pop # 释放内容的缓存
+```
+
+
 
 ### 分支合并
 
