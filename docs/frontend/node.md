@@ -377,7 +377,7 @@ import test from 'my-module/main.js' // 报错
 
 在`package.json`的`dependencies`字段中我们经常能看见这种形式的版本号`"react": "^17.0.2"`、`"xx": "~0.10.0"`，这种写法通常被称为[`semver`表示法](https://github.com/npm/node-semver)，三个数字分别表示主要版本、次要版本、补丁版本。
 
-当我们`clone`项目后使用`npm install`来安装依赖，或者是在已有的项目中使用`npm update`来更新依赖，都会根据`semver`规则安装对应版本的模块，也就是说依赖的版本并不是固定的。
+当我们`clone`项目后使用`npm install`来安装依赖，或者是在已有的项目中使用`npm update`来更新依赖，都会根据`semver`规则安装对应版本的模块，也就是说**实际安装版本并不是固定的**。
 
 - `^`：表示只会执行不更改最左边非零数字的更新。比如`^0.10.0`，意味着我们可以安装（或更新，下同）`0.10.1`等版本，但不能安装`0.11.0`或更高的版本；又比如`^1.10.0`，意味着我们可以安装`1.10.1`、`1.11.0`等版本，但不能安装`2.0.0`或更高的版本。
 
@@ -389,9 +389,13 @@ import test from 'my-module/main.js' // 报错
 
 而**不锁版本的坏处是**，当项目所依赖的某个模块偷偷地更新了小版本，对我们来说是无感知的。一旦这个依赖的更新引入了一些破坏性变更，那么当我们`clone`项目并`npm install`后可能发现项目跑不起来（特别是使用CI进行构建的时候）
 
-针对这样的问题，`yarn`和新版的`npm`都默认启用了`lock`机制，`package-lock.json`文件下会固定依赖的版本号，当我们`npm i`安装依赖的时候会根据`package-lock.json`来安装指定版本的模块了。不过很明显锁不锁版本都有对应的好处和坏处，所以社区对是否锁版本还存在着一些[争论](https://www.zhihu.com/question/65536076)。
+针对这样的问题，`yarn`和新版的`npm`都默认启用了`lock`机制，当我们`npm i`的时候会生成`package-lock.json`文件**固定依赖的版本号**，今后每次修改`package.json`依赖的时候（如`npm i xx@latest`），`package-lock.json`也会相应的改变，这两个文件的**依赖强关联**。
 
+当项目中存在`package-lock.json`时，我们通过`npm i`或`npm update`安装的都是指定版本的模块。
 
+------
+
+不过很明显锁不锁版本都有对应的好处和坏处，所以社区对是否锁版本还存在着一些[争论](https://www.zhihu.com/question/65536076)。
 
 另外，无论是否使用`lock`机制，都不应该把`package-lock.json`写入`.gitignore`中。
 
@@ -445,6 +449,16 @@ import test from 'my-module/main.js' // 报错
 
 
 比如`npx create-react-app my-app`，我们无需提前安装`create-react-app`，借助`npx`会下载并使用该库来生成我们的项目，并在任务执行完成后删除下载好的`create-react-app`。
+
+
+
+##### npm ci
+
+`npm ci`的作用和`npm i`一样，用来安装依赖模块，而该命令经常被用在持续集成CI当中。
+
+使用该命令时需要确保项目中存在`package-lock.json`或`npm-shrinkwrap.json`，并且当`package.json`和`package-lock.json`中依赖的版本不一致时`npm ci`会抛出错误。
+
+
 
 
 
