@@ -85,6 +85,7 @@ module.exports = {
                 'mongodb',
                 'mysql',
                 'linux',
+                'docker',
                 'git',
                 '设计模式',
                 'websocket',
