@@ -91,7 +91,9 @@ function Hello(props) {
 }
 ```
 
-像这种形式的组件是**非纯组件**，只要它们的父组件发生了重新渲染，该组件也会进行重新渲染。为了避免额外的开销我们可以声明**纯组件**，**父组件的渲染不会触发纯组件的渲染**。
+Vue和React都是数据驱动视图的更新。Vue采用对数据的劫持，因此知道具体数据的改变，当父组件发生重新渲染时子组件不一定会重新渲染；而React通常只要父组件发生了重新渲染，子组件也会进行重新渲染，这种组件被称为**非纯组件**。
+
+为了避免额外的开销我们可以使用**纯组件**，**父组件的渲染不会触发纯组件的渲染。**
 
 ``` jsx
 class Akara extends React.PureComponent { // 纯类组件
@@ -101,7 +103,7 @@ class Akara extends React.PureComponent { // 纯类组件
 const App = React.memo(() => <div>akara</div>) // 纯函数组件
 ```
 
-对于组件来说，当通过`setState`修改数据或`props`改变时（浅对比），组件就会重新渲染。
+无论何种组件，当通过`setState`修改数据或`props`改变时（浅对比），组件就会重新渲染。
 
 ##### 状态
 
@@ -437,6 +439,14 @@ function example(props) {
 }
 ```
 
+`useState`的参数也可以是一个函数。
+
+``` js
+const [state, setState] = useState(() => {
+    return 0
+})
+```
+
 ### useEffect
 
 在函数组件中执行副作用操作，可用于模拟`mounted`、`updated`生命周期钩子。
@@ -575,11 +585,9 @@ function useReducer(reducer, initialState) {
 
 ### useImperativeHandle
 
-这个Hook通常和`forwardRef`一起使用，二者的搭配常见于各类组件库当中。
+通常和`forwardRef`搭配使用，`forwardRef`能够暴露组件的内部DOM元素给外部使用，而`useImperativeHandle`能够限制我们只能访问DOM元素的哪些属性或方法。
 
-`forwardRef`可以向外界暴露DOM元素，而`useImperativeHandle`可以限制我们只能访问哪些方法。
-
-比如以下代码，我们可以获取到输入框，却被限制了只能使用`focus`来控制焦点。
+比如以下代码，我们可以获取`FancyInput`组件内部的`input`元素，但是被限制只能使用`focus`来控制焦点。
 
 ``` js
 // forwardRef + useImperativeHandle
@@ -595,162 +603,79 @@ function FancyInput(props, ref) {
 FancyInput = forwardRef(FancyInput);
 ```
 
-以下是单独使用`forwardRef`时的代码结构
+### useMemo
 
-``` js
-const FancyButton = React.forwardRef((props, ref) => (
-  <button ref={ref} className="FancyButton">
-    {props.children}
-  </button>
-));
-```
-
-### useMemo 与 useCallback
-
-Vue和React有一个比较明显的差异。
-
-由于Vue使用了对数据的劫持，知道具体数据的变化。因此当父组件数据改变，而子组件数据没有改变时，只有父组件会重新渲染。
-
-而React的方式很粗暴，只要父组件的数据改变，强制会让子组件也重新渲染，很多时候这不是我们想要的结果。
-
- 
-
-当然，React提供了解决方式。
-
-首先，React中的类组件分React.Component和React.PureComponent，而类组件都是具有shouldComponentUpdate这个方法的。
-
-对于普通的类组件，这个方法总是返回true。而对于PureComponent，React会浅对比该组件的前后state和props，如果没有变化，则不会重新渲染组件。
-
-而对于函数组件来说，默认情况也是会重新渲染的，我们可以通过React.memo包裹函数组件来实现类似PureComponent的效果。
-
-总的来说，类组件我们可以使用PureComponent，函数组件我们可以使用React.memo来提高性能。
-
- 
-
-接下来聊一下useMemo和useCallback
-
-什么是useMemo，这是个类似Vue中计算属性的概念，相对来说比较好理解。
+类似计算属性，根据依赖的变量缓存计算的结果。
 
 ``` js
 const revertMsg = useMemo(() => msg.split('').reverse().join(''), [msg])
 ```
 
-而useCallback可能稍微难理解一点，首先我们需要搞清楚为什么需要这个hook，我用代码举个例子。
+
+
+### useCallback
+
+对于这样的一段代码，父组件将匿名函数（或普通函数）作为`props`传递给子组件。当父组件重新渲染，则会生成一个全新的匿名函数作为`props`传递给子组件，因此会**触发子组件的重新渲染**。
+
 ``` jsx
-const Child = (props) => {
-   useEffect(() => {
-       console.log('子组件渲染');
-  })
-   return (
-       <div>
-           <div>子组件</div>
-           <button onClick={props.onClick}>子组件按钮</button>
-       </div>
-  )
+function Father () {
+    const [count, setCount] = useState(0)
+    return (
+    	<PureChildComponent onClick={() => { setCount(1) }}/>
+    )
 }
 
-const MemoChild = React.memo(Child)
+// 或者
 
-const Father = () => {
-   const [count, setCount] = useState(0)
-   return (
-       <div>
-           <span>父组件</span>
-           <span>计数器:{count}</span>
-           <button onClick={() => setCount(count + 1)}>父组件按钮</button>
-           <MemoChild onClick={() => setCount(count + 1)}/>
-       </div>
-  )
+function Father () {
+    const [count, setCount] = useState(0)
+    function handleClick() {
+        setCount(1)
+    }
+    return (
+    	<PureChildComponent onClick={handleClick}/>
+    )
 }
 ```
-在这个代码中，即使我们使用了React.memo包括子组件，当父组件的count数据变化时，子组件也会重新渲染。
 
-问题其实是出在`<MemoChild onClick={() => setCount(count + 1)}/>`
+为了解决这样的问题我们需要在函数组件中保存一个函数，而`useCallback`就是用来做这个的。
 
-总的来说，每次父组件重新渲染时，传给子组件的props的地址就发生了变化（注：也就是说只要是引用类型，都会存在这个问题），因此子组件也会重新渲染。
-
-当然，换成以下写法也是行不通的，每次渲染，add函数的地址都会发生变化。
 ``` jsx
-const Father = () => {
-// ...
-   function add() {
-       setCount(count + 1)
-  }
-   // ...
-   <MemoChild onClick={add}/>
+function Father () {
+    const [count, setCount] = useState(0)
+    const cb = useCallback(() => {
+       setCount(count => count + 1)
+    }, [])
+    return (
+    	<PureChildComponent onClick={cb}/>
+    )
 }
 ```
-作为对比，类组件中是怎样的场景？
+
+当然，实际上我们也可以用`useState`、`useMemo`来实现该功能，只是`useCallback`更加语义化。
 
 ``` jsx
-class Father extends React.Component {
-   constructor(props) {
-       super(props)
-       this.state = {
-           count: 0
-      }
-       this.add = this.add.bind(this)
-  }
-
-   add() {
-       this.setState((state) => ({
-           count: state.count + 1
-      }))
-  }
-   
-   render() {
-       return (
-           <div>
-               <span>父组件</span>
-               <span>计数器:{this.state.count}</span>
-               <button onClick={this.add}>父组件按钮</button>
-               <MemoChild onClick={this.add}/>
-           </div>
-      )
-  }
+// 使用useState（不推荐，只是一个思路）
+function Father () {
+    const [count, setCount] = useState(0)
+    const [cb, setCb] = useState(() => () => setCount(count => count + 1))
+    return (
+    	<PureChildComponent onClick={cb}/>
+    )
+}
+// 使用useMemo（不推荐，只是一个思路）
+function Father () {
+    const [count, setCount] = useState(0)
+    const cb = useMemo(() => {
+       return () => setCount(count => count + 1)
+    }, [])
+    return (
+    	<PureChildComponent onClick={cb}/>
+    )
 }
 ```
-可以看出，在类组件中，组件的重新渲染不会影响add，因此不会影响子组件。
 
-所以我们需要的是，在函数组件中保存某个函数的地址，可以立刻联想到hook
-
-方法一：使用useState来保存函数，十分简单粗暴，但感觉很有用
-``` jsx
-const [cb, setCb] = useState(() => () => setCount(count => count + 1))
-
-<MemoChild onClick={cb}/>
-```
-注：useState传入函数的时候，获取的是它的返回值，所以用了两个箭头函数
-
-方法二（推荐）：我们自然可以使用官方自带的useCallback
-
-``` jsx
-const cb = useCallback(() => {
-   setCount(count => count + 1)
-}, [])
-
-<MemoChild onClick={cb}/>
-```
-
-方法三（不推荐，只是一个思路）：我们甚至可以使用useMemo来实现
-
-``` jsx
-const cb = useMemo(() => {
-   return () => setCount(count => count + 1)
-}, [])
-
-<MemoChild onClick={cb}/>
-```
-
-注：useEffect，useMemo和useCallback的第二个参数都是数组，用来存放依赖。
-
-而在本例中，因为我们保存的是函数，它的地址无需变化，因此我传了一个空数组。
-
-官方文档: useCallback(fn, deps) 相当于 useMemo(() => fn, deps)。
-
- 
-
-其实useCallback的作用应该不局限与此，但这个hook确实可以用来方便的处理类似的问题。
+> `useCallback(fn, deps)` 相当于 `useMemo(() => fn, deps)`
 
 
 
@@ -759,8 +684,6 @@ const cb = useMemo(() => {
 如react-redux提供的`useSelector`，`useDispatch`等
 
 如react-router提供的`useParams`, `useRouteMatch`,  `useLocation`等
-
-
 
 ### Hook的闭包陷阱
 
