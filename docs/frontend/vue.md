@@ -1,49 +1,68 @@
 ---
 sidebarDepth: 4
 ---
-## Vue
+# Vue
 
-### Vue基础
+> 部分内容已经替换成Vue3
+
+## 基础
 
 ``` vue
-<div class='app'>
-	{{ count }}
-    <button @click='increment'>
-        点我加一
-    </button>
+<div id="counter">
+  Counter: {{ counter }}
 </div>
 <script>
-	const vm = new Vue({
-        el: '.app',
-        data: {
-            count: 0
+	const Counter = {
+      	data() {
+        	return {
+          		counter: 0
+        	}
+      	},
+        computed: { // 计算属性
+            A() {
+                return counter * counter
+            }
+        },
+        watch: {
+            counter(newValue, oldValue) { // 当counter改变触发该函数
+                
+            }
         },
         methods: {
-            increment: function () {
-                this.count++
+            fn() {
+                console.log(this.counter)
             }
+        },
+        mounted() {
+            
         }
-    })
+    }
+	const app = Vue.createApp(Counter)
+    app.mount('#counter')
 </script>
 ```
 
+##### 组件注册
+
+通常使用`app.component('name', {})`注册全局组件，或是使用Vue单文件组件。
+
+
+
 ##### 指令
 
-- `v-bind` 缩写为`:`
-- `v-on` 缩写为`@`
-- `v-show`
-- `v-if`
-- `v-else-if`
-- `v-else`
-- `v-for`
-- `v-model`
-- `v-text` ：等价于`{{}}`
-- `v-html`
-- `v-once`
+`v-bind`（缩写为`:`）、`v-on`（缩写为`@`）、`v-for`、`v-model`、`v-if`、`v-show`等
 
-
-
-##### v-if vs v-show
+``` vue
+<!-- 
+	post: {
+		id: 1,
+		title: 'aka'
+	}
+-->
+<blog-post v-bind="post"></blog-post>
+<!-- 等价于 -->
+<blog-post v-bind:id="post.id" v-bind:title="post.title"></blog-post>
+```
 
 > `v-if` 是“真正”的条件渲染，因为它会确保在切换过程中条件块内的事件监听器和子组件适当地被销毁和重建。
 >
@@ -53,61 +72,79 @@ sidebarDepth: 4
 >
 > 一般来说，`v-if` 有更高的切换开销，而 `v-show` 有更高的初始渲染开销。因此，如果需要非常频繁地切换，则使用 `v-show` 较好；如果在运行时条件很少改变，则使用 `v-if` 较好。
 
-
-
-
-
-##### options
-
-- `el`
-- `data`
-- `computed`
-- `methods`
-- `template`
-- `store`
-- `router`
-
 ##### 生命周期
 
-- beforeCreate
-- created
-- beforeMount
-- mounted
-- beforeUpdate
-- updated
-- beforeDestory
-- destoryed
+`beforeCreate`、`created`、`beforeMount`、`mounted`、`beforeUpdate`、`updated`、`beforeUnmount`、`mounted`
 
-##### 组件间通信
+[图示](https://v3.cn.vuejs.org/guide/instance.html#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E9%92%A9%E5%AD%90)
 
-###### 父子组件通信
+##### 组件通信
 
-父组件通过props传递数据给子组件。
-
-父组件对子组件的自定义事件使用`v-on:eventName=doSomething`进行监听，当子组件内部触发了该自定义事件时（使用`$emit('eventName')`），父组件执行doSomething，从而实现子组件向父组件的通信。
+父子组件通信借助`props`和父组件对子组件自定义事件的监听；兄弟组件可以使用事件总线来通信；或者用Vuex。
 
 
 
-###### 非父子组件通信
+##### Props
 
-在简单的场景下，可以使用一个空的 Vue 实例作为事件总线。
+和React不同，在Vue中我们需要指定组件接收哪些`props`属性，当我们给组件传递非`props`属性时，该属性会默认挂载在组件的根元素上。
 
-``` javascript
-var bus = new Vue()
-// 触发组件 A 中的事件
-bus.$emit('id-selected', 1)
+而Vue3模仿Fragment实现了多根节点的组件，此时我们需要显示的定义这些非`props`属性应该被挂载在哪个节点。
 
-// 在组件 B 创建的钩子中监听事件
-bus.$on('id-selected', function (id) {
-  // ...
+``` vue
+<!-- Layout.vue -->
+<template>
+  	<header>...</header>
+  	<main v-bind="$attrs">...</main>
+  	<footer>...</footer>
+</template>
+```
+
+##### Provider and Inject
+
+简单来说是Vue版本的Context，不过默认情况下`Provider/Inject`绑定不是响应式的。
+
+##### Teleport
+
+简单来说就是Vue版本的Portals，通常的使用场景是Modal。
+
+对于一个Modal遮罩组件，逻辑上弹出的遮罩在组件的内部，但从页面布局的角度来看遮罩应该是全局的（因为绝对定位），所以可以使用Teleport来使组件内部的元素被**传送**到外部，比如放在`body`元素下。
+
+``` vue
+app.component('modal-button', {
+  template: `
+    <button @click="modalOpen = true">
+        Open full screen modal! (With teleport!)
+    </button>
+
+    <teleport to="body">
+      <div v-if="modalOpen" class="modal">
+        <div>
+          I'm a teleported modal! 
+          (My parent is "body")
+          <button @click="modalOpen = false">
+            Close
+          </button>
+        </div>
+      </div>
+    </teleport>
+  `,
+  data() {
+    return { 
+      modalOpen: false
+    }
+  }
 })
 ```
 
-复杂的情况下，我们可以使用Vuex。
+##### 组合式API
+
+> Todo
+
+感觉有点像React的Hook，在以前的Vue开发一个模块功能的代码被分散在`data`、`computed`、`watch`、`computed`、`lifecycle`当中，而组合式API使得一个模块相关的代码高度内聚，方便管理。
 
 
 
-### Vuex
+## Vuex
 
 ``` javascript
 const store = new Vuex.Store({
@@ -156,7 +193,7 @@ action类似于mutation，不同在于：
 - Action 提交的是 mutation，而不是直接变更状态。
 - Action 可以包含任意异步操作，Mutation只能包括同步操作。
 
-### Vue Router
+## Vue Router
 
 ``` html
 <div class="app">
@@ -283,7 +320,7 @@ const router = new VueRouter({
 
 
 
-### 底层原理
+## 原理
 
 ##### nextTick
 
@@ -435,7 +472,7 @@ Vue是通过数据劫持结合发布-订阅模式的方式，实现的双向绑�
 
 
 
-##### Vue的坑
+##### Vue2的坑
 
 准确来说是`Object.defineProperty`的坑。
 

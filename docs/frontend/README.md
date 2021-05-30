@@ -1,8 +1,8 @@
 ---
 sidebarDepth: 4
 ---
-## HTML
-##### 渲染流程
+# HTML
+### 页面渲染流程
 
 浏览器收到响应后将其内容解码成HTML，下一步要做的就是把HTML解析成DOM。
 
@@ -43,7 +43,7 @@ sidebarDepth: 4
 
 
 
-###### async和defer
+##### async和defer
 
 通过给`script`加上这两个属性，**脚本的加载就不会阻塞后续HTML的解析**了。
 
@@ -61,7 +61,7 @@ sidebarDepth: 4
 
 
 
-###### DOMContentLoaded和Load
+##### DOMContentLoaded和Load
 
 - `DOMContentLoaded`: 当HTML文档被解析完成。
 - `Load`：当所有的资源都加载完成，即包括文档、图片、样式、脚本等资源。
@@ -70,7 +70,7 @@ sidebarDepth: 4
 
 
 
-###### preload
+##### preload
 
 ``` html
 <link rel="preload" as="script" href="/main.js" >
@@ -81,16 +81,16 @@ sidebarDepth: 4
 
 
 
-###### link和@import的区别
+##### link和@import的区别
 
 1. link是XHTML提供的标签，不仅可以加载CSS。@import是CSS提供的语法规则，只能加载CSS
 2. 加载页面时，`link`标签引入的 CSS 被同时加载；`@import`引入的 CSS 将在页面加载完毕后被加载。
 
-###### doctype
+##### doctype
 
 Doctype声明位于文档中的最前面，处于html标签之前。告知浏览器的解析器，用什么文档类型规范来解析这个文档
 
-##### 重定向
+### 重定向
 
 `meta`标签的`http-equiv="refresh"`属性用来告诉浏览器进行页面的跳转，`content`属性告知在多少秒后进行跳转，以及跳转的地址。此处为2s后重定向。
 
@@ -112,11 +112,11 @@ res.statusCode = 301 // or 302
 res.setHeader('Location', 'https://messiahhh.github.io/blog')
 ```
 
-##### HTML5
+### HTML5
 
 > 介绍一些HTML5的用法
 
-###### 元素拖拽
+##### 元素拖拽
 
 ``` html
 <div class="contain"></div>
@@ -142,7 +142,7 @@ res.setHeader('Location', 'https://messiahhh.github.io/blog')
 <!-- 事件触发了两次，两次的e.target不同，使用e.dataTransfer来传输数据 -->
 ```
 
-###### 地理位置
+##### 地理位置
 
 ``` js
 navigator.geolocation.getCurrentPosition((position) => {
@@ -157,7 +157,7 @@ navigator.geolocation.getCurrentPosition((position) => {
 
 
 
-##### 解析markdown
+### 解析markdown
 
 我们的常见需求是把`markdown`文件解析成页面，有很多种工具可以实现这一目的，比如可以使用`gray-matter`、`remark`、`remark-html`、`remark-prism`来实现。
 

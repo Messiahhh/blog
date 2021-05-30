@@ -1,9 +1,9 @@
 ---
 sidebarDepth: 4
 ---
-## Node
+# Node
 
-### 模块化
+## 模块化
 
 **在Node中引入模块，会发生什么？**
 
@@ -206,7 +206,7 @@ a()
 
 
 
-### pakeage.json
+## pakeage.json
 
 ##### bin
 
@@ -373,7 +373,7 @@ import test from 'my-module/main.js' // 报错
 
 
 
-### package-lock.json
+## package-lock.json
 
 在`package.json`的`dependencies`字段中我们经常能看见这种形式的版本号`"react": "^17.0.2"`、`"xx": "~0.10.0"`，这种写法通常被称为[`semver`表示法](https://github.com/npm/node-semver)，三个数字分别表示主要版本、次要版本、补丁版本。
 
@@ -401,7 +401,7 @@ import test from 'my-module/main.js' // 报错
 
 如果我们使用`lock`机制，应该直接把`package-lock.json`提交进仓库；如果我们不使用`lock`机制，则应该在`.npmrc`中写入`package-lock=false`来关闭`lock`机制，并把`package-lock.json`提交到仓库中。[参考](https://www.zhihu.com/question/264560841)
 
-### NPM
+## NPM
 
 ##### node_modules
 
@@ -484,7 +484,7 @@ NPM的模块分为公共模块和私有模块，发布私有模块是需要付�
 
 
 
-### 事件循环
+## 事件循环
 
 浏览器和Node环境都存在事件循环这一概念，但因为它们基于不同的架构所以实现原理也有些许不同，比如浏览器环境的事件循环是通过主线程和工作线程之间的调度实现的。另外，在Node的`11.0`版本的发布之后，同一段代码在两个不同环境的表现也越来越相似了，所以在这里我会主要以浏览器环境介绍事件循环的原理。
 
@@ -593,7 +593,7 @@ process.nextTick(function(){
 
 因为高版本Node是**执行完一个宏任务，就执行微队列的全部任务**。所以**先输出4，再输出3。**
 
-### http模块
+## http模块
 
 ``` javascript
 const http = require('http')
@@ -732,7 +732,7 @@ server.listen(3000, () => {
 
 
 
-### fs模块
+## fs模块
 
 ``` javascript
 const fs = require('fs')
@@ -766,7 +766,7 @@ const stream = fs.createWriteStream(`./image/${Math.floor(Math.random() * 10000)
 reader.pipe(stream)
 ```
 
-### path模块
+## path模块
 
 ``` javascript
 const path = require('path')
@@ -804,7 +804,7 @@ const path3 = path.join(__dirname, '..', 'b')
 
 
 
-### process模块
+## process模块
 
 ##### `process.cwd()`
 
@@ -861,7 +861,7 @@ process.stdin.on('data', (chunk) => {
 })
 ```
 
-### util模块
+## util模块
 
 这个模块提供了诸多很有用的小工具。
 
@@ -894,7 +894,7 @@ async function A() {
 
 
 
-### child_process模块
+## child_process模块
 
 Node的`child_process`模块提供了创建子进程的四种方式，分别是`folk`、`exec`、`execFile`、`spawn`。
 
@@ -959,7 +959,7 @@ sort.stdout.pipe(process.stdout)
 
 
 
-### cluster模块
+## cluster模块
 
 使用cluster来搭建集群node应用
 
@@ -1003,7 +1003,7 @@ cluster让我们不用亲自去管理进程通信的事情（process.on('message
 
 
 
-### url模块
+## url模块
 
 ``` javascript
 // 当请求url为 http://localhost:3000/index.html?name=akara#aa
@@ -1016,7 +1016,7 @@ let {
 } = url.parse(req.url)
 ```
 
-### querystring模块
+## querystring模块
 
 ``` javascript
 const qs = require('querystring')
@@ -1026,7 +1026,7 @@ querystring.parse(str)
 // { foo: 'bar', abc: [ 'xyz', '123' ] }
 ```
 
-### os模块
+## os模块
 
 获取操作系统相关信息。
 
@@ -1037,7 +1037,7 @@ const homedir = os.homedir() // 获取用户目录
 
 
 
-### event模块
+## event模块
 
 > 实现原理见本文的设计模式-发布订阅章节
 
@@ -1058,7 +1058,7 @@ emitter.emit('ev')
 
 以上是Node自带的核心库，下面介绍一些常用的第三方库。
 
-### bluebird库
+## bluebird库
 
 可以将回调函数实现的异步改写成Promise的方式来写的第三方库。
 
@@ -1117,7 +1117,7 @@ let data = await conn.queryAsync(`sql code here...`)
 
 
 
-### PM2库
+## PM2库
 
 除了常见的`pm2 start index.js`，我们也可以使用配置文件。
 
@@ -1165,7 +1165,7 @@ pm2 monit
 
 
 
-### 命令行工具
+## 命令行工具
 
 本节介绍如何使用node写命令行工具。
 
