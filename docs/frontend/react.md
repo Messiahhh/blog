@@ -1,54 +1,59 @@
 ---
 sidebarDepth: 4
 ---
-## React
+# React
 
-### 基础
-
-##### JSX
+### JSX
 
 ``` jsx
-const element = <h1>hello, world!</h1>
+const element = <h1 class="hello">hello, world!</h1>
+const component = <App /> 
 ```
 
-该JSX代码会被Babel编译成`React.createElement`函数并调用，它等价于：
+在React中我们能够编写这种被称为JSX风格的代码，该代码实际会被`babel`和`@babel/preset-react`编译成`React.createElement`函数调用，它等价于以下代码
 
 ``` jsx
-const element = React.createElement('h1', null, 'hello, world')
+const element = React.createElement('h1', { class: 'hello' }, 'hello, world')
+const component = React.createElement(App, null, null)
 ```
 
-这也是为什么写JSX代码时必须提前引入React库。
+而`React.createElement`函数的返回值对象被我们称作**虚拟DOM**
 
+``` js
+// element 
+{
+    $$typeof: Symbol(react.element)
+    key: null
+    props: {class: "hello", children: "hello, world!"}
+    ref: null
+    type: "h1"
+    _owner: null
+    _store: {validated: false}
+    _self: null
+    _source: {fileName: "*\src\index.js", lineNumber: 21, columnNumber: 17}
+    __proto__: Object
+}
 
-
-
-
-
-
-##### 组件
-
-组件名必须大写，因为小写会被当成HTML标签，如`<app />`会被编译成`React.createElement('app')`；而`<App />`会被编译成`React.createElement(App)`。
-
-
-
-当通过`setState`操作数据时，又或者`props`改变时（通过浅对比），组件会重新渲染。另外对于非纯组件来说，只要父组件渲染了，子组件也会跟着重新渲染。
-
-
-
-React的组件分为**函数组件**和**class组件**，函数组件没有内部状态和生命周期。
-
-``` javascript
-function Hello(props) {
-    return (
-        <div>
-        	// 函数组件使用props
-            hello world {props.name}
-        </div>
-    )
+// component
+{
+    $$typeof: Symbol(react.element)
+    key: null
+    props: {}
+    ref: null
+    type: class App
+    _owner: null
+    _store: {validated: false}
+    _self: null
+    _source: {fileName: "C:\Users\Messiah\Desktop\workshop\learn-react\src\index.js", lineNumber: 22, columnNumber: 19}
+    __proto__: Object
 }
 ```
 
-``` js
+### 组件
+
+React组件分为**class组件**和**函数组件**，函数组件没有内部状态和生命周期，但是可以使用`Hook`实现类似的效果，我会在后面详细介绍`Hook`，本节将着重介绍类组件。
+
+``` jsx
 class Count extends React.Component {
     state = {
         count: 0
@@ -56,41 +61,65 @@ class Count extends React.Component {
     constructor(props) {
         super(props)
     }
-
     render() {
         return (
             <div>
-                {this.props.name}
-                {this.state.count}
+                name: {this.props.name}
+                count: {this.state.count}
+                <button onClick={this.handleClick}></button>
             </div>
         )
+    }
+    mounted() {
+        
+    }
+	handleClick = () => {
+        console.log(this.state.count)
     }
 }
 ```
 
+``` jsx
+function Hello(props) {
+    return (
+        <div>
+            hello world {props.name}
+        </div>
+    )
+}
+```
 
+像这种形式的组件是**非纯组件**，只要它们的父组件发生了重新渲染，该组件也会进行重新渲染。为了避免额外的开销我们可以声明**纯组件**，**父组件的渲染不会触发纯组件的渲染**。
+
+``` jsx
+class Akara extends React.PureComponent { // 纯类组件
+    // ...
+}
+
+const App = React.memo(() => <div>akara</div>) // 纯函数组件
+```
+
+对于组件来说，当通过`setState`修改数据或`props`改变时（浅对比），组件就会重新渲染。
 
 ##### 状态
 
-在Class组件中通过调用`this.setState`来操作`State`。只有通过该方式操作数据后，组件才会重新渲染。
+在类组件中通过`this.setState`修改数据。
 
-``` javascript
+``` js
 this.setState({name: 'aka'})
 ```
 
-`setState`实际上是把我们提供的对象合并进原本的对象中，调用`setState`之后，**`this.state`的地址实际上改变了**，而不仅仅是修改了内部的值。
-
 ``` jsx
-state = Object.assign(state, { name: 'aka' }) // 相当于
+this.state = Object.assign(this.state, { name: 'aka' }) // 简单地理解
 ```
 
-另外**State的更新通常是异步的**。
+通常状态的更新是**异步**的。
 
 ``` tsx
 this.setState({
-    count: 1 // 初始值为0
+    count: 1 // 假设原始值为0
 })
-console.log(this.state.count) // 输出0
+console.log(this.state.count) // 输出0而不是1
 ```
 
 想要获取修改后的值，我们可以传一个回调函数给`setState`
@@ -113,8 +142,6 @@ this.setState((state, props) => {
 })
 ```
 
-
-
 事实上，在**合成事件**和**组件的生命周期**中`setState`是异步的；而在**原生事件**和**定时器**中`setState`是同步的。
 
 这是因为，React内部维护了一个标识：`isBatchingUpdates`。在**合成事件**和**组件的生命周期**中，该值为`true`，那么`setState`会被缓存进队列，最后才批量更新；而在**原生事件**和**定时器**中，该值为`false`，调用`setState`时会直接同步更新。
@@ -123,17 +150,15 @@ this.setState((state, props) => {
 
 ##### 事件
 
-React使用驼峰式`onClick`来进行事件处理：
+React中的`event`是**合成事件**，我们无需担心任何浏览器的兼容性问题。
 
 ``` jsx
-<button onClick={handleClick}>
+<button onClick={this.handleClick}>
 	aka
 </button>
 ```
 
-React中的`event`是**合成事件**，我们无需担心任何浏览器的兼容性问题。
-
-另外要注意一下Class组件中的`this`问题
+我们有几种方式绑定事件。
 
 ``` tsx
 // 方法一
@@ -162,21 +187,15 @@ class Btn extends React.component {
 }
 ```
 
-
-
-
-
 ##### 生命周期
 
 详细的生命周期可以参考[该链接](http://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/)
 
 
 
-##### 表单
+### Form
 
-React把`input`元素分为**受控组件**和**非受控组件**，受控组件的意思是`input`元素的内部值完全由我们的`state`控制。
-
-比如在`input`中，我们可以使用`value`或`defaultValue`，但不能同时使用这两个。使用前者时为受控组件，使用后者时为非受控组件。
+React把表单元素分为**受控组件**和**非受控组件**，默认的`input`元素被视为非受控组件，此时我们通常会给`defaultValue`属性；当我们给`input`元素加上`value`和`onChange`属性时该元素被视为受控组件，此时`input`元素的内部值完全由我们的状态控制。
 
 ``` jsx
 // 受控组件
@@ -193,9 +212,9 @@ render() {
 
 
 
-##### Refs
+### Ref and forwardRef
 
-现代框架的原则是不直接操作DOM，不过在某些特定情况我们希望打破该原则，比如当我们希望管理输入框的焦点，这个时候我们可以使用`ref`来获取对应的DOM元素。
+使用现代框架的一大特点是基于数据驱动的页面渲染，避免了复杂的DOM操作。有的时候我们就是想使用DOM，此时可以使用`ref`。
 
 ``` javascript
 class App extends React.Component {
@@ -219,15 +238,7 @@ class App extends React.Component {
 }
 ```
 
-正常函数组件不能被分配`refs`，比如以下代码会报错。
-
-``` jsx
-const FancyButton = () => <button>aka</button>
-
-<FancyButton ref={myRef}></FancyButton>
-```
-
-此时可以使用**`forwardRef`**来把`refs`向下传递。
+对于一个`FancyButton`组件，我们或许希望能用`ref`拿到组件内部的元素，此时可以使用**Refs转发**。
 
 ``` jsx
 const FancyButton = React.forwardRef((props, ref) => {
@@ -239,7 +250,7 @@ const FancyButton = React.forwardRef((props, ref) => {
 
 
 
-##### Context
+### Context
 
 Context 设计目的是为了共享那些对于一个组件树而言是“全局”的数据，例如当前认证的用户、主题或首选语言。
 
@@ -284,7 +295,7 @@ class ThemedButton extends React.Component {
 }
 ```
 
-##### Fragment
+### Fragment
 
 ``` jsx
 function App() {
@@ -301,7 +312,9 @@ function App() {
 
 
 
-##### 高阶组件
+### 高阶组件
+
+高阶组件是参数为组件，返回值为新组件的函数。
 
 ``` js
 function App () {
@@ -344,7 +357,7 @@ function withMouse(WrappedComponent) {
 }
 ```
 
-##### Render Props
+### Render Props
 
 ``` js
 function App () {
@@ -387,13 +400,11 @@ function Mouse(props) {
 }
 ```
 
-
-
-### Hook
+## Hook
 
 Hook 是一个特殊的函数，它可以让你“钩入” React 的特性。它可以让你在不编写 class 的情况下使用 state 以及其他的 class组件的特性。
 
-##### useState
+### useState
 
 ``` javascript
 import React, { useState } from 'react'
@@ -410,7 +421,7 @@ function example(props) {
 }
 ```
 
-##### useEffect
+### useEffect
 
 *Effect Hook* 可以让你在函数组件中执行副作用操作
 
@@ -487,7 +498,7 @@ ChatAPI.subscribeToFriendStatus(300, handleStatusChange);     // 运行下一个
 ChatAPI.unsubscribeFromFriendStatus(300, handleStatusChange); // 清除最后一个 effect
 ```
 
-##### useRef
+### useRef
 
 ``` javascript
 import React, { useRef } from 'react'
@@ -500,7 +511,7 @@ function App(props) {
 }
 ```
 
-##### useReducer
+### useReducer
 
 简化版本如下
 
@@ -544,7 +555,7 @@ function todosReducer(state, action) {
 }
 ```
 
-##### useImperativeHandle
+### useImperativeHandle
 
 这个Hook通常和`forwardRef`一起使用，二者的搭配常见于各类组件库当中。
 
@@ -576,7 +587,7 @@ const FancyButton = React.forwardRef((props, ref) => (
 ));
 ```
 
-##### useMemo 与 useCallback
+### useMemo 与 useCallback
 
 Vue和React有一个比较明显的差异。
 
@@ -725,7 +736,7 @@ const cb = useMemo(() => {
 
 
 
-##### 其他Hook
+### 其他Hook
 
 如react-redux提供的`useSelector`，`useDispatch`等
 
@@ -733,7 +744,7 @@ const cb = useMemo(() => {
 
 
 
-##### Hook的闭包陷阱
+### Hook的闭包陷阱
 
 在学习Hook的过程中，我们可能会听到这样的名词：“闭包陷阱”。那么什么是闭包陷阱呢，我们可以看一下以下两个代码的例子。
 
@@ -877,9 +888,9 @@ message.info(`Current count is ${count}`);
 
 
 
-### 底层原理
+## 底层原理
 
-##### Fiber架构
+### Fiber架构
 
 React在它的V16版本推出了Fiber架构，在弄清楚什么是Fiber之前，我们应该先了解为什么需要Fiber。
 
@@ -899,7 +910,7 @@ React在它的V16版本推出了Fiber架构，在弄清楚什么是Fiber之前�
 
 举个例子。由于componentWillMount已经要被React废弃了，所以在以上链接中的图谱没有被标出来，它其实也是属于"Render/Reconciliation phase"的。那么当一个组件即将挂载时，就会调用这个生命周期钩子，假如在这之后我们就碰到了优先级更高的任务，那么原本的任务就会被废弃，并在之后被重新调用。导致的结果就是componentWillMount被调用了两次，这是一个值得注意的点。
 
-##### Diff策略
+### Diff策略
 
 [参考](https://zhuanlan.zhihu.com/p/20346379)
 
@@ -923,7 +934,7 @@ React在它的V16版本推出了Fiber架构，在弄清楚什么是Fiber之前�
 
 
 
-### 服务端渲染(SSR)
+## 服务端渲染(SSR)
 
 [完整代码例子](https://github.com/Messiahhh/react-ssr-demo)
 
@@ -961,7 +972,7 @@ import { hydrate } from 'react-dom'
 hydrate(<App />, document.querySelector('#root'))
 ```
 
-##### 同构
+### 同构
 
 所谓同构，指的是一份代码可以分别在前端和后端运行。
 
@@ -969,7 +980,7 @@ hydrate(<App />, document.querySelector('#root'))
 
 
 
-##### 服务端加载数据
+### 服务端加载数据
 
 通常使用服务端渲染都会用到`react-router-dom`和`redux` ，要注意后端需要使用`StaticRouter`而不是`BrowserRouter`
 
@@ -1079,7 +1090,7 @@ hydrate(
 )
 ```
 
-##### 服务端加载CSS
+### 服务端加载CSS
 
 在`App`组件中需要使用`import 'index.css'`来加载样式，通过`style-loader`来调用`document.createElement('style')`创建标签，又因为Node环境中并不存在`document`变量，所以这种思路是行不通的。
 
@@ -1167,7 +1178,7 @@ ReactDOM.hydrate(
 
 
 
-##### Next.js
+### Next.js
 
 `next.js`是一个React的服务端渲染框架，它有以下特点：
 
@@ -1180,9 +1191,9 @@ ReactDOM.hydrate(
 
 
 
-### create-react-app
+## Create-React-App
 
-##### 环境变量
+### 环境变量
 
 通常项目都会存在测试环境和正式环境，不同环境下接口请求的路径也是不同的。而`CRA`提供了`process.env`让我们在前端读取环境变量，从而可以根据环境的不同设置不同的接口参数。
 
@@ -1209,7 +1220,7 @@ ReactDOM.hydrate(
 
 
 
-##### rewired
+### rewired
 
 使用`create-react-app`创建的项目，其`webpack`配置等信息对我们是不可见的，也是不可直接修改的。
 
