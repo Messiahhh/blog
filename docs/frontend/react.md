@@ -3,6 +3,8 @@ sidebarDepth: 4
 ---
 # React
 
+## 基础
+
 ### JSX
 
 ``` jsx
@@ -312,11 +314,12 @@ function App() {
 
 
 
-### 高阶组件
+### HOC
 
-高阶组件是参数为组件，返回值为新组件的函数。
+高阶组件（HOC）是参数为组件，返回值为新组件的函数。
 
 ``` js
+// 官网例子
 function App () {
     const MouseWithCat = withMouse(Cat)
     return (
@@ -360,6 +363,7 @@ function withMouse(WrappedComponent) {
 ### Render Props
 
 ``` js
+// 官网例子
 function App () {
     return (
         <Mouse render={point =>
@@ -400,11 +404,23 @@ function Mouse(props) {
 }
 ```
 
+### Error Boundary
+
+> Todo
+
+
+
+### Portals
+
+> Todo
+
 ## Hook
 
 Hook 是一个特殊的函数，它可以让你“钩入” React 的特性。它可以让你在不编写 class 的情况下使用 state 以及其他的 class组件的特性。
 
 ### useState
+
+在函数组件中引入状态。
 
 ``` javascript
 import React, { useState } from 'react'
@@ -423,7 +439,7 @@ function example(props) {
 
 ### useEffect
 
-*Effect Hook* 可以让你在函数组件中执行副作用操作
+在函数组件中执行副作用操作，可用于模拟`mounted`、`updated`生命周期钩子。
 
 ``` javascript
 import React, {
@@ -449,7 +465,11 @@ function App() {
 }
 ```
 
-`useEffect` 会在每次渲染后都执行，包括初次渲染和每次数据更新之后。
+``` jsx
+useEffetc(() => {}, []) // 只在挂载时执行
+useEffect(() => {}, [count]) // 只在挂载和count改变时执行
+useEffect(() => {}) // 在挂载和数据更新时执行
+```
 
 `useEffect`可以返回一个函数来清除副作用
 
@@ -464,11 +484,7 @@ useEffect(() => {
 })
 ```
 
-组件挂载时，运行副作用（effect）。
-
-组件更新时，先清除上一个effect，再运行下一个effect
-
-组件卸载时，清除最后一个effect
+组件挂载时，运行副作用（effect）；组件更新时，先清除上一个effect，再运行下一个effect；组件卸载时，清除最后一个effect
 
 ``` javascript
 function FriendStatus(props) {
@@ -500,6 +516,8 @@ ChatAPI.unsubscribeFromFriendStatus(300, handleStatusChange); // 清除最后一
 
 ### useRef
 
+在函数组件中引入`ref`
+
 ``` javascript
 import React, { useRef } from 'react'
 
@@ -513,24 +531,9 @@ function App(props) {
 
 ### useReducer
 
-简化版本如下
+在函数组件中引入状态，类似`useState`但我们不是直接修改数据，而是通过`dispatch(action)`的形式修改数据。
 
-```js
-function useReducer(reducer, initialState) {
-  const [state, setState] = useState(initialState);
-
-  function dispatch(action) {
-    const nextState = reducer(state, action);
-    setState(nextState);
-  }
-
-  return [state, dispatch];
-}
-```
-
-我们可以这样使用
-
-``` js
+``` jsx
 function Todos() {
   const [todos, dispatch] = useReducer(todosReducer, []);
 
@@ -552,6 +555,21 @@ function todosReducer(state, action) {
     default:
       return state;
   }
+}
+```
+
+`useReducer`的简单实现版本如下
+
+```js
+function useReducer(reducer, initialState) {
+  const [state, setState] = useState(initialState);
+
+  function dispatch(action) {
+    const nextState = reducer(state, action);
+    setState(nextState);
+  }
+
+  return [state, dispatch];
 }
 ```
 
@@ -888,7 +906,7 @@ message.info(`Current count is ${count}`);
 
 
 
-## 底层原理
+## 原理
 
 ### Fiber架构
 
