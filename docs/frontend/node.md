@@ -348,7 +348,7 @@ const test = require('my-module') // ./index.js
 const test2 = require('my-module/test') // ./src/test.js
 ```
 
-需要特别注意的是，使用`exports`字段时，模块子路径的文件不能被导入了。
+需要特别注意的是，使用`exports`字段时，`files`字段的作用就会失效。
 
 ``` js
 import test from 'my-module/main.js' // 报错
