@@ -267,6 +267,16 @@ npm run test
 
 
 
+##### type
+
+`.cjs`文件会被视为`CommonJS`模块，`.mjs`会被视为`es`模块，`.js`则会根据`package.json`的`type`字段视为不同的模块。
+
+默认情况`package.json`不包括`type`字段，`.js`文件被视为`CommonJS`模块，我们能够使用`require`而不能使用`import`。
+
+当我们加上`type: module`，则`.js`文件会被视为`es`模块，我们能够使用`import`语法。
+
+
+
 ##### files
 
 `files`字段用来规定模块的哪些文件能够被外部下载引入，默认值为`[*]`，即模块的所有文件都能被外部下载引用。
@@ -282,7 +292,7 @@ const test = require('my-module/public/test')
 import 'antd/dist/antd.css'
 ```
 
-我们能够通过修改`files`字段来限制模块能够被下载的文件，不过需要注意的是模块以下文件永远都会被外部下载`package.json`、`README`、`CHANGE / CHANGELOG / HISTORY 	`、`LICENSE / LICENCE`、`NOTICE`、`main`字段指向的文件。
+我们能够通过修改`files`字段来限制模块能够被下载的文件，不过需要注意的是以下文件永远都会被外部下载：`package.json`、`README`、`CHANGE / CHANGELOG / HISTORY 	`、`LICENSE / LICENCE`、`NOTICE`、`main`字段指向的文件。
 
 
 
@@ -298,25 +308,11 @@ const test = require('my-module') // 引入my-module模块的根目录的index.j
 
 ##### browser | module
 
-许多模块的`package.json`中除了`main`字段可能还存在`browser`和`module`字段，这是由于模块可能被使用在不同的环境下（浏览器环境或`node`环境），此时`browser`和`module`指向了不同的构建后文件。
+一般`browser`字段指向`cjs`或`umd`模块，`module`字段指向`es`模块，大多数情况下这两个字段都没什么用处。
 
-具体的情况要稍微复杂一些，[参考](https://github.com/SunshowerC/blog/issues/8)。
+在某些情况下，特别是使用`webpack`打包模块时，当`webpack`配置的`target`为`web`（默认值），会根据模块的`browser`字段导入模块；通过设置`target`为`node`，会根据`module`字段导入模块。
 
-``` json
-{
-    "main": "./main.js",
-    "browser": "./browser.js",
-    "module": "./module.js"
-}
-```
-
-
-
-如果我们只是简单的使用模块，会根据`main`字段进行导入。
-
-而如果我们使用`webpack`作为项目的构建工具，此时会根据`webpack.config.js#target`设置从哪个入口导入模块。`target`默认值为`web`，即根据`browser`导入模块；通过设置`target`为`node`，会根据`module`导入模块。
-
-另外，当`package.json`不存在对应的入口字段，会根据`browser -> module -> main`的优先级导入模块。这个优先级是根据`webpack.config.js#resolve.mainFields`字段指定的，我们可以通过修改该字段来调整优先级：
+另外，当`package.json`不存在对应的入口字段，会根据`browser -> module -> main`的优先级导入模块。这个优先级是根据配置`resolve.mainFields`字段指定的，我们可以通过修改该字段来调整优先级：
 
 ``` js
 // webpack.config.js
@@ -327,6 +323,12 @@ module.exports = {
     }
 }
 ```
+
+
+
+
+
+
 
 
 
@@ -1117,7 +1119,7 @@ let data = await conn.queryAsync(`sql code here...`)
 
 
 
-## PM2库
+## PM2
 
 除了常见的`pm2 start index.js`，我们也可以使用配置文件。
 
@@ -1167,59 +1169,132 @@ pm2 monit
 
 ## 命令行工具
 
-本节介绍如何使用node写命令行工具。
+介绍常用的命令行工具
+
+##### chalk
+
+给日志输出加上颜色。
+
+``` js
+import chalk from 'chalk'
+console.log(chalk.blue('akara'))  // 蓝色字体
+console.log(chalk.blue.bgRed('akara')) // 蓝色字体，红色背景
+```
 
 
 
-平时我们通常是使用`node index.js`去执行js代码。
+##### yargs
 
-如果我们在文件的开头加上`#!/usr/bin/env node`则可以指定代码默认的运行环境，如下代码:
+提供了对命令行参数的解析功能，并且默认提供了`--help`、`--version`选项。
 
 ``` js
 #!/usr/bin/env node
-console.log('hello')
+const yargs = require("yargs/yargs");
+const { hideBin } = require("yargs/helpers");
+const http = require("http");
+
+yargs(hideBin(process.argv)) // hideBin(process.argv) 相当于 process.argv.slice(2)
+    .command( 
+        "serve [port]", // [port]为可选参数
+        "启动服务器",
+        { // 设置命令参数的别名、默认值等信息
+            port: {
+                alias: "p",
+                default: 3000,
+            },
+        },
+        (argv) => {
+            http.createServer((req, res) => {}).listen(argv.port, () => {
+                console.log(`服务器运行在${argv.port}端口`);
+            });
+        }
+    )
+    .command("curl <url>", "发送请求", {}, (argv) => { // <url>为必须参数
+        if (argv.verbose) console.log('已经开启verbose')
+        console.log(argv.url);
+    })
+    .option('verbose', {
+      alias: 'v',
+      type: 'boolean',
+      description: 'Run with verbose logging'
+    })
+    .argv;
 ```
 
-我们现在可以使用`./index.js`去执行该文件，默认的运行环境就是node。
-
-
-
-再进一步，我们在`package.json`中加上几行字段，如下:
-
-``` json
-"bin": {
-    "mycli": "index.js"
-},
+``` bash
+cli --help
+cli --version
+cli serve 8000 # cli serve -p 8000 | cli serve --port=8000
+cli curl 'google.com' -v
 ```
-
-之后在当前目录下执行`npm link`，执行完之后我们就可以通过`mycli`命令来执行代码。
-
-
-
-在此基础上，介绍一些常用的库。
 
 ##### commander
 
+和`yargs`作用差不多，可以选择其中一个来开发自己的命令行工具。
+
 ``` js
-// index.js
+#!/usr/bin/env node
 const { program } = require('commander')
-// 或者
-// const { Commander } = require('commander')
-// const program = new Commander()
+
 program
     .version('1.0.0')
-    .description('命令行工具')
-    .option('-t, --test', '测试命令');
-program.parse(process.argv)
+    .description('cli tool')
+    .option('--verbose', 'use verbose') // 布尔值
+    .option('-u, --url <url>', 'url参数') // 必须参数
+    .option('-p, --port [port]', 'port参数', 3000) // 可选参数，可设置默认值
+    .parse(process.argv)
 
-if (program.test) {
-    console.log('测试成功')
-}
-
-// bash
-$mycli -test 
-测试成功
+console.log(program.opts());
 ```
+
+##### inquirer
+
+非常有用的命令行工具，常见于各种脚手架中。
+
+``` js
+#!/usr/bin/env node
+const inquirer = require('inquirer')
+const questions = [
+    {
+        type: 'confirm',
+        name: 'isPeople',
+        message: '你是人吗?',
+        default: false
+    },
+    {
+        type: 'input',
+        name: 'name',
+        message: '请输入你的名字',
+    },
+    {
+        type: 'input',
+        name: 'phone',
+        message: '请输入你的电话号码',
+        validate(value) {
+            const pass = value.match(/^1[34578]\d{9}$/g)
+            if (pass) return true
+            return '请输入正确的电话号码'
+        }
+    },
+    {
+        type: 'list',
+        name: 'sex',
+        message: '请选择你的性别',
+        choices: ['Male', 'Female', 'None'],
+        filter(val) {
+            return val.toLowerCase();
+        },
+
+    }
+]
+inquirer
+    .prompt(questions)
+    .then(answers => {
+        console.log(JSON.stringify(answers, null, ' '));
+    })
+```
+
+
 
 
 
@@ -1241,8 +1316,6 @@ rl.question('你好', (answer) => {
     rl.close()
 })
 ```
-
-
 
 ``` js
 // 官网代码
@@ -1266,8 +1339,6 @@ async function processLineByLine() {
 
 processLineByLine();
 ```
-
-
 
 ##### puppeteer
 
