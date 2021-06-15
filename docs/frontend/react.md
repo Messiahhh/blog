@@ -258,19 +258,14 @@ const FancyButton = React.forwardRef((props, ref) => {
 
 Context 设计目的是为了共享那些对于一个组件树而言是“全局”的数据，例如当前认证的用户、主题或首选语言。
 
-> 借用官方代码说明，偷个懒。
->
+##### 类组件
 
 ``` javascript
-// Context 可以让我们无须明确地传遍每一个组件，就能将值深入传递进组件树。
-// 为当前的 theme 创建一个 context（“light”为默认值）。
+// 官网例子
 const ThemeContext = React.createContext('light');
 
 class App extends React.Component {
   render() {
-    // 使用一个 Provider 来将当前的 theme 传递给以下的组件树。
-    // 无论多深，任何组件都能读取这个值。
-    // 在这个例子中，我们将 “dark” 作为当前的值传递下去。
     return (
       <ThemeContext.Provider value="dark">
         <Toolbar />
@@ -279,7 +274,6 @@ class App extends React.Component {
   }
 }
 
-// 中间的组件再也不必指明往下传递 theme 了。
 function Toolbar(props) {
   return (
     <div>
@@ -289,15 +283,41 @@ function Toolbar(props) {
 }
 
 class ThemedButton extends React.Component {
-  // 指定 contextType 读取当前的 theme context。
-  // React 会往上找到最近的 theme Provider，然后使用它的值。
-  // 在这个例子中，当前的 theme 值为 “dark”。
   static contextType = ThemeContext;
   render() {
     return <Button theme={this.context} />;
   }
 }
 ```
+
+##### 函数式组件
+
+``` js
+const ThemeContext = React.createContext("akara");
+export const MyProvider = ThemeContext.Provider;
+
+export function useMyContext() {
+    const context = useContext(ThemeContext);
+    return context;
+}
+
+const App = () => {
+    return (
+        <div>
+            <MyProvider value="bkara">
+                <Test />
+            </MyProvider>
+        </div>
+    );
+};
+
+const Test = () => {
+    const context = useMyContext();
+    return <div>{context}</div>;
+};
+```
+
+
 
 ### Fragment
 
@@ -677,17 +697,9 @@ function Father () {
 
 > `useCallback(fn, deps)` 相当于 `useMemo(() => fn, deps)`
 
+### Hook闭包陷阱
 
-
-### 其他Hook
-
-如react-redux提供的`useSelector`，`useDispatch`等
-
-如react-router提供的`useParams`, `useRouteMatch`,  `useLocation`等
-
-### Hook的闭包陷阱
-
-在学习Hook的过程中，我们可能会听到这样的名词：“闭包陷阱”。那么什么是闭包陷阱呢，我们可以看一下以下两个代码的例子。
+在学习Hook的过程中，我们可能会听到这样的名词：“闭包陷阱”。那么什么是闭包陷阱呢，我们可以看一下以下几个代码的例子。
 
 ``` js
 // 测试代码1
@@ -718,6 +730,25 @@ export default function Test2() {
             {count}
             <button onClick={() => setCount(100)}>点我</button>
             <button onClick={fn}>输出</button> // 输出的是0而不是100
+        </div>
+    )
+}
+
+// 测试代码3
+export default const Test3 = () => {
+    const [count, setCount] = useState(0)
+    useEffect(() => {
+        store.subscribe(() => {
+            setCount(count + 1)
+            // setCount(count => count + 1)
+        })
+    }, [])    
+    return (
+        <div>
+            { store.getState()}
+            { count }
+            <button onClick={() => { store.dispatch({type: 'asc', payload: 1})}}>点我</button>
+            <button onClick={() => {alert(store.getState())}}>store值</button>
         </div>
     )
 }
