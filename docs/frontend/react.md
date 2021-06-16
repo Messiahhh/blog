@@ -261,33 +261,30 @@ Context 设计目的是为了共享那些对于一个组件树而言是“全局
 ##### 类组件
 
 ``` javascript
-// 官网例子
-const ThemeContext = React.createContext('light');
+const ThemeContext = React.createContext("akara");
+export const MyProvider = ThemeContext.Provider;
 
-class App extends React.Component {
-  render() {
+const App = () => {
     return (
-      <ThemeContext.Provider value="dark">
-        <Toolbar />
-      </ThemeContext.Provider>
+        <div>
+            <Test />
+        </div>
     );
-  }
+};
+
+class Test extends React.Component {
+    static contextType = ThemeContext
+    render() {
+        return <div>{this.context}</div>
+    }
 }
 
-function Toolbar(props) {
-  return (
-    <div>
-      <ThemedButton />
-    </div>
-  );
-}
-
-class ThemedButton extends React.Component {
-  static contextType = ThemeContext;
-  render() {
-    return <Button theme={this.context} />;
-  }
-}
+ReactDOM.render(
+    <MyProvider value="dark">
+        <App />
+    </MyProvider>,
+    document.querySelector("#root")
+);
 ```
 
 ##### 函数式组件
@@ -317,8 +314,6 @@ const Test = () => {
 };
 ```
 
-
-
 ### Fragment
 
 ``` jsx
@@ -336,9 +331,9 @@ function App() {
 
 
 
-### HOC
+### Hight-Order Components
 
-高阶组件（HOC）是参数为组件，返回值为新组件的函数。
+高阶组件是参数为组件，返回值为新组件的函数。
 
 ``` js
 // 官网例子
@@ -428,13 +423,83 @@ function Mouse(props) {
 
 ### Error Boundary
 
-> Todo
+当某个组件抛出异常时，开发模式下能在页面看到错误信息，而生产模式下整个页面都白屏了。**在生产模式下**为了避免某个组件的错误让整个应用都塌陷，我们可以使用`Error Boundary`组件来捕捉和打印组件内部的异常信息，并提供页面的降级处理。
 
+一个类组件被视为错误边界组件的前提是我们给该组件定义了`static getDerivedStateFromError() `或`componentDidCatch()`，通常我们会同时提供这两个方法。`static getDerivedStateFromError() `的作用是当出现异常时提供降级UI，`componentDidCatch()`内部通常用来打印错误日志。
 
+``` js
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props)
+        this.state = { 
+            hasError: false 
+        }
+    }
+
+    static getDerivedStateFromError(error) {
+        return {
+            hasError: true
+        }
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.log(error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return <div>i'm fallback UI</div>
+        }
+        return this.props.children
+    }
+}
+
+const App = () => {
+    const [count, setCount] = useState(0)
+    const handleClick = useCallback(() => {
+        setCount(count + 1)
+    }, [count])
+
+    if (count >= 5) {
+        throw new Error('i crashed!')
+    }
+    return (
+        <>
+            {count}
+            <div onClick={handleClick}>点击</div>
+        </>
+    );
+};
+
+ReactDOM.render(
+    <ErrorBoundary>
+        <App />
+    </ErrorBoundary>,
+    document.querySelector("#root")
+);
+```
 
 ### Portals
 
-> Todo
+``` js
+const App = () => {
+    return (
+        <>
+            <div>hello akara</div>
+            <Modal>
+                <div>i'm modal</div>
+            </Modal>
+        </>
+    );
+};
+
+const Modal = (props) => {
+    return ReactDOM.createPortal(
+        props.children,
+        document.querySelector('body')
+    )
+}
+```
 
 ## Hook
 

@@ -745,7 +745,6 @@ const fs = require('fs')
 ``` javascript
 fs.readFile('./image.png', (err, buffer) => {
     if (err) throw err
-
 })
 ```
 
@@ -810,15 +809,9 @@ const path3 = path.join(__dirname, '..', 'b')
 
 ##### `process.cwd()`
 
-获得执行脚本时所处的**绝对路径**。
+获得执行脚本时所处的绝对路径。当我们使用`fs.readFile`等函数并传入`./index.html`形式的相对路径时，相对路径实际上是相对于执行脚本时所在的目录路径，也就是相对于`process.cwd()`。
 
-
-
-###### 相对路径
-
-之前我们有介绍过`fs.readFile`和`path.resolve`，通常我们会传入类似`./index.html`形式的相对路径，这个路径自然是相对于执行脚本时所在的目录路径，也就是相对于`process.cwd()`。
-
-所以当我们给这些方法传入相对路径时，根据执行脚本时所处的路径不同，结果可能有很大的差异。所以很多使用我们会传入绝对路径，比如搭配`__dirname`传入参数：
+因此根据执行脚本时所处路径的不同，结果也可能有很大的差异，所以很多时候我们会传入绝对路径，如
 
 ``` js
 fs.readFile(`${__dirname}/../index.html`)
@@ -842,6 +835,8 @@ $node index.js abc
 
 
 
+
+
 ##### `process.stdout`
 
 标准输出流
@@ -861,6 +856,65 @@ process.stdin.on('data', (chunk) => {
     process.stdout.write('Hello' + chunk)
     process.exit()
 })
+```
+
+
+
+## 环境变量
+
+##### `process.env`
+
+在`Node`中可以通过`process.env`拿到环境变量，从而根据不同的环境执行不同的代码。
+
+
+
+##### cross-env
+
+通常不同系统设置环境变量的方式不同，为此可以使用第三方库`cross-env`来设置环境变量。
+
+``` json
+// package.json
+{
+    "script": {
+        "start": "cross-env NODE_ENV=development node app.js"
+    }
+}
+```
+
+##### dotenv
+
+除了在命令行中设置环境变量，我们也可以使用单独的文件`.env`来保存环境变量，并搭配`dotenv`库来读取`.env`文件中的环境变量。
+
+``` .env
+NODE_ENV=development
+name=aka
+```
+
+``` js
+// app.js
+const dotenv = require('dotenv')
+dotenv.config() // 读取.env文件中的信息
+
+console.log(process.env.NODE_ENV)
+```
+
+或者我们可以写一个`config.js`
+
+``` js
+// config.js
+const dotenv = require('dotenv')
+dotenv.config()
+
+module.exports = {
+    NODE_ENV: process.env.NODE_ENV,
+    name: process.env.name
+}
+```
+
+``` js
+// app.js
+const { NODE_ENV, name } = require('./config.js')
+console.log(NODE_ENV, name)
 ```
 
 ## util模块
