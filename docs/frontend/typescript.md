@@ -127,7 +127,9 @@ function liveDangerously(x?: number | undefined) {
 
 
 
-### 基本类型
+### 类型系统
+
+##### 基本类型
 
 ``` tsx
 let success : boolean = true // 布尔值
@@ -143,11 +145,11 @@ value = null
 
 ##### 数组
 
-TS中数组只可以储存一种数据类型，并且数组长度可变。
+TS中数组只可以储存一种数据类型，数组长度可变。
 
 ``` tsx
 let arr: number[] = [1, 2, 3]
-let arr: Array[number] = [1, 2, 3]
+let arr: Array<number> = [1, 2, 3]
 ```
 
 ##### 元组

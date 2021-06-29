@@ -239,21 +239,33 @@ npx myapp
 
 ##### script
 
+`npm`除了`npm ci`、`npm install`等内置脚本，还包括`hook script`（`pre/post script）`和`lifecycle script`。
+
+###### pre/post script
+
+对于一个脚本我们可能想要在其执行之前或之后执行某些操作，此时可以使用`pre`或`post`前缀。
+
 ``` json
 {
     "script": {
-        "start": "xxx",
-        "dev": "xxx"
+        "test": "echo \"i'm test\"",
+        "pretest": "echo \"在test脚本执行前执行\"",
+        "posttest": "echo \"在test脚本执行后执行\""
     }
 }
 ```
 
-``` bash
-npm run start # npm start
-npm run test
+###### lifecycle script
+
+`npm`存在一些会在特定场景触发的脚本，比如`prepare`脚本会在执行`npm install`前执行。
+
+``` json
+{
+    "script": {
+        "prepare": "echo \"hello akara\""
+    }
+}
 ```
-
-
 
 ##### dependencies
 
@@ -466,11 +478,9 @@ import test from 'my-module/main.js' // 报错
 
 ##### 模块发布
 
-在使用`npm login`登陆自己的NPM账号之后，我们可以在项目目录使用`npm publish`发布模块，使用`npm unpublish --force`来删除发布的模块，需要注意的时NPM的镜像源需要是官方镜像`npm config set registry https://registry.npmjs.org`
+在使用`npm login`登陆自己的NPM账号之后，我们可以在项目目录使用`npm publish`发布模块，使用`npm unpublish --force`来删除发布的模块，需要注意的是NPM的镜像源需要是官方镜像`npm config set registry https://registry.npmjs.org`
 
-NPM的模块分为公共模块和私有模块，发布私有模块是需要付费的。除此之外NPM的模块还存在形如`@akara/my-package`这样子的，属于用户作用域的模块。
-
-想要发布这样的模块，首先需要确保模块的名字形如`@akara/my-package`，并且由于这种模块默认是私有的，为了不花钱我们需要使用`npm publish --access public`来发布公共的作用域模块。
+NPM的模块分为公共模块和私有模块，发布私有模块是需要付费的。除此之外NPM的模块还存在形如`@akara/my-package`这样子的，属于用户作用域的模块，如果想要发布这样的模块，首先需要确保模块的名字形如`@akara/my-package`，并且由于这种模块默认是私有的，为了不花钱我们需要使用`npm publish --access public`来发布公共的作用域模块。
 
 
 
