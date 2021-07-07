@@ -1750,7 +1750,7 @@ nest new my-project
 ```
 
 ``` tsx
-// main.js
+// main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
@@ -1762,7 +1762,7 @@ bootstrap();
 ```
 
 ``` js
-// app.module.js
+// app.module.ts
 import { Module } from '@nestjs/common';
 import { AppController, MyController } from './app.controller';
 import { AppService } from './app.service';
@@ -1780,11 +1780,12 @@ export class AppModule {}
 我们可以通过编写`controller`来实现后端路由。
 
 ``` js
+// app.controller.ts
 import { Controller, Get, Post, Req, Res, Body, Param, Query, Headers, Header, HttpCode } from '@nestjs/common';
 import { Request } from 'express'
 
-class DTO { // 数据传输对象
-  value: 'akara'
+export class DTO { // 数据传输对象
+  value: string
 }
 
 @Controller()
@@ -1857,6 +1858,49 @@ export class MyController {
 ```
 
 ##### Service
+
+我们使用`Controller`来进行路由控制，具体的数据操作或逻辑操作由`Service`（`Service`是一种`Provider`）负责。
+
+首先创建`Service`类，并在`app.module.ts`中声明该`Service`为`Provider`，然后`Controller`的构造函数添加一个入参（为`Service`类的实例）。
+
+``` ts
+// app.service.ts
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class AppService {
+  private name: string = 'akara'
+
+  getName(): string {
+    return this.name
+  }
+
+  setName(name: string): void {
+    this.name = name
+  }
+}
+```
+
+``` ts
+// app.controller.ts
+import { Controller, Get} from '@nestjs/common';
+import { AppService } from './app.service';
+
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get('/get/service')
+  async testGetService() {
+    return this.appService.getName()
+  }
+
+  @Get('/set/service')
+  async testSetService() {
+    return this.appService.setName('bkb')
+  }
+}
+```
 
 
 
