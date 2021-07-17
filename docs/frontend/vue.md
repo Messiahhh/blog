@@ -298,13 +298,17 @@ router.push({ name: 'user', params: { userId: '123' }})
 router.push({ path: 'register', query: { plan: 'private' }})
 ```
 
-##### Hash模式和History模式
+##### 原理
 
-Hash模式的Url结构类似：`https://example.com/#user/akara`
+使用Vue能够让我们快速搭建单页应用，一次性拿到完整的页面，之后可以借助Vue-Router来根据不同路由渲染不同的组件。
 
-History模式的Url结构类似：`https://example.com/user/akara`
+Vue-Router有两种模式，`Hash`模式和`History`模式，其中`Hash`模式的Url结构类似：`https://example.com/#user/akara`；`History`模式的Url结构类似：`https://example.com/user/akara`。
 
-无论哪种模式，本质都是使用的`history.pushState`，每次pushState后，会在浏览器的浏览记录中添加一个新的记录，但是并**不会触发页面刷新**，也**不会请求新的数据**。
+对于`Hash`模式而言，我们用`a`标签即可轻松实现路径的切换，并且单纯**改变哈希值不会触发页面的刷新**，也就不存在任何的副作用。接下来我们只需要使用`onhashchange`**监听哈希的变化**，从而实现组件的切换即可。
+
+对于`History`模式而言，我们不能使用`a`标签的原生行为来实现路径的切换，这样会导致页面的刷新。所以我们会手动阻止`a`标签的默认行为，当点击时使用`history.pushState`方法给浏览器的浏览记录中添加一个新的记录，同时**手动执行组件的更新**。但这还不算完，如果此时用户点击浏览器的回退或前进按钮，我们就会**重新发请求导致页面的刷新**，为了避免这样的行为我们会监听浏览器的`popstate`事件（用户点击回退或前进按钮会触发`popstate`事件），并在该事件的回调函数中手动执行组件的更新。
+
+
 
 ```js
 // 使用history模式
@@ -316,7 +320,7 @@ const router = new VueRouter({
 
 不过使用History模式需要后端进行配置，如果不配置，当用户访问 `https://example.com/user/akara`的时候会返回404。所以我们需要设置当URL匹配不到任何资源的时候，同返回同一个`index.html`。
 
-##### 导航卫士
+
 
 
 

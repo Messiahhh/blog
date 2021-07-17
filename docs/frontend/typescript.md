@@ -378,7 +378,34 @@ let obj = {
 
 ##### 重载
 
-> Todo
+假设对于函数A存在参数a、b，我们希望`a`为字符串时`b`为数字，`a`为数字时`b`为字符串，如果单纯使用联合类型就可能出现`a`为数字时`b`也为数字。
+
+``` ts
+function A<T extends string | number>(a: T, b: T): T | undefined {
+    if (a === '1') return b
+    if (a === 1) return b
+    return
+}
+
+A(1, 1) // 没报错，我们不希望这种情况
+```
+
+通常这种情况我们可以使用函数重载。
+
+``` ts
+function A(a: string, b: number): number;
+function A(a: number, b: string): string;
+function A<T extends string | number>(a: T, b: T): T | undefined {
+    if (a === '1') return b
+    if (a === 1) return b
+    return
+}
+
+A(1, '1') // ok
+A(1, 1) // 报错
+```
+
+
 
 ### 对象类型
 
