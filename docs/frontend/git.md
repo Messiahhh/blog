@@ -193,3 +193,9 @@ git cat-file -t 58c9
 git cat-file -p 58c9 # 58c9为想找的object的值
 ```
 
+### 其他
+
+##### .gitkeep
+
+`git`通常无法追踪空文件夹，如果我们追踪空文件夹，可以在该文件夹下新建一个空的`.gitkeep`文件。
+
