@@ -9,6 +9,8 @@ sidebarDepth: 4
 git init # 初始化git仓库
 git add . # 工作目录内容添加进索引区域
 git commit -m '' # 生成新的commit，commit对应某个时刻的内容
+git commit --amend # 可用来重写commit的message，也可以用来当作commit的压缩手段
+git commit --amend --reset-author # 可用来重写commit的作者
 git push origin main # 推送分支  
 git push origin test --delete # 删除远程分支
 
