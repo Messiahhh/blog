@@ -1167,42 +1167,137 @@ type Range = [start: number, end: number];
 
 
 
-### tsconfig.json
-
-很多项目的根目录下都存在`tsconfig.json`文件，也就是`TypeScript`的配置文件，当我们使用`tsc`命令来编译代码的时候，会向上层目录中寻找该配置文件。
-
-需要注意的一点是，当我们使用`tsc index.tsx`来直接指定待编译文件时，`tsconfig.json`的配置并不会生效。因此我们大多数时候都是直接在`tsconfig.json`中指定编译的输入与输出，比如使用`files/include/exclude`等参数。
-
-另外，即使`tsconfig.json`为空，只要存在就拥有对应的默认参数。
 
 
+### 声明文件
 
-当我们在ts项目引用一个外部的js库时，需要拥有该文件对应的声明，通常可以使用`npm i @types/xxx`，或者是项目中存在对应的声明文件（xx.d.ts）
+当我们编写`a.ts`文件时，因为`TypeScript`存在着变量上下文和类型上下文，我们在`b.ts`文件中可以享受到到`a.ts`所提供的**变量类型提示**，以及各种**类型或接口**。
 
-``` tsx
-// xx.d.ts
-// 一种普通的场景
-declare module 'module-name' {
-    export function methodA(): void
+而当我们使用第三方库的时候，由于目前大多数库提供的都是`TypeScript`源码编译打包而来的`JavaScript`产物，我们项目中引入的`JS`文件已经不存在类型系统了，而我们实际上还是希望能够得到对应的**变量类型提示**（至少我们想要清楚地知道库包括了哪些方法和属性）、以及库所提供的类型，为了实现这个目的我们需要引入库所对应的声明文件（`xxx.d.ts`）。
+
+目前主流库有两种方案来处理声明文件。第一种方案是将声明文件也一起放在模块内部，比如`chalk`库就同时提供了`index.js`和`index.d.ts`（通过`package.json`的`main`字段指定入口文件，`types`字段指定声明文件的位置），这种方案的特点是我们必须显式引入这个库，才能使用库提供的声明文件所带来的变量类型提示；另一种方案是将声明文件作为一个独立的模块发布在`@types`模块作用域下，比如`@types/react`和`@types/node`。
+
+> 有的库比如`mockjs`模块内部没有声明文件，当我们`import mockjs from 'mockjs'`会提示找不到`mockjs`，这时候就得乖乖去安装一个`@types/mockjs`
+
+除了使用库所提供的声明文件，我们也可以自己在项目中创建声明文件（`.ts`和`.d.ts`文件都需要被`files`或`include`包括才生效），之后项目中的`TS`代码就可以得到声明文件所提供的变量类型提示和类型系统。事实上在我们安装了`typescript`模块后，也能使用它内置的声明文件（如`node_modules/typescript/lib/index.d.ts`）。
+
+``` ts
+// global.d.ts
+interface People {
+  name: string;
+  age: number;
+}
+declare const p: People
+
+// index.ts
+console.log(p.name) // 不报错
+
+const p: People = { // 缺失属性，报错
+  name: 'aaa',
 }
 ```
 
-`tsconfig.json`中的一些配置：
+
+
+##### 三斜线注释
+
+除了以上的方式引入声明文件，我们还可以使用三斜线注释来手动引入声明文件。
+
+比如`/// <reference path="test.d.ts"/>`可以引入相同路径下的`test.d.ts`文件；再比如`/// <reference types="react/next" />`可以引入`node_modules/@types/react/next.d.ts`（这个文件默认不生效）；又或者`/// <reference lib="es2015" />`来引入`node_modules/typescript/lib/es2015.d.ts`声明文件。
+
+当`compilerOptions`中没有指定`types`字段时，`node_modules/@types`下的所有库的入口声明文件都会生效，但当指定了`types`字段时，只有`types`包含的类型模块才会生效。（比如`types`字段只有`['react']`，此时`@types/node`不会生效）
+
+我们也可以通过设置`lib`或`target`字段，来设置默认生效的内置声明文件。
+
+
+
+##### 模块
+
+依托于`TypeScript`提供的类型系统，我们在`b.ts`文件中可以享受到到`a.ts`所提供的**变量类型提示**，以及各种**类型或接口**，这可以极大加强我们的开发效率。
+
+不过考虑到现代项目都是模块化的，模块内的变量和类型对外应该是未知的，因此在`TypeScript`中我们把包括`import`或`export`语法的文件视为**模块**，我们必须显式引入模块才能得到对应的变量类型提示；反之则被视为**全局作用域下的脚本**。
+
+``` ts
+// a.ts
+interface People {}
+export {}
+
+// b.ts
+let p: People // 报错，找不到People
+```
+
+`TypeScript`中导出的语法包括以下几种：`export {}`、`export default {}`，`export = {}`。最后一种看起来很奇怪，简单来说可以视为`CommonJS`和`AMD`导出的一种兼容。
+
+> `export as namespace XXX`不是模块导出
+
+事实上`@types/react`的声明文件是这样写的：
+
+``` ts
+declare namespace React {
+  
+}
+
+export = React
+export as namespace React
+```
+
+通过使用`export = React`来使其被视为一个模块，此时我们必须手动引入`React`才能得到对应的类型提示，但细心的话会发现就算我们不引入`React`，在代码中输入`React`也会提示它拥有的方法和类型，这是通过`export as namespace React`实现的。
+
+##### declare module
+
+像`@types/react`只是提供了一个库的声明文件，因此可以用以上的写法。那么对于`@types/node`这种需要提供`fs`、`path`、`http`、`os`等多个库的声明文件，写法就如下所示：
+
+``` ts
+// node_modules/@types/node/os.d.ts
+declare module os {
+  function hostname(): string;
+}
+
+// node_modules/@types/node/fs.d.ts
+declare module fs {
+	import * as promises from 'node:fs/promises';
+
+  export { promises }
+  export function readFile(): void;
+}
+```
+
+``` ts
+import os from 'os'
+import fs, { promises } from 'fs'
+
+os.hostname()
+fs.readFile()
+```
+
+`module`默认会导出所有内容，而当`module`内部包括`import`或`export`时，那么`module`也必须显式导出内容。
+
+
+
+
+
+
+
+
+
+### tsconfig.json
 
 ``` tsx
 {
     "compilerOptions": {
-        // 编译后的输出目录
-        "outDir": "lib",
-        // true表示不会生成输出文件
-        "noEmit": true,
-        // true表示ts编译成js的同时，会生成对应的.d.ts声明文件
-        "declaration": true,
-		// 生成的js是严格模式
-        "strict": true,
-		// 生成的目标，通常是es5
-        "target": "es5"
-        // 等等...
+        "outDir": "dist", // 编译后的输出目录
+        "noEmit": true, // 不生成编译产物
+        "declaration": true, // 生成声明文件
+				"moduleResolution": "node", // 推荐
+        "module": "esnext", // 推荐
+        "jsx": "react", // 支持react jsx
+        "target": "es5", // 构建目标
+        "lib": [], // 包括的库文件
+        "allowJs": true, // 允许编译JS文件
+        "checkJs": true, // 检查JS文件语法
+        "paths": {  // 路径别名
+          "@test/*": ["./src/test/*"]
+        },
     },
     // 指定待编译的文件
     "files": [
