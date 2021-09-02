@@ -6,8 +6,6 @@ sidebarDepth: 4
 
 > 注：本节参考自官网文档，部分代码直接引用于原文档的例子
 
-
-
 ### 安装 
 
 ``` shell
@@ -25,53 +23,9 @@ npm install --save typescript @types/node @types/react @types/react-dom @types/j
 
 
 
-### 配置
-
-##### noEmitOnError
-
-``` shell
-tsc --noEmitOnError index.tsx
-```
-
-当不开启该标志时，当调用`tsc`时，即使`ts`代码存在错误，依然会生成一份新的`js`代码。
-
-当开启该标志时，只有`ts`代码没有错误时，才生成新的代码。
-
-
-
-##### noImplicitAny
-
-当开启该标志时，参数如果是隐式any类型，就会报错。
-
-``` tsx
-function A(name) { // 隐式any类型，报错
-    console.log(name)
-}
-```
-
-
-
-##### strictNullChecks
-
-当不开启该标志时，`undefined`和`null`的值可以被赋值给其他类型的变量（如`string`类型）
-
-``` tsx
-let str: string = undefined // 不会报错
-```
-
-当开启该标志时，该代码就会报错。
-
-此时只能：
-
-``` tsx
-let str: string | undefined = undefined
-```
-
-
-
 ### 声明文件
 
-当我们编写`a.ts`文件时，因为`TypeScript`存在着变量上下文和类型上下文，我们在`b.ts`文件中可以享受到到`a.ts`所提供的**变量类型提示**，以及各种**类型或接口**。
+当我们编写`a.ts`文件时，因为`TypeScript`存在着变量上下文和类型上下文，我们在`b.ts`文件中可以享受到到`a.ts`所提供的**变量类型提示**，以及各种**类型接口**。
 
 而当我们使用第三方库的时候，由于目前大多数库提供的都是`TypeScript`源码编译打包而来的`JavaScript`产物，我们项目中引入的`JS`文件已经不存在类型系统了，而我们实际上还是希望能够得到对应的**变量类型提示**（至少我们想要清楚地知道库包括了哪些方法和属性）、以及库所提供的类型，为了实现这个目的我们需要引入库所对应的声明文件（`xxx.d.ts`）。
 
@@ -101,9 +55,11 @@ const p: People = { // 缺失属性，报错
 
 ##### 三斜线注释
 
-除了以上的方式引入声明文件，我们还可以使用三斜线注释来手动引入声明文件。
+除了以上的方式引入声明文件，我们还可以在声明文件中使用三斜线注释来手动引入其他声明文件。
 
-比如`/// <reference path="test.d.ts"/>`可以引入相同路径下的`test.d.ts`文件；再比如`/// <reference types="react/next" />`可以引入`node_modules/@types/react/next.d.ts`（这个文件默认不生效）；又或者`/// <reference lib="es2015" />`来引入`node_modules/typescript/lib/es2015.d.ts`声明文件。
+- `/// <reference path="test.d.ts"/>`可以引入相同路径下的`test.d.ts`文件
+- `/// <reference types="react/next" />`可以引入`node_modules/@types/react/next.d.ts`（这个文件默认不生效）
+- `/// <reference lib="es2015" />`来引入`node_modules/typescript/lib/es2015.d.ts`声明文件。
 
 当`compilerOptions`中没有指定`types`字段时，`node_modules/@types`下的所有库的入口声明文件都会生效，但当指定了`types`字段时，只有`types`包含的类型模块才会生效。（比如`types`字段只有`['react']`，此时`@types/node`不会生效）
 
@@ -115,7 +71,7 @@ const p: People = { // 缺失属性，报错
 
 依托于`TypeScript`提供的类型系统，我们在`b.ts`文件中可以享受到到`a.ts`所提供的**变量类型提示**，以及各种**类型或接口**，这可以极大加强我们的开发效率。
 
-不过考虑到现代项目都是模块化的，模块内的变量和类型对外应该是未知的，因此在`TypeScript`中我们把包括`import`或`export`语法的文件视为**模块**，我们必须显式引入模块才能得到对应的变量类型提示；反之则被视为**全局作用域下的脚本**。
+不过考虑到现代项目都是模块化的，模块内的变量和类型对外应该是未知的，因此在`TypeScript`中我们把包括`import`或`export`语法的文件视为**模块**，我们必须显式引入模块才能得到对应的变量类型提示；反之则被视为**全局作用域下的脚本**，其内部的变量和类型是全局可见的。
 
 ``` ts
 // a.ts
@@ -126,11 +82,9 @@ export {}
 let p: People // 报错，找不到People
 ```
 
-`TypeScript`中导出的语法包括以下几种：`export {}`、`export default {}`，`export = {}`。最后一种看起来很奇怪，简单来说可以视为`CommonJS`和`AMD`导出的一种兼容。
+`TypeScript`中导出的语法包括以下几种：`export {}`、`export default {}`、`export = {}`，前面两种是我们熟悉的`ES`模块导出语法，最后的`export = {}`则是`TypeScript`专有的一种导出语法，可以简单地视为`CommonJS`（`module.exports = `）和`AMD`导出的一种兼容，和`ES`模块导出的区别是这种模块没有默认导出，而且必须整体引入模块。
 
-> `export as namespace XXX`不是模块导出
-
-事实上`@types/react`的声明文件是这样写的：
+拿`React`的声明文件为例，它使用了`export = React`的语法导出模块：
 
 ``` ts
 declare namespace React {
@@ -141,7 +95,17 @@ export = React
 export as namespace React
 ```
 
-通过使用`export = React`来使其被视为一个模块，此时我们必须手动引入`React`才能得到对应的类型提示，但细心的话会发现就算我们不引入`React`，在代码中输入`React`也会提示它拥有的方法和类型，这是通过`export as namespace React`实现的。
+我们不能直接使用`import React from 'react'`来引入该模块，因为找不到模块默认的导出。
+
+此时可以使用`import React = require('react')`或者`import * as React from 'react'`来整体导入模块。或者可以通过`"esModuleInterop": true`来开启模块互通功能，开启后我们就可以直接`import React from 'react'`了，这是因为`TypeScript`会使用工具函数来帮我们处理这种不同模块导入的问题，
+
+
+
+除此之外我们可以看到以上代码包括了一行`export as namespace React`，从结果上来看，当我们导出一个模块时我们必须引入该模块才能得到对应的语法提示，而通过加上这一行我们可以在不引入React模块的时候就能知道React存在哪些方法和类型。
+
+> `export as namespace XXX`不是模块导出
+
+
 
 ##### declare module
 
@@ -180,89 +144,108 @@ fs.readFile()
 
 ``` tsx
 {
-    "compilerOptions": {
-      	// 用于将多个非模块TS文件生成一个JS文件
-      	"outFile": "./test.js",
-        // 编译后的输出目录
-        "outDir": "dist", 
-        // 不生成编译产物
-        "noEmit": true, 
-        // 自动生成声明文件
-        "declaration": true, 
-        // 自动生成sourceMap文件
-        "sourceMap": true,
-        "allowJs": true, // 允许编译JS文件
-        "checkJs": true, // 检查JS文件语法
-        "strict": true, // 严格模式
-        "jsx": "react", // 支持react jsx
-          
-        /**
-         * 编译后产物的模块类型
-         */
-        "module": "esnext", // commonjs es6 amd
-        /**
-         * module为commonjs时为node（推荐），否则为classic。
-         * 使用和node类似的模块解析策略
-         */
-				"moduleResolution": "node",
-        /**
-         * TypeScript在编译前会先进行模块解析，被解析的模块之后也会被TypeScript编译
-         * 通过noResolve: true可以关闭解析功能
-         * import fs from 'fs' // 报错
-         */
-        "noResolve": true,
-        /**
-         * 当使用baseUrl，绝对路径是相对于baseUrl的
-         * 如import A from 'lib/test' 
-         * 实际的路径是baseUrl和'lib/test'拼接后的结果./src/lib/test（相对于tsconfig.json）
-         */
-        "baseUrl": "./src",
-        /**
-         * 路径映射
-         * 使用时通常设置"baseUrl": "."
-         */
-        "paths": {  
-          "@test/*": ["./src/test/*"],
-          "jquery": ["node_modules/jquery/dist/jquery"] // This mapping is relative to "baseUrl"
-        },
+  "compilerOptions": {
+      // 用于将多个非模块TS文件生成一个JS文件
+      "outFile": "./test.js",
+      // 编译后的输出目录
+      "outDir": "dist", 
+      // 不生成编译产物
+      "noEmit": true, 
+      // 自动生成声明文件
+      "declaration": true, 
+      // 自动生成sourceMap文件
+      "sourceMap": true,
+      "allowJs": true, // 允许编译JS文件
+      "checkJs": true, // 检查JS文件语法
+      "strict": true, // 严格模式
+      "jsx": "react", // 支持react jsx
         
-        /**
-         * 编译目标
-         */
-        "target": "es5", 
-    		"lib": [
-      	  "dom",
-      	  "dom.iterable",
-      	  "esnext"
-    		],
-        "skipLibCheck": true,
-          
-        /**
-         * 没有指定`types`字段时，`node_modules/@types`下的所有库的入口声明文件都会生效，但当指定了
-         * `types`字段，只有`types`包含的类型模块才会生效
-         */
-        "types": [],
-        "typeRoots": ["node_modules/@types"]
+      /**
+       * 编译后产物的模块类型
+       */
+      "module": "esnext", // commonjs es6 amd
 
-          
-        "esModuleInterop": true,
-    		"allowSyntheticDefaultImports": true,
-        "isolatedModules": true,
-    },
-    // 指定待编译的文件
-    "files": [
+      /**
+       * module为commonjs时为node（推荐），否则为classic。
+       * 使用和node类似的模块解析策略
+       */
+      "moduleResolution": "node",
+
+      /**
+       * TypeScript在编译前会先进行模块解析，被解析的模块之后也会被TypeScript编译
+       * 通过noResolve: true可以关闭解析功能
+       * import fs from 'fs' // 报错
+       */
+      "noResolve": true,
+
+      /**
+       * 当使用baseUrl，绝对路径是相对于baseUrl的
+       * 如import A from 'lib/test' 
+       * 实际的路径是baseUrl和'lib/test'拼接后的结果./src/lib/test（相对于tsconfig.json）
+       */
+      "baseUrl": "./src",
+
+      /**
+       * 路径映射
+       * 使用时通常设置"baseUrl": "."
+       */
+      "paths": {  
+        "@test/*": ["./src/test/*"],
+        "jquery": ["node_modules/jquery/dist/jquery"] // This mapping is relative to "baseUrl"
+      },
+      
+      /**
+       * 编译目标
+       */
+      "target": "es5", 
+      "lib": [
+        "dom",
+        "dom.iterable",
+        "esnext"
+      ],
+      // 跳过.d.ts的类型检查，节约时间
+      "skipLibCheck": true,
         
-    ],
-    // 指定待编译文件的目录
-    "include": [
+      /**
+       * 没有指定`types`字段时，`node_modules/@types`下的所有库的入口声明文件都会生效，但当指定了
+       * `types`字段，只有`types`包含的类型模块才会生效
+       */
+      "types": [],
+      "typeRoots": ["node_modules/@types"],
+
+      "esModuleInterop": true, // 模块互通
+      /**
+       * 允许从没有设置默认导出的模块中默认导入
+       * esModuleInterop为true时默认开启
+       */
+      "allowSyntheticDefaultImports": true, 
+      /**
+       * 开启时，被编译的所有文件必须是模块（import/export）而不能是脚本
+       */
+      "isolatedModules": true,
         
-    ],
-    // 指定哪些文件不被编译，默认值包括node_modules等
-    "exclude": [
-        
-    ],
-    // 继承配置文件
-    "extends": "./config/base"
+      "noEmitOnError": false, // 错误时不生成产物
+      "noImplicitAny": true // 参数如果是隐式any类型，就会报错
+    	/**
+    	 * let str: string = undefined // 默认不会报错, 为true时报错
+    	 * let str: string | undefined // 为true时需要这样写
+    	 */
+    	"strictNullChecks": true
+  },
+  // 指定待编译的文件
+  "files": [
+      
+  ],
+  // 指定待编译文件的目录
+  "include": [
+      
+  ],
+  // 指定哪些文件不被编译，默认值包括node_modules等
+  "exclude": [
+      
+  ],
+  // 继承配置文件
+  "extends": "./config/base"
 }
 ```
 
