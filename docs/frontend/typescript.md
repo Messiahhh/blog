@@ -1333,6 +1333,60 @@ type InstanceType<T extends new (...args: any) => any> = T extends new (...args:
 
 ### Follow TypeScript Version
 
+#### 4.4
+
+1. 索引类型支持Symbol、模板字符串类型、联合类型
+2. Try...Catch 中err的类型默认为any，现在可以通过`--useUnknownInCatchVariables`将默认值改为`unknown`
+3. `--exactOptionalPropertyTypes`。可选符号应该意味着属性可以存在可以不存在，但不应该代表该属性的值可以为undefined
+
+#### 4.3 
+
+1. 允许set和get访问器拥有不同的类型。
+
+   ``` ts
+   class A {
+       #size = 1
+       
+       // 4.3以前会报错
+       // 'get' and 'set' accessor must have the same type
+       get size(): number { 
+           return this.#size;
+       }
+   
+       set size(value: number | string) {
+           if (typeof value === 'string') {
+               this.#size = 0
+           } else {
+               this.#size = value  
+           }
+       }
+   }
+   ```
+
+   ``` ts
+   // Now valid!
+   interface Thing {
+       get size(): number
+       set size(value: number | string | boolean);
+   }
+   ```
+
+2. 新增override关键字用来在类的继承中显式声明方法的重写，同时新增`--noImplicitOverride`来禁止隐式重写（即必须使用override关键字重写，减少出错的可能）
+
+3. 扩展私有域，支持#method()
+
+#### 4.2
+
+1. 元组支持可选参数和rest参数
+
+
+
+#### 4.1
+
+1. 模板字符串字面量类型
+
+
+
 #### 4.0
 
 ##### Variadic Tuple Types
@@ -1361,11 +1415,33 @@ type Range = [start: number, end: number];
 
 
 
+#### 3.8
+
+1. import type {}
+
+   ``` tsx
+   export const People = 'p1';
+   export type People2 = 'p2';
+   
+   const p: typeof People = 'p1'; // ok
+   const p2: People2 = 'p2'; // ok
+   const p3 = People; // "People" 是使用 "import type" 导入的，因此不能用作值。
+   ```
+
+2. 私有字段（#xxx）
+
+3. export * as xxx from xx
+
+4. top-level await（只能在模块中用）
 
 
 
 
 
+#### 3.7 
+
+1. 可选链
+2. 支持??（*nullish coalescing operator* ）
 
 
 
