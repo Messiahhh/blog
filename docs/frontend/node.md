@@ -3,7 +3,7 @@ sidebarDepth: 4
 ---
 # Node
 
-## 模块化
+## 模块
 
 **在Node中引入模块，会发生什么？**
 
@@ -186,7 +186,235 @@ a()
 
    好在，我们可以使用 `import()`来实现**运行时加载模块**，组件的懒加载通常就是使用 `import()`搭配代码分割来实现的。
 
-## pakeage.json
+
+
+
+
+## NPM
+
+### 命令
+
+##### npm config
+
+``` shell
+npm config set registry https://registry.npmjs.org/
+npm config get prefix 
+npm config delete registry
+npm config 
+```
+
+##### npm init
+
+初始化`package.json`
+
+``` shell
+npm init -y
+```
+
+##### npm install
+
+``` shell
+npm install <name> --save # yarn add <name>
+npm install <name> --save-dev # yarn add <name> -D
+npm install -g <name> # yarn global add <name>
+
+npm install
+npm ci # 通常用于CI，使用该命令时需要确保项目中存在 package-lock.json或 npm-shrinkwrap.json，并且当 package.json和 package-lock.json中依赖的版本不一致时 npm ci会抛出错误。
+```
+
+
+
+本地安装时，模块会被安装在`/project/node_modules`下，同时如果该模块的`package.json`中存在`bin`字段时，则会自动根据`bin`表示的字典在`/project/node_modules/.bin`下面创建对应的符号链接。
+
+全局安装时，模块会被安装在`/usr/local/lib/node_modules`（以MacOS举例）下，同时如果该模块的`package.json`中存在`bin`字段时，则会自动根据`bin`表示的字典在`/usr/local/bin`下面创建对应的符号链接（可理解为Windows中的快捷方式）。
+
+
+
+举个例子，`akara-project`的`package.json`中的`bin`字段如下，那么当全局安装`akara-project`时会创建`/usr/local/bin/akara`这个文件（符号链接），这个文件实际指向着`akara-project`根路径下的`index.js`。（其实这就是开发命令后工具的原理）
+
+``` shell
+"bin": {
+    "akara": "index.js"
+}
+```
+
+
+
+##### npm uninstall
+
+``` shell
+npm uninstall <name> # yarn remove <name>
+```
+
+##### npm update
+
+``` shell
+npm update <name> # yarn upgrade <name>
+
+npm update
+```
+
+
+
+举个例子，如果我们的项目（采用锁机制）存在老版本的`react@^16.0.0`，此时我们（包括CI）只能拿到`16.0.0`版本的`react`。如果我们现在想要升级`react`可以采取两种方式：`npm install react`或`npm update react`。前者更类似于重新安装`react`，并会重写`package.json`中的依赖关系；而`npm update`并不会改动`package.json`，它仅仅是根据`package.json`中的版本`semver`来重新安装可安装的最新`react`。二者都会重新生成`package-lock.json`。
+
+
+
+##### npm outdated
+
+查看项目中哪些模块不是最新版本
+
+``` shell
+npm outdated 
+```
+
+##### npm link
+
+> alias: npm ln
+
+简单来说这个命令存在两种用法，可用于将本地模块链接到全局，或是将全局模块链接到本地。
+
+用法一：
+
+当我们位于模块`akara-project`项目中时，直接执行`npm link`会把当前模块链接到全局（具体来说的话，会在`/usr/local/lib/node_modules`下创建一个符号链接指向着`akara-project`这个模块，如果该模块的`package.json`存在`bin`字段时还会在`/usr/local/bin`下面创建对应的符号链接）
+
+用法二：
+
+当我们位于某个项目中时，并假设我们已经全局安装了一个模块（如`pm2`），此时在项目中执行`npm link webpack`会把全局模块链接到本地（具体来说的话，会在当前项目的`node_modules`创建一个符号链接`pm2`指向着全局的`pm2`模块，如果该模块的`package.json`存在`bin`字段时还会在`/project/node_modules/.bin`下面创建对应的符号链接）
+
+
+
+通过结合方法一和方法二我们可以实现这样的功能：假设我们同时维护着项目A和模块B，并在项目A中引用着模块B。那么比较传统的方法来维护这两个库是这样的，更新完模块B后发布，然后在项目A中更新模块B从而查看最新的效果；而通过`npm link`我们可以简化这个流程，我们只需要先在B模块中通过`npm link`来把B模块链接到全局，然后在A项目中通过`npm link B`来把全局B模块链接到A项目本地。
+
+
+
+##### npm exec
+
+可以直接执行`node_modules/.bin`下的可执行文件
+
+``` shell
+npm exec webpack # 等于npx webpack
+```
+
+
+
+##### npm publish
+
+``` shell
+npm publish # 发布模块
+npm unpublish --force # 下架模块
+
+npm publish --access publish # 发布公共模块
+```
+
+
+
+在通过`npm login`登陆了`npm`账户后，我们可以在任意项目下通过`npm publish`来进行模块的发布，此时NPM镜像源需要是官方镜像源。
+
+除了通常的模块，我们还可以发布类似`@akara/my-package`这样的作用域模块，此时我们需要`npm publish --access publish`。这是因为NPM模块分为公共模块和私有模块，通常我们发布的都是公共模块，而发布私有模块是收费的，同时发布作用域模块默认是发布私有模块，因此我们需要显式的制定模块的类型。
+
+
+
+发布NPM模块时，`.gitignore`和`.npmignore`中指定的文件不会被发布出去。除此之外我们还可以通过`package.json`的`files`来指定只有哪些文件能被发布。
+
+1. `.gitignore`中的文件不会被发布
+2. `.npmignore`中的文件不会被发布
+3. `package.json`中的 `files`字段指定哪些文件会被发布
+
+##### npm view
+
+查看一个模块的信息
+
+``` shell
+npm view <name> # e.g npm view antd
+```
+
+##### npm version
+
+``` shell
+npm version # 查看当前版本
+npm version patch # 升级一个补丁版本，同时自动git commit并打上版本号对应的git tag，如v1.0.1
+npm version minor # 升级一个小版本，如v1.1.1
+npm version major # 升级一个大版本，如v2.0.0
+```
+
+##### npm audit
+
+``` shell
+npm audit # 查看当前项目所有依赖模块的漏洞
+npm audit --fix # 更新所有存在漏洞的模块来修复漏洞
+```
+
+当我们安装模块时会自动提示当前版本的模块的漏洞，我们也可以通过该命令来查找当前项目所有依赖中可能存在的漏洞
+
+##### npm fund
+
+``` shell
+npm fund
+```
+
+当我们安装模块时会自动提示有多少个模块正在寻找投资/资助，我们也可以通过该命令来查看具体是哪些命令在寻找投资
+
+
+
+
+
+### package.json
+
+##### type
+
+以`.cjs`结尾的文件会被视为`CommonJS`模块，以`.mjs`结尾的文件会被视为`ES`模块，而普通的`.js`文件则会根据`type`字段的不同视为不同的模块，默认不带`type`视为`CommonJS`模块，`type: 'module'`则视为`ES`模块。
+
+
+
+##### files
+
+对于一些模块而言，用户只需要引用该模块源码构建后的产物，而并不想连源代码也一起安装。这样的模块通常会通过`files`字段来规定哪些模块才会被发布，如`"file": ["dist", "README.md"]`
+
+需要注意的是以下文件永远都会被外部下载：`package.json`、`README`、`CHANGE / CHANGELOG / HISTORY 	`、`LICENSE / LICENCE`、`NOTICE`、`main`字段指向的文件。
+
+##### main
+
+用来规定模块的默认入口，默认值为 `index.js`。
+
+```js
+const test = require('my-module') // 引入my-module模块的根目录的index.js文件
+```
+
+##### exports
+
+功能类似`main`，同时存在`exports`和`main`时，`exports`字段的优先级更高
+
+```json
+{
+    "exports": {
+        ".": "./index.js", 
+        "./test": "./src/test.js" 
+    }
+}
+```
+
+```js
+const test = require('my-module') // ./index.js
+const test2 = require('my-module/test') // ./src/test.js
+```
+
+可以看到一旦使用了`exports`字段，那么模块的引用规则就和以往有较大的区别，此时我们不再能根据模块的任意路径来引用相对应的文件，只能根据`exports`所指定的映射关系来引用所给定的文件。
+
+`exports`还能够根据导入模块时使用的是 `require`还是 `import`选择不同的导出。
+
+```json
+{
+    "exports": {
+        ".": {
+            "require": "./a.js",
+            "import": "./b.mjs"
+        }
+    }
+}
+```
+
+
 
 ##### bin
 
@@ -196,9 +424,11 @@ a()
 
    ```js
    #!/usr/bin/env node
-
+   
    ```
+
 2. 通过 `chmod +x <file>来给予该文件可执行权限`
+
 3. 在 `package.json`中加上 `bin`字段，比如
 
    ```json
@@ -213,7 +443,9 @@ a()
    `bin`字段表示着命令名与本地可执行文件的映射关系。当我们全局安装该模块时，系统会自动在 `/usr/local/bin`下面创建该可执行文件的符号链接（可以简单理解为快捷方式），此时可以直接使用命令 `myapp`；当我们本地安装该模块时，系统会自动在 `./node_modules/.bin`下面创建该可执行文件的符号链接，此时我们有多种方式使用该命令：
 
    1. `./node_modules/.bin/myapp`
+
    2. `package.json`的 `script`字段中填写执行方式，如
+
       ```1
       {
           "script": {
@@ -221,7 +453,9 @@ a()
           }
       }
       ```
+
    3. `npm exec myapp`
+
    4. `npx myapp`
 
 ##### script
@@ -267,38 +501,6 @@ a()
 假设存在A库，该库存在一个插件B，那么很明显插件B自身是不依赖于库A的，但是又需要你的项目中存在库A，那么插件B的 `package.json`中就可以通过 `peerDependencies`来指定同级依赖关系。比如插件B只能在1.0版本的A库中起作用，那么 `peerDependencies`可能是 `A@1.0.0`，当你的项目中同时安装了插件B和2.0版本的A库时就会出现警告。
 
 
-##### type
-
-`.cjs`文件会被视为 `CommonJS`模块，`.mjs`会被视为 `es`模块，`.js`则会根据 `package.json`的 `type`字段视为不同的模块。
-
-默认情况 `package.json`不包括 `type`字段，`.js`文件被视为 `CommonJS`模块，我们能够使用 `require`而不能使用 `import`。
-
-当我们加上 `type: module`，则 `.js`文件会被视为 `es`模块，我们能够使用 `import`语法。
-
-##### files
-
-`files`字段用来规定模块的哪些文件能够被外部下载引入，默认值为 `[*]`，即模块的所有文件都能被外部下载引用。
-
-```js
-// my-module/public/test.js
-module.exports = function() {
-    console.log('我是模块的内部文件')
-}
-
-// app.js
-const test = require('my-module/public/test')
-import 'antd/dist/antd.css'
-```
-
-我们能够通过修改 `files`字段来限制模块能够被下载的文件，不过需要注意的是以下文件永远都会被外部下载：`package.json`、`README`、`CHANGE / CHANGELOG / HISTORY 	`、`LICENSE / LICENCE`、`NOTICE`、`main`字段指向的文件。
-
-##### main
-
-用来规定模块的默认入口，默认值为 `index.js`。
-
-```js
-const test = require('my-module') // 引入my-module模块的根目录的index.js文件
-```
 
 ##### browser | module
 
@@ -318,44 +520,9 @@ module.exports = {
 }
 ```
 
-##### exports
+##### 
 
-`exports`字段在功能上和 `main`相近，使用起来更加灵活。如果同时存在 `exports`和 `main`，`exports`的优先级更高。
-
-```json
-{
-    "exports": {
-        ".": "./index.js", // 需要加上./
-        "./test": "./src/test.js" 
-    }
-}
-```
-
-```js
-const test = require('my-module') // ./index.js
-const test2 = require('my-module/test') // ./src/test.js
-```
-
-需要特别注意的是，使用 `exports`字段时，`files`字段的作用就会失效。
-
-```js
-import test from 'my-module/main.js' // 报错
-```
-
-`exports`最大的特性是能够根据导入模块时使用的是 `require`还是 `import`选择不同的导出。
-
-```json
-{
-    "exports": {
-        ".": {
-            "require": "./a.js",
-            "import": "./b.mjs"
-        }
-    }
-}
-```
-
-## package-lock.json
+### package-lock.json
 
 在 `package.json`的 `dependencies`字段中我们经常能看见这种形式的版本号 `"react": "^17.0.2"`、`"xx": "~0.10.0"`，这种写法通常被称为[`semver`表示法](https://github.com/npm/node-semver)，三个数字分别表示主要版本、次要版本、补丁版本。
 
@@ -380,9 +547,11 @@ import test from 'my-module/main.js' // 报错
 
 如果我们使用 `lock`机制，应该直接把 `package-lock.json`提交进仓库；如果我们不使用 `lock`机制，则应该在 `.npmrc`中写入 `package-lock=false`来关闭 `lock`机制，并把 `package-lock.json`提交到仓库中。[参考](https://www.zhihu.com/question/264560841)
 
-## NPM
 
-##### node_modules
+
+
+
+### node_modules
 
 在 `NPM`的早期版本，`node_modules`使用嵌套结构来管理模块之间的依赖关系。而我们的很多模块都又可能依赖于同一个模块，这样的结构可能导致性能的浪费。
 
@@ -414,7 +583,7 @@ import test from 'my-module/main.js' // 报错
    - B@1.1.0
    ```
 
-##### npx
+### npx 
 
 在 `npx@5.2`之后引入了 `npx`这个强大的命令。
 
@@ -422,23 +591,7 @@ import test from 'my-module/main.js' // 报错
 
 比如 `npx create-react-app my-app`，我们无需提前安装 `create-react-app`，借助 `npx`会下载并使用该库来生成我们的项目，并在任务执行完成后删除下载好的 `create-react-app`。
 
-##### npm ci
 
-`npm ci`的作用和 `npm i`一样，用来安装依赖模块，而该命令经常被用在持续集成CI当中。
-
-使用该命令时需要确保项目中存在 `package-lock.json`或 `npm-shrinkwrap.json`，并且当 `package.json`和 `package-lock.json`中依赖的版本不一致时 `npm ci`会抛出错误。
-
-##### 模块发布
-
-在使用 `npm login`登陆自己的NPM账号之后，我们可以在项目目录使用 `npm publish`发布模块，使用 `npm unpublish --force`来删除发布的模块，需要注意的是NPM的镜像源需要是官方镜像 `npm config set registry https://registry.npmjs.org`
-
-NPM的模块分为公共模块和私有模块，发布私有模块是需要付费的。除此之外NPM的模块还存在形如 `@akara/my-package`这样子的，属于用户作用域的模块，如果想要发布这样的模块，首先需要确保模块的名字形如 `@akara/my-package`，并且由于这种模块默认是私有的，为了不花钱我们需要使用 `npm publish --access public`来发布公共的作用域模块。
-
-当我们发布一个npm库时，通常目的是发布构建后的文件，所以我们需要控制哪些文件可以被发布，哪些文件不会被发布。
-
-1. `.gitignore`中的文件不会被发布
-2. `.npmignore`中的文件不会被发布
-3. `package.json`中的 `files`字段指定哪些文件会被发布
 
 ## 事件循环
 
@@ -1410,7 +1563,7 @@ Koa的实例app有三个公共的API
 
   ```javascript
   app.use((ctx, next) => {
-
+  
   })
   ```
 
