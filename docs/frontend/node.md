@@ -15,7 +15,7 @@ sidebarDepth: 4
 - 文件定位
 - 编译执行
 
-##### 立即执行函数
+##### IIFE
 
 立即执行函数（IIFE）是以前主流的模块化方案，比如 `Jquery`就使用该方案。
 
@@ -43,9 +43,9 @@ myModule.A()
 
 现在基本不用。
 
-##### CommonJS
+##### CommonJS模块
 
-最主流的模块化方案。
+和`ES`模块是目前最主流的两个模块化方案。
 
 ```javascript
 // a.js
@@ -109,76 +109,78 @@ module: {
 }));
 ```
 
-##### ES6模块
+##### ES模块
 
-ES6模块使用 `import`和 `export`来导入和导出模块。
+通常我们把`.mjs`文件视为`ES`模块，或者`package.json`的`type`为`module`时该项目下所有`.js`文件都视为`ES`模块。ES6模块使用 `import`和 `export`语法来导入和导出模块。
 
-新版本Node已经支持 `node app.mjs`的写法，老版本Node需要开启 `--experimental-modules`使用该特性。
+###### export
 
-除了通过文件后缀名来区分 `ES`模块，我们也可以设置 `package.json`的 `type`字段为 `module`来表示这是一个 `ES`模块，此时文件可以是 `.js`后缀。
-
-```js
+``` js
 // a.js
-const name = 'aka'
-export default name // 等价于 export { name as default }
-export function getName() { // 等价于 export { getName as getName }
+const A = 'akara'
+export default A // 等价于 export { name as default }
+export function B() { // 等价于 export { getName as getName }
     return name
 }
-
-// b.js
-import name from './a.js' // 等价于 import { default as name }
-import { getName } from './a.js' // 等价于 import { getName as getName }
+const C = 'akara'
+export { C as alias }
 ```
 
-我们也可以自行定义模块接口的名字
+###### import
 
-```js
-// a.js
-const name = 'aka'
-export { name as alias }
-
+``` js
 // b.js
-import { alias as myName } from './a.js'
+import A from './a.js' // 等价于 import { default as name }
+import { B } from './a.js' // 等价于 import { getName as getName }
+import { alias as C } from './a.js'
+console.log(A, B, C)
 ```
 
-我们还可以使用 `import * as xx from`的写法来加载整个模块。
+除了逐个接口`import`，我们甚至可以一次性`import`整个模块
 
-```js
-// a.js
-export const name = 'aka'
-export const age = 20
-
+``` js
 // b.js
-import * as m from './a.js'
-console.log(m)
-// Module {
-//   age: 20
-//   name: "aka"
-//   Symbol(Symbol.toStringTag): "Module"
-//   __esModule: true
+import * as myModule from './a.js' 
+console.log(myModule)
+// [Module: null prototype] {
+//     B: [Function: B],
+//     alias: 'akara',
+//     default: 'akara'
 // }
 ```
 
-事实上，在 `ES`模块中我们可以加载 `CommonJS`模块。
+###### import CJS
 
-```js
+通常来说我们会使用`CommonJS`模块引用`CommonJS`模块，使用`ES`模块引用`ES`模块，而我们甚至可以使用`ES`模块引用`CommonJS`模块（当然，`CommonJS`是无法引用`ES`模块的）
+
+``` js
 // a.js
-module.exports = function() {
+module.exports = function A() {
     console.log('common模块')
 }
 
 // b.mjs
-import a from './a.js' // 默认导入了a.js文件的module.exports
-a()
+import * as myModule from './a.js' // 默认导入了a.js文件的module.exports
+console.log(myModule)
+// [Module: null prototype] { 
+//     default: [Function A] 
+// }
+
+import A from './a.js'
+console.log(A)
+// [Function: A]
 ```
+
+由此可见，`CommonJS`模块只能定义一个`default`接口，而`ES`模块除了`default`接口还可以定义其他自定义接口。从这个角度来看`ES`模块能引用`CommonJS`模块是比较科学的，因为`ES`模块能处理`default`接口；而`CommonJS`模块无法引用`ES`模块是因为`CommonJS`无法处理`ES`模块可能暴露的非`default`接口。
+
+
 
 ###### 对比
 
 `CJS`模块和 `MJS`模块存在几大区别
 
-1. `CJS`模块不存在默认导出 `default`，`MJS`模块存在 `default`。
-2. `CJS`模块会被整体导入，而 `MJS`可以被部分导入。因此使用 `MJS`可以 `tree shaking`。
-3. `import`命令会在**其他所有代码执行前**就被JavaScript引擎静态分析，可以说它是在**编译时加载模块**。
+1. `CJS`模块会被整体导入，而 `MJS`可以被部分导入。因此使用 `MJS`可以 `tree shaking`。
+2. `import`命令会在**其他所有代码执行前**就被JavaScript引擎静态分析，可以说它是在**编译时加载模块**。
 
    所以我们通常只能把 `import`放在模块的顶层，并且不能放在如 `if`之类的代码块中。
 
@@ -191,6 +193,17 @@ a()
 
 
 ## NPM
+
+### .npmrc
+
+NPM的配置文件
+
+``` shell
+registry=https://registry.npmjs.org/
+package-lock=false # 不启用NPM锁
+```
+
+
 
 ### 命令
 
@@ -230,11 +243,13 @@ npm ci # 通常用于CI，使用该命令时需要确保项目中存在 package-
 
 
 
-举个例子，`akara-project`的`package.json`中的`bin`字段如下，那么当全局安装`akara-project`时会创建`/usr/local/bin/akara`这个文件（符号链接），这个文件实际指向着`akara-project`根路径下的`index.js`。（其实这就是开发命令后工具的原理）
+举个例子，`akara-project`的`package.json`中的`bin`字段如下，那么当全局安装`akara-project`时会创建`/usr/local/bin/akara`这个文件（符号链接），这个文件实际指向着`akara-project`根路径下的`index.js`。（其实这就是开发命令行工具的原理）
 
-``` shell
-"bin": {
+``` json
+{
+  "bin": {
     "akara": "index.js"
+	}
 }
 ```
 
@@ -258,14 +273,19 @@ npm update
 
 举个例子，如果我们的项目（采用锁机制）存在老版本的`react@^16.0.0`，此时我们（包括CI）只能拿到`16.0.0`版本的`react`。如果我们现在想要升级`react`可以采取两种方式：`npm install react`或`npm update react`。前者更类似于重新安装`react`，并会重写`package.json`中的依赖关系；而`npm update`并不会改动`package.json`，它仅仅是根据`package.json`中的版本`semver`来重新安装可安装的最新`react`。二者都会重新生成`package-lock.json`。
 
-
-
 ##### npm outdated
 
 查看项目中哪些模块不是最新版本
 
 ``` shell
 npm outdated 
+```
+
+##### npm run 
+
+``` shell
+npm run start # 执行脚本
+npm run-script <stage>
 ```
 
 ##### npm link
@@ -418,51 +438,43 @@ const test2 = require('my-module/test') // ./src/test.js
 
 ##### bin
 
-开发命令行工具需要三个条件。
+如之前说过那样，当我们通过`npm install`安装模块时，会根据该模块`package.json`中的`bin`字段来创建指向指定文件的符号链接
 
-1. 文件以 `#!/usr/bin/env node`开头，比如
+``` json
+{
+	"bin": {
+    "akara": "index.js"
+	}
+}
+```
 
-   ```js
-   #!/usr/bin/env node
-   
-   ```
+假设`akara-project`的配置如上，那么全局安装`akara-project`时会创建`/usr/local/bin/akara`符号链接（指向着`/usr/local/lib/node_modules/akara-project/index.js`），所以现在我们可以直接在命令行中输入`akara`来执行对应的`index.js`（当然实际上我们还需要两个小步骤，一是我们需要规定`index.js`这个文件执行的环境，因此需要在`index.js`代码的第一行加上`#!/usr/bin/env node`；二是我们需要通过执行`chmod +x index.js`来给予该文件可执行权限）
 
-2. 通过 `chmod +x <file>来给予该文件可执行权限`
 
-3. 在 `package.json`中加上 `bin`字段，比如
 
-   ```json
+如果我们是本地安装而不是全局安装`akara-project`，那么创建的符号链接`akara`会被放在`project/node_modules/.bin`下面，此时无法直接通过在命令行输入`akara`来执行命令，我们有其他的几种方式
+
+1. `./node_modules/.bin/akara`
+
+2. `package.json`的 `script`字段中填写执行方式，如
+
+   ```1
    {
-       "name": "myapp",
-       "bin": {
-           "myapp": "./index.js"
+       "script": {
+           "run-my-script": "akara"
        }
    }
    ```
 
-   `bin`字段表示着命令名与本地可执行文件的映射关系。当我们全局安装该模块时，系统会自动在 `/usr/local/bin`下面创建该可执行文件的符号链接（可以简单理解为快捷方式），此时可以直接使用命令 `myapp`；当我们本地安装该模块时，系统会自动在 `./node_modules/.bin`下面创建该可执行文件的符号链接，此时我们有多种方式使用该命令：
+3. `npm exec akara`
 
-   1. `./node_modules/.bin/myapp`
-
-   2. `package.json`的 `script`字段中填写执行方式，如
-
-      ```1
-      {
-          "script": {
-              "test": "myapp"
-          }
-      }
-      ```
-
-   3. `npm exec myapp`
-
-   4. `npx myapp`
+4. `npx akara`
 
 ##### script
 
 `npm`除了 `npm ci`、`npm install`等内置脚本，还包括 `hook script`（`pre/post script）`和 `lifecycle script`。
 
-###### pre/post script
+###### pre & Post 
 
 对于一个脚本我们可能想要在其执行之前或之后执行某些操作，此时可以使用 `pre`或 `post`前缀。
 
@@ -476,9 +488,9 @@ const test2 = require('my-module/test') // ./src/test.js
 }
 ```
 
-###### lifecycle script
+###### LifeCycle
 
-`npm`存在一些会在特定场景触发的脚本，比如 `prepare`脚本会在执行 `npm install`前执行。
+`npm`内置了一些生命周期脚本，如`prepare`、`prepack`等
 
 ```json
 {
@@ -490,7 +502,7 @@ const test2 = require('my-module/test') // ./src/test.js
 
 ##### dependencies
 
-项目的依赖。
+项目的依赖
 
 ##### devDependencies
 
@@ -520,24 +532,20 @@ module.exports = {
 }
 ```
 
-##### 
-
 ### package-lock.json
 
 在 `package.json`的 `dependencies`字段中我们经常能看见这种形式的版本号 `"react": "^17.0.2"`、`"xx": "~0.10.0"`，这种写法通常被称为[`semver`表示法](https://github.com/npm/node-semver)，三个数字分别表示主要版本、次要版本、补丁版本。
 
-当我们 `clone`项目后使用 `npm install`来安装依赖，或者是在已有的项目中使用 `npm update`来更新依赖，都会根据 `semver`规则安装对应版本的模块，也就是说**实际安装版本并不是固定的**。
+当我们使用 `npm install <name>`来安装依赖，或者是在已有的项目中使用 `npm update`来更新依赖，都会根据 `semver`规则安装对应版本的模块，也就是说**实际安装版本并不是固定的**。
 
 - `^`：表示只会执行不更改最左边非零数字的更新。比如 `^0.10.0`，意味着我们可以安装（或更新，下同）`0.10.1`等版本，但不能安装 `0.11.0`或更高的版本；又比如 `^1.10.0`，意味着我们可以安装 `1.10.1`、`1.11.0`等版本，但不能安装 `2.0.0`或更高的版本。
 - `~`：如果我在比较器中指定了次要版本，那么只允许补丁版本的更新；如果没有指定次要版本，那么可以允许次要版本的更新，所以通常情况 `~`只允许补丁级别的更新。比如 `~1.10.0`的依赖，意味着我们只能安装 `1.10.x`的版本，不能安装 `1.11.0`的版本。
 
-使用 `semver`表示法，**不锁版本的好处**是当我们项目所依赖的某个模块存在漏洞时，该模块的开发者可以发布一个补丁级别的新版本，而我们开发者可以直接 `npm update`来更新所有模块。
+而这也带来了一个新的问题，对于同一个项目在不同时机安装的依赖版本可能不一致，这就带来了相当大的风险和不可控性，特别是当依赖的某个包更新了一个漏洞，那也会影响到我们新构建的代码。
 
-而**不锁版本的坏处是**，当项目所依赖的某个模块偷偷地更新了小版本，对我们来说是无感知的。一旦这个依赖的更新引入了一些破坏性变更，那么当我们 `clone`项目并 `npm install`后可能发现项目跑不起来（特别是使用CI进行构建的时候）
+因此高版本`yarn`和`npm`都默认启用了`lock`机制，当我们`npm install <name>`安装依赖或`npm update`更新依赖的时候都会生成`package-lock.json`（`yarn`对应`yarn.lock`），那当其他人`clone`项目并`npm install`时则会根据`package-lock.json`来安装指定版本的模块。
 
-针对这样的问题，`yarn`和新版的 `npm`都默认启用了 `lock`机制，当我们 `npm i`的时候会生成 `package-lock.json`文件**固定依赖的版本号**，今后每次修改 `package.json`依赖的时候（如 `npm i xx@latest`），`package-lock.json`也会相应的改变，这两个文件的**依赖强关联**。
 
-当项目中存在 `package-lock.json`时，我们通过 `npm i`或 `npm update`安装的都是指定版本的模块。
 
 ---
 
@@ -583,13 +591,7 @@ module.exports = {
    - B@1.1.0
    ```
 
-### npx 
 
-在 `npx@5.2`之后引入了 `npx`这个强大的命令。
-
-除了提供了像 `npx pm2`这样的脚本执行方式，`npx`的另一个特性是无需安装即可执行命令。
-
-比如 `npx create-react-app my-app`，我们无需提前安装 `create-react-app`，借助 `npx`会下载并使用该库来生成我们的项目，并在任务执行完成后删除下载好的 `create-react-app`。
 
 
 
