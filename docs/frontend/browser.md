@@ -610,13 +610,15 @@ const data = jwt.verify(token, 'key')
 
 ![JWT鉴权原理](https://pic3.zhimg.com/v2-f1556c71042566d4a6f69ee20c2870ae_r.jpg)
 
+
+
 ##### IndexedDB
 
-某些情况下，比如在`WebGL`的使用场景中，我们希望在本地缓存一个体积巨大的资源。而无论是HTTP缓存还是`LocalStorage`都无法实现巨大本地存储，这个时候或许可以考虑一下`IndexedDB`。
+浏览器内部的数据库，可用于存储大容量的结构化（或二进制数据）数据。目前有两个比较好用的库。
 
-简单来说它是一个浏览器中的非关系数据库，并且可以储存大体积的资源。
+###### localforage
 
-当然`IndexedDB`的使用并不是太简单，网络也有各式各样的教程，好在我们也可以使用一些封装好的类库，比如一个叫做`localforage`的库，它可以让我们以类似于`localStorage`的写法来实现在`IndexedDB`中数据的存储和读取。
+更像容量加强版的LocalStorage，感觉读写性能并不是很高，特点是在不支持IndexedDB的浏览器中会从IndexedDB实现降级成LocalStorage实现。
 
 ``` js
 const keys = await localforage.keys()
@@ -631,3 +633,6 @@ if (hasLocalCache) {
 }
 ```
 
+###### Dexie
+
+更贴近IndexedDB底层操作，读写性能更高。
