@@ -56,7 +56,11 @@ sidebarDepth: 4
 
 ##### crossorigin
 
+浏览器默认是开启跨域资源共享（CORS）的，这意味着对于一个普通的`fetch`请求，如果请求的资源是同域的，那么请求头不会自动带上`Origin`；如果请求的资源是跨域的，则请求头会自动带上`Origin: 当前域`。浏览器会根据响应头的`Access-Control-Allow-Origin`来控制资源能否访问。
 
+对于`script`、`link`、`img`等标签请求的外链资源，默认情况下不会指定`crossorigin`属性（可视为没有开启CORS），此时我们发送的跨域请求不会带上`Origin`头部，这意味着浏览器不会根据请求头`Origin`和响应头`Access-Control-Allow-Origin`来控制资源能否访问（也就是我们俗称的`script`标签不受同源策略的影响）
+
+除了默认的不指定`crossorigin`属性（随意请求跨域资源），我们也可以手动给这个属性值，分别是`anonymous`和`user-credentials`，只要给定了`crossorigin`就相当于开启了CORS，此时如果请求的脚本是跨域的那么请求头也会带上`Origin`
 
 
 
