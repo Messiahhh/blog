@@ -2,162 +2,147 @@
 sidebarDepth: 4
 ---
 # HTML
-### 页面渲染流程
+## 浏览器解析流程
 
-浏览器收到响应后将其内容解码成HTML，下一步要做的就是把HTML解析成DOM。
+浏览器收到HTML -> 解码 -> 资源预加载 -> 解析HTML（HTML -> Token -> DOM）-> DOM和CSS Tree生成渲染树 -> 布局 -> 绘制 -> 渲染层合成。
 
-我们知道在JavaScript中可以操作DOM，因此为了避免冲突**JavaScript代码的执行会阻塞后续HTML的解析**。
+### 解码
 
-``` html
-<script>
-	// do something...
-</script>
-<div>
-    <!-- html解析被阻塞 -->
-</div>
-```
+根据编码方式进行解码。
 
-因此，JavaScript代码的加载也会阻塞后续HTML的解析。
+### 资源预加载
 
-``` html
-<script src="./index.js"></script>
-<div>
-    <!-- 先加载脚本，再执行脚本，再进行HTML的解析 -->
-</div>
-```
+在解析HTML前先获取到HTML内部的外链地址并放入请求队列当中，因此不必等到HTML解析到某行代码的时候再去加载资源。
 
-但是我们可以观察到多个外链脚本的加载是并行的，这是因为现代浏览器会对**资源进行预加载**
+##### preload
+
+预加载资源时进入请求队列的先后顺序是根据资源在代码中出现的顺序决定的，我们也可以使用`preload`来手动调整资源的预加载顺序。
 
 ``` html
-<!-- a.js 的加载并不会阻塞b.js的加载 -->
-<script src="a.js"></script>
-<script src="b.js"></script> 
-<script src="c.js"></script>
-<script src="d.js"></script>
-<div>
-    <!-- 我的解析仍然要先等所有脚本加载和执行完成 -->
-</div>
+<body>
+    <script src="a.js"></script>
+    <script src="b.js"></script>
+    <script src="c.js"></script>
+</body>
 ```
 
-又因为JavaScript是单线程的，在该例中如果`a.js`的加载耗时很长，即使`b.js`已经加载完成了，`b.js`也需要等待`a.js`的代码执行完成后才能执行。
-
-
-
-##### async和defer
-
-通过给`script`加上这两个属性，**脚本的加载就不会阻塞后续HTML的解析**了。
+对于以上文档的脚本资源的加载顺序是`a、b、c`，如果想要在不改变脚本执行顺序的同时让`c.js`优先于`a.js`进入请求队列，我们可以这样改。此时脚本资源的加载顺序是`c、a、b`
 
 ``` html
-<script async></script>
-<script defer></script>
+<body>
+    <link rel="preload" as="script" href="c.js">
+    <script src="a.js"></script>
+    <script src="b.js"></script>
+    <script src="c.js"></script>
+</body>
 ```
 
-而二者的不同点在于：
+### 解析HTML
 
-- `async`的脚本在加载完成时，会立刻开始脚本的执行，并停止HTML的解析
-- `defer`的脚本会在整个文档都被加载完（即`DOMContentLoaded`）之后才开始执行。
+解析HTML的时候需要注意JavaScript**脚本的执行会阻塞HTML的解析**，因此当解析HTML解析到一行外链脚本的时候，我们需要等待**脚本的加载**、再等待**脚本的执行**，才能继续后续HTML的解析。
+
+
+
+##### async and defer
+
+如果我们不希望**脚本的加载**阻塞HTML的解析，我们可以给`script`标签加上`async`或者`defer`，此时该外链脚本的加载将不会阻塞后续HTML的解析（也就是解析后续HTML的同时并行加载该脚本，当该脚本被成功加载后则会停止后续HTML的解析并开始执行该脚本）
+
+- `async`：外链脚本加载完成后会立刻停止HTML的解析并开始执行该脚本
+- `defer`：外链脚本会在整个HTML都被解析完成后（或者说`DOMContentLoaded`事件触发）才执行
 
 ![defer and async](https://image-static.segmentfault.com/215/179/2151798436-59da4801c6772_articlex)
 
 
 
+##### crossorigin
+
+
+
+
+
+
+
 ##### DOMContentLoaded和Load
 
-- `DOMContentLoaded`: 当HTML文档被解析完成。
-- `Load`：当所有的资源都加载完成，即包括文档、图片、样式、脚本等资源。
+- `DOMContentLoaded`：HTML被完全加载和解析后触发，通常此时样式、图片等资源没有完全加载好
+- `Load`：当所有的资源都加载完成，即包括HTML、样式、图片、脚本等资源。
 
-在`chrome`的`network`一栏中，蓝色的竖线表示`DOMContentLoaded`的时间点，红色的竖线表示`Load`的时间点，`Load`耗时总是大于等于前者的。
-
-
-
-##### preload
-
-``` html
-<link rel="preload" as="script" href="/main.js" >
-<link rel="preload" as="style" href="/common.css">
-```
-
-`<link>`标签中可以使用`preload`来实现资源的预加载，但此时加载的资源并不会应用到页面中，比如预加载的`css`并不会被解析。
+在浏览器`network`一栏中可以看到这两个事件完成所经过的时间。
 
 
 
-##### link和@import的区别
+### 布局
 
-1. link是XHTML提供的标签，不仅可以加载CSS。@import是CSS提供的语法规则，只能加载CSS
-2. 加载页面时，`link`标签引入的 CSS 被同时加载；`@import`引入的 CSS 将在页面加载完毕后被加载。
+定义：浏览器根据渲染树，获取每个渲染对象在屏幕上的位置和尺寸
 
-##### doctype
+##### 重排（回流）
 
-Doctype声明位于文档中的最前面，处于html标签之前。告知浏览器的解析器，用什么文档类型规范来解析这个文档
+定义：重新布局。当渲染对象的位置，尺寸，或某些属性发生改变时，浏览器重新渲染部分或全部文档的过程。
+
+可能引起重排的操作包括：
+
+1. 元素位置或尺寸发生变化。
+2. 浏览器窗口大小发生变化。
+3. 添加或删除可见的DOM元素。
+4. 查询某些属性或调用某些方法，如`clientWidth`、`clientHeight`、`scrollIntoView()`、`getComputedStyle()`、`getBoundingClientRect()`、`scrollTo()`
+
+
+
+
+### 绘制
+
+将计算好的像素点绘制到屏幕
+
+定义：重新绘制/样式的改变不改变渲染对象在文档流中的位置时（如：color, background-color的改变）浏览器重新绘制
+
+**回流一定引发重绘，重绘不一定引发回流。回流比重绘的代价要更高**。
+
+**优化手段**
+
+1. 浏览器会维护一定队列，所有引起回流或重绘的操作会放进这个队列，一定时间后会对这些操作进行批处理。
+
+   但当访问clientWidth, clientHeight之类的属性时，会刷新这个队列，所以要尽量减少这些属性的访问
+
+2. 浏览器使用的流式布局模型，避免使用table。
+
+3. 对DOM元素进行修改时，可以先使用`display: none`使其脱离文档流，再进行DOM操作，执行完再放回文档流。
+
+4. 对于复杂的动画效果，可以用`display: position`使其脱离文档流
+
+5. 使用CSS3中的`transform, opacity, filters`属性，启动GPU加速，这些属性的改变不会引发回流或重绘。
+
+
+
+### 渲染层合成
+
+多个绘制后的渲染层按照恰当的重叠顺序进行合并，而后生成位图，最终通过显卡展示到屏幕上。
+
+
+
+
+
+
+
+
+
+## 其他
 
 ### 重定向
 
-`meta`标签的`http-equiv="refresh"`属性用来告诉浏览器进行页面的跳转，`content`属性告知在多少秒后进行跳转，以及跳转的地址。此处为2s后重定向。
+- ``` html
+  <meta http-equiv="refresh" content='2;https://messiahhh.github.io/blog'>
+  ```
 
-``` html
-<meta http-equiv="refresh" content='2;https://messiahhh.github.io/blog'>
-```
+- ``` js
+  location.href = 'https://messiahhh.github.io/blog'
+  ```
 
-或者
+- ``` js
+  res.statusCode = 301 // or 302
+  res.setHeader('Location', 'https://messiahhh.github.io/blog')
+  ```
 
-``` javascript
-// js
-location.href = 'https://messiahhh.github.io/blog'
-```
-
-或者响应状态码为301/302的重定向
-
-``` js
-res.statusCode = 301 // or 302
-res.setHeader('Location', 'https://messiahhh.github.io/blog')
-```
-
-### HTML5
-
-> 介绍一些HTML5的用法
-
-##### 元素拖拽
-
-``` html
-<div class="contain"></div>
-<div class="el" draggable="true"></div> <!-- 使元素能够被拖拽 -->
-<script>
-    const contain = document.querySelector('.contain')
-	const el = document.querySelector('div')
-    el.addEventListener('dragstart', (e) => { // 当元素被拖拽时触发
-        console.log(e.target); // 被拖拽元素
-        e.dataTransfer.setData('message', 'hello')
-    })
-    
-    
-    contain.addEventListener('dragover', (e) => {
-        e.preventDefault()
-    })
-
-    contain.addEventListener('drop', (e) => {
-        e.preventDefault()
-        console.log(e.dataTransfer.getData('message'));
-    })
-</script>
-<!-- 事件触发了两次，两次的e.target不同，使用e.dataTransfer来传输数据 -->
-```
-
-##### 地理位置
-
-``` js
-navigator.geolocation.getCurrentPosition((position) => {
-    const {
-        latitude, // 纬度 
-        longitude // 经度
-    } = position.coords
-});
-```
-
-
-
-
-
-### 解析markdown
+### markdown to html
 
 我们的常见需求是把`markdown`文件解析成页面，有很多种工具可以实现这一目的，比如可以使用`gray-matter`、`remark`、`remark-html`、`remark-prism`来实现。
 
@@ -180,5 +165,8 @@ const contentHtml = processedContent.toString()
 
 
 
+### link和@import的区别
 
+1. link是XHTML提供的标签，不仅可以加载CSS。@import是CSS提供的语法规则，只能加载CSS
+2. 加载页面时，`link`标签引入的 CSS 被同时加载；`@import`引入的 CSS 将在页面加载完毕后被加载。
 
