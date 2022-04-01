@@ -265,7 +265,7 @@ const el = <HTMLCanvasElement>document.querySelector('.el')
 
 
 
-##### const 断言
+### const 断言
 
 ``` tsx
 let obj = {
@@ -285,7 +285,7 @@ let arr = [1, 2, 3] as const
 
 
 
-##### not-null 断言
+### not-null 断言
 
 ``` tsx
 function liveDangerously(x?: number | undefined) {
@@ -299,7 +299,7 @@ function liveDangerously(x?: number | undefined) {
 
 ## 类型系统
 
-##### 基本类型
+### 基本类型
 
 ``` tsx
 let success : boolean = true 
@@ -313,7 +313,7 @@ let value : void = undefined
 value = null
 ```
 
-##### 数组
+### 数组
 
 数组只可以储存一种数据类型，数组长度可变。
 
@@ -322,7 +322,7 @@ let arr: number[] = [1, 2, 3]
 let arr: Array<number> = [1, 2, 3]
 ```
 
-##### 元组
+### 元组
 
 元组可以储存多种数据类型，但是元组长度不可变。
 
@@ -334,7 +334,7 @@ let arr2: [numer, number?] = [1]
 arr2 = [1, 2] // 不报错
 ```
 
-##### 枚举
+### 枚举
 
 ``` tsx
 enum Days {Sun, Mon, Tue, Wed, Thu, Fri, Sat};
@@ -350,7 +350,7 @@ console.log(Days[2] === "Tue"); // true
 console.log(Days[6] === "Sat"); // true
 ```
 
-##### any
+### any
 
 `anyscript === javascript`（笑
 
@@ -363,7 +363,7 @@ let obj: any = {}
 obj.getName() // 不报错
 ```
 
-##### unknown
+### unknown
 
 `unknown`表示某个变量的类型是未知的，也意味着这个变量可能是任意类型的值
 
@@ -385,7 +385,7 @@ if (typeof value === 'string') {
 }
 ```
 
-##### never
+### never
 
 ``` ts
 function fn(value: 1 | 2) {
@@ -403,7 +403,7 @@ function neverThrow(value: never): never { // 函数永远不会返回值
 }
 ```
 
-##### object
+### object
 
 可以用来表示对象的类型
 
@@ -413,7 +413,7 @@ let obj: object = {
 }
 ```
 
-##### Object
+### Object
 
 看起来`object`和`Object`只有大小写的区别，`Object`实际上表示的范围更加的广泛，除了表示对象还可以表示数字、字符串、布尔值等基本类型（但不包括`Null`和`Undefined`）。
 
@@ -444,7 +444,7 @@ const obj: {} = {
 
 
 
-##### 字面量类型
+### 字面量类型
 
 ```ts
 // 字符串字面量类型
@@ -725,6 +725,68 @@ let o: a & b = {
     age: 20,
 }
 ```
+
+
+
+### type guard
+
+`TypeScript`的`Control Flow Analysis`（控制流分析）能够根据**代码逻辑**把联合类型`narrow`到一个更小范围的类型，同时对于`unknown`的类型我们也可以`narrow`成一个更具体的类型，这样的代码类型一般称为类型守卫（`type guard`）
+
+常见的类型守卫有这些`typeof`、`instanceof`、`in`、`switch...case...`等
+
+``` ts
+if (typeof value === 'string') {}
+if (value instanceof Array) {}
+if ('type' in value) {}
+
+value // string | number
+if (value.length) {} // value: string
+```
+
+``` ts
+type V = {type: 'a', name: string } | {type: 'b', age: number }
+switch (value.type) {
+  case 'a':
+    return value.name
+  case 'b'
+    return value.age;
+  default:
+    throw new Error('')
+}
+```
+
+除了这些基础的类型守卫，我们还可以自己定义类型守卫函数，比如常见的`Array.isArray`就是一个典型的类型守卫函数
+
+``` ts
+type fn = {
+  isArray(arg: any): arg is any[]; // 重点是这个is关键字
+}
+```
+
+``` ts
+type A = {
+  type: 'a',
+  name: string;
+}
+
+type B = {
+  type: 'b',
+  age: number;
+}
+
+function isA(value: A | B): value is A {
+  return 'name' in value
+}
+
+function fn(value: A | B) {
+  if (isA(value)) {
+    return value.name
+  }
+  return value.age;
+}
+```
+
+
 
 
 
