@@ -2,91 +2,161 @@
 sidebarDepth: 4
 ---
 
-## TypeScript
-
-> 注：本节参考自官网文档，部分代码直接引用于原文档的例子
-
-### 安装 
+# TypeScript
 
 ``` shell
-npm install typescript -g
+yarn add typescript -D
 tsc index.tsx
 ```
 
-##### 项目中添加TS
+## `tsconfig.json`
 
-``` shell
-npm install --save typescript @types/node @types/react @types/react-dom @types/jest
+``` json
+{
+  // 指定待编译的文件
+  "files": [
+      
+  ],
+  // 指定待编译文件的目录
+  "include": [
+      
+  ],
+  // 指定哪些文件不被编译，默认值包括node_modules等
+  "exclude": [
+      
+  ],
+  "compilerOptions": {
+    	// 编译产物的输出目录
+      "outDir": "dist",
+      // 根据多个源文件生成一个产物，可搭配`emitDeclarationOnly`来生成一份完整的声明文件
+      "outFile": "./test.js",
+       
+      
+      // 生成声明文件
+      "declaration": true, 
+    	// 只生成声明文件
+    	"emitDeclarationOnly": true,
+      // 生成sourceMap文件
+      "sourceMap": true,
+    	// 不生成编译产物
+      "noEmit": true, 
+    
+      "allowJs": true, // 允许编译JS文件
+      "checkJs": true, // 检查JS文件语法
+      "strict": true, // 严格模式
+      "jsx": "react", // 支持react jsx
+        
+     	/**
+       * 编译目标
+       */
+      "target": "es5", 
+      "lib": [
+        "dom",
+        "dom.iterable",
+        "esnext"
+      ],
+      // 跳过.d.ts的类型检查，节约时间
+      "skipLibCheck": true,
+    
+      /**
+       * 编译后产物的模块类型
+       */
+      "module": "esnext", // commonjs es6 amd
+
+      /**
+       * module为commonjs时为node（推荐），否则为classic。
+       * 使用和node类似的模块解析策略
+       */
+      "moduleResolution": "node",
+
+      /**
+       * TypeScript在编译前会先进行模块解析，被解析的模块之后也会被TypeScript编译
+       * 通过noResolve: true可以关闭解析功能
+       * import fs from 'fs' // 报错
+       */
+      "noResolve": true,
+
+      /**
+       * 当使用baseUrl，绝对路径是相对于baseUrl的
+       * 如import A from 'lib/test' 
+       * 实际的路径是baseUrl和'lib/test'拼接后的结果./src/lib/test（相对于tsconfig.json）
+       */
+      "baseUrl": "./src",
+
+      /**
+       * 路径映射
+       * webpack设置了resolve.alias的时候需要
+       * 使用时通常设置"baseUrl": "."
+       */
+      "paths": {  
+        "@test/*": ["./src/test/*"],
+        "jquery": ["node_modules/jquery/dist/jquery"] // This mapping is relative to "baseUrl"
+      },
+      
+        
+      /**
+       * 没有指定`types`字段时，`node_modules/@types`下的所有库的入口声明文件都会生效，但当指定了
+       * `types`字段，只有`types`包含的类型模块才会生效
+       */
+      "types": [],
+      "typeRoots": ["node_modules/@types"],
+
+      "esModuleInterop": true, // 模块互通
+      /**
+       * 允许从没有设置默认导出的模块中默认导入
+       * esModuleInterop为true时默认开启
+       */
+      "allowSyntheticDefaultImports": true, 
+      /**
+       * 开启时，被编译的所有文件必须是模块（import/export）而不能是脚本
+       */
+      "isolatedModules": true,
+        
+      "noEmitOnError": false, // 错误时不生成产物
+      "noImplicitAny": true // 参数如果是隐式any类型，就会报错
+    	/**
+    	 * let str: string = undefined // 默认不会报错, 为true时报错
+    	 * let str: string | undefined // 为true时需要这样写
+    	 */
+    	"strictNullChecks": true
+  },
+  
+  
+  // 继承配置文件
+  "extends": "./config/base"
+}
 ```
 
-比如在已有的CRA项目中添加TS支持
+
+
+## 声明文件
+
+相比于`JavaScript`，`TypeScript`存在着变量上下文和类型上下文，如当`index.ts`被编译成`index.js`和`index.d.ts`，`index.js`包含着变量上下文，而`index.d.ts`包含着类型上下文（包括变量的声明和类型）
+
+我们可以自行编写声明文件`index.d.ts`来辅助我们进行一些工作，事实上`tsconfig.json#includes`内所有的`ts`和`.d.ts`文件都是有效的，除此之外`tsconfig.json#types`和`tsconfig.json#lib`默认就会分别把`node_modules/@types/node`和`node_modules/typescript/lib`下对应的声明文件加入到整个编译系统当中。（比如当我们安装了`@types/react`后就能在代码中直接使用`JSX.Element`这个类型了，这是因为该声明文件内部通过`declare global`来声明了全局变量的类型）
+
+目前主流库有两种方案来包含声明文件。第一种方式就是把声明文件作为另一个库发布到上文提到过的`node_modules/@types`下；第二种方式是把声明文件也放在当前库下面，通过在`package.json#types`中指定声明文件的位置，第二种方式需要注意的是需要显式的把模块引入后才能得到对应的类型提示。
 
 
 
-### 声明文件
+### 三斜线注释
 
-当我们编写`a.ts`文件时，因为`TypeScript`存在着变量上下文和类型上下文，我们在`b.ts`文件中可以享受到到`a.ts`所提供的**变量类型提示**，以及各种**类型接口**。
-
-而当我们使用第三方库的时候，由于目前大多数库提供的都是`TypeScript`源码编译打包而来的`JavaScript`产物，我们项目中引入的`JS`文件已经不存在类型系统了，而我们实际上还是希望能够得到对应的**变量类型提示**（至少我们想要清楚地知道库包括了哪些方法和属性）、以及库所提供的类型，为了实现这个目的我们需要引入库所对应的声明文件（`xxx.d.ts`）。
-
-目前主流库有两种方案来处理声明文件。第一种方案是将声明文件也一起放在模块内部，比如`chalk`库就同时提供了`index.js`和`index.d.ts`（通过`package.json`的`main`字段指定入口文件，`types`字段指定声明文件的位置），这种方案的特点是我们必须显式引入这个库，才能使用库提供的声明文件所带来的变量类型提示；另一种方案是将声明文件作为一个独立的模块发布在`@types`模块作用域下，比如`@types/react`和`@types/node`。
-
-> 有的库比如`mockjs`模块内部没有声明文件，当我们`import mockjs from 'mockjs'`会提示找不到`mockjs`，这时候就得乖乖去安装一个`@types/mockjs`
-
-除了使用库所提供的声明文件，我们也可以自己在项目中创建声明文件（`.ts`和`.d.ts`文件都需要被`files`或`include`包括才生效），之后项目中的`TS`代码就可以得到声明文件所提供的变量类型提示和类型系统。事实上在我们安装了`typescript`模块后，也能使用它内置的声明文件（如`node_modules/typescript/lib/index.d.ts`）。
-
-``` ts
-// global.d.ts
-interface People {
-  name: string;
-  age: number;
-}
-declare const p: People
-
-// index.ts
-console.log(p.name) // 不报错
-
-const p: People = { // 缺失属性，报错
-  name: 'aaa',
-}
-```
-
-
-
-##### 三斜线注释
-
-除了以上的方式引入声明文件，我们还可以在声明文件中使用三斜线注释来手动引入其他声明文件。
+我们可以在声明文件中使用三斜线注释来手动引入其他声明文件，需要注意的是该注释需要放在文件开头。
 
 - `/// <reference path="test.d.ts"/>`可以引入相同路径下的`test.d.ts`文件
-- `/// <reference types="react/next" />`可以引入`node_modules/@types/react/next.d.ts`（这个文件默认不生效）
-- `/// <reference lib="es2015" />`来引入`node_modules/typescript/lib/es2015.d.ts`声明文件。
-
-当`compilerOptions`中没有指定`types`字段时，`node_modules/@types`下的所有库的入口声明文件都会生效，但当指定了`types`字段时，只有`types`包含的类型模块才会生效。（比如`types`字段只有`['react']`，此时`@types/node`不会生效）
-
-我们也可以通过设置`lib`或`target`字段，来设置默认生效的内置声明文件。
+- `/// <reference types="react/next" />`可以引入`node_modules/@types/react/next.d.ts`
+- `/// <reference lib="es2015" />`来引入`node_modules/typescript/lib/es2015.d.ts`
 
 
 
-##### 模块
+### 脚本与模块
 
-依托于`TypeScript`提供的类型系统，我们在`b.ts`文件中可以享受到到`a.ts`所提供的**变量类型提示**，以及各种**类型或接口**，这可以极大加强我们的开发效率。
+在`TypeScript`中我们把使用了`import`或`export`语法的文件视为**模块**，否则则被视为**全局作用域下的脚本**。脚本内部声明的变量和类型是全局可见的，而模块内部的变量和类型是不可见的，需要外部进行相对应的导入。
 
-不过考虑到现代项目都是模块化的，模块内的变量和类型对外应该是未知的，因此在`TypeScript`中我们把包括`import`或`export`语法的文件视为**模块**，我们必须显式引入模块才能得到对应的变量类型提示；反之则被视为**全局作用域下的脚本**，其内部的变量和类型是全局可见的。
+`TypeScript`中导出的语法包括以下几种：`export {}`、`export default {}`、`export = {}`。其中`export = {}`是`TypeScript`专有的一种导出语法，可以简单地视为`CommonJS`（`module.exports = `）和`AMD`导出的一种兼容，外部导入时需要使用`import React = require('react')`或者`import * as React from 'react'`来进行导入，使用`import React from 'react'`导入会报错（如果我们想要使用`import React from 'react'`这种写法进行导入，则需要设置`"esModuleInterop": true`开启模块互动功能，此时`TypeScript`会使用工具函数来帮我们处理这种不同模块导入的问题）
 
 ``` ts
-// a.ts
-interface People {}
-export {}
-
-// b.ts
-let p: People // 报错，找不到People
-```
-
-`TypeScript`中导出的语法包括以下几种：`export {}`、`export default {}`、`export = {}`，前面两种是我们熟悉的`ES`模块导出语法，最后的`export = {}`则是`TypeScript`专有的一种导出语法，可以简单地视为`CommonJS`（`module.exports = `）和`AMD`导出的一种兼容，和`ES`模块导出的区别是这种模块没有默认导出，而且必须整体引入模块。
-
-拿`React`的声明文件为例，它使用了`export = React`的语法导出模块：
-
-``` ts
+// React.d.ts
 declare namespace React {
   
 }
@@ -95,21 +165,42 @@ export = React
 export as namespace React
 ```
 
-我们不能直接使用`import React from 'react'`来引入该模块，因为找不到模块默认的导出。
-
-此时可以使用`import React = require('react')`或者`import * as React from 'react'`来整体导入模块。或者可以通过`"esModuleInterop": true`来开启模块互通功能，开启后我们就可以直接`import React from 'react'`了，这是因为`TypeScript`会使用工具函数来帮我们处理这种不同模块导入的问题，
 
 
+### export as namespace
 
-除此之外我们可以看到以上代码包括了一行`export as namespace React`，从结果上来看，当我们导出一个模块时我们必须引入该模块才能得到对应的语法提示，而通过加上这一行我们可以在不引入React模块的时候就能知道React存在哪些方法和类型。
-
-> `export as namespace XXX`不是模块导出
+设想我们是通过外链引入`React`，因此在源码中希望不`import`也能够拿到`React`对应的类型声明，上方代码中的`export as namespace React`就是起这个作用的。
 
 
 
-##### declare module
+### declare global {}
 
-像`@types/react`只是提供了一个库的声明文件，因此可以用以上的写法。那么对于`@types/node`这种需要提供`fs`、`path`、`http`、`os`等多个库的声明文件，写法就如下所示：
+对于一个模块文件来说，我们可以使用`declare global {}`来提供全局的类型提示
+
+``` ts
+// a.ts 模块
+declare global {
+		const akara: string;
+    interface People {
+        age: number;
+    }
+}
+export {}
+
+// b.ts 脚本
+let a = akara; // 不报错
+let b: People
+```
+
+
+
+
+
+
+
+### declare module
+
+可用来声明一个模块的类型和导出内容，如果一个库自身不存在声明文件，`node_modules/@types`也不存在对应声明文件，我们可以在自己的代码中`mock`该模块的导出接口
 
 ``` ts
 // node_modules/@types/node/os.d.ts
@@ -140,114 +231,6 @@ fs.readFile()
 
 
 
-### `tsconfig.json`
-
-``` tsx
-{
-  "compilerOptions": {
-      // 用于将多个非模块TS文件生成一个JS文件
-      "outFile": "./test.js",
-      // 编译后的输出目录
-      "outDir": "dist", 
-      // 不生成编译产物
-      "noEmit": true, 
-      // 自动生成声明文件
-      "declaration": true, 
-      // 自动生成sourceMap文件
-      "sourceMap": true,
-      "allowJs": true, // 允许编译JS文件
-      "checkJs": true, // 检查JS文件语法
-      "strict": true, // 严格模式
-      "jsx": "react", // 支持react jsx
-        
-      /**
-       * 编译后产物的模块类型
-       */
-      "module": "esnext", // commonjs es6 amd
-
-      /**
-       * module为commonjs时为node（推荐），否则为classic。
-       * 使用和node类似的模块解析策略
-       */
-      "moduleResolution": "node",
-
-      /**
-       * TypeScript在编译前会先进行模块解析，被解析的模块之后也会被TypeScript编译
-       * 通过noResolve: true可以关闭解析功能
-       * import fs from 'fs' // 报错
-       */
-      "noResolve": true,
-
-      /**
-       * 当使用baseUrl，绝对路径是相对于baseUrl的
-       * 如import A from 'lib/test' 
-       * 实际的路径是baseUrl和'lib/test'拼接后的结果./src/lib/test（相对于tsconfig.json）
-       */
-      "baseUrl": "./src",
-
-      /**
-       * 路径映射
-       * 使用时通常设置"baseUrl": "."
-       */
-      "paths": {  
-        "@test/*": ["./src/test/*"],
-        "jquery": ["node_modules/jquery/dist/jquery"] // This mapping is relative to "baseUrl"
-      },
-      
-      /**
-       * 编译目标
-       */
-      "target": "es5", 
-      "lib": [
-        "dom",
-        "dom.iterable",
-        "esnext"
-      ],
-      // 跳过.d.ts的类型检查，节约时间
-      "skipLibCheck": true,
-        
-      /**
-       * 没有指定`types`字段时，`node_modules/@types`下的所有库的入口声明文件都会生效，但当指定了
-       * `types`字段，只有`types`包含的类型模块才会生效
-       */
-      "types": [],
-      "typeRoots": ["node_modules/@types"],
-
-      "esModuleInterop": true, // 模块互通
-      /**
-       * 允许从没有设置默认导出的模块中默认导入
-       * esModuleInterop为true时默认开启
-       */
-      "allowSyntheticDefaultImports": true, 
-      /**
-       * 开启时，被编译的所有文件必须是模块（import/export）而不能是脚本
-       */
-      "isolatedModules": true,
-        
-      "noEmitOnError": false, // 错误时不生成产物
-      "noImplicitAny": true // 参数如果是隐式any类型，就会报错
-    	/**
-    	 * let str: string = undefined // 默认不会报错, 为true时报错
-    	 * let str: string | undefined // 为true时需要这样写
-    	 */
-    	"strictNullChecks": true
-  },
-  // 指定待编译的文件
-  "files": [
-      
-  ],
-  // 指定待编译文件的目录
-  "include": [
-      
-  ],
-  // 指定哪些文件不被编译，默认值包括node_modules等
-  "exclude": [
-      
-  ],
-  // 继承配置文件
-  "extends": "./config/base"
-}
-```
 
 
 
@@ -255,9 +238,8 @@ fs.readFile()
 
 
 
-### 概念
 
-##### 类型推导
+## 类型推导
 
 ``` tsx
 // 报错！！！因为第一句会自动将value的类型推导为string
@@ -271,7 +253,7 @@ value = 123456
 
 
 
-##### 类型断言
+## 类型断言
 
 ``` tsx
 const el = document.querySelector('.el') as HTMLCanvasElement 
@@ -283,7 +265,7 @@ const el = <HTMLCanvasElement>document.querySelector('.el')
 
 
 
-###### const 断言
+##### const 断言
 
 ``` tsx
 let obj = {
@@ -303,7 +285,7 @@ let arr = [1, 2, 3] as const
 
 
 
-###### Not-null 断言
+##### not-null 断言
 
 ``` tsx
 function liveDangerously(x?: number | undefined) {
@@ -315,16 +297,16 @@ function liveDangerously(x?: number | undefined) {
 
 
 
-### 类型系统
+## 类型系统
 
 ##### 基本类型
 
 ``` tsx
-let success : boolean = true // 布尔值
-let age : number = 20 // 数字
-let name : string = 'akara' // 字符串
-let u : undefined = undefined // undefined
-let n : null = null // null
+let success : boolean = true 
+let age : number = 20 
+let name : string = 'akara' 
+let u : undefined = undefined 
+let n : null = null 
 
 // void 用来代表空值，值只能是undefined或null
 let value : void = undefined
@@ -333,7 +315,7 @@ value = null
 
 ##### 数组
 
-TS中数组只可以储存一种数据类型，数组长度可变。
+数组只可以储存一种数据类型，数组长度可变。
 
 ``` tsx
 let arr: number[] = [1, 2, 3]
@@ -345,9 +327,11 @@ let arr: Array<number> = [1, 2, 3]
 元组可以储存多种数据类型，但是元组长度不可变。
 
 ```ts
-let aka: [string, number] = ['akara', 20]
+let arr: [number, number] = [1, 2]
+arr = [1, 2, 3] // 报错
 
-aka = ['akara', 20, 100] // 报错
+let arr2: [numer, number?] = [1]
+arr2 = [1, 2] // 不报错
 ```
 
 ##### 枚举
@@ -368,6 +352,8 @@ console.log(Days[6] === "Sat"); // true
 
 ##### any
 
+`anyscript === javascript`（笑
+
 ``` js
 let value: any = 'akara'
 value = 100 // 不报错
@@ -375,47 +361,45 @@ let num: boolean = value // 不报错
 
 let obj: any = {}
 obj.getName() // 不报错
-
 ```
-
-`any`类型的变量可以获取它的任何属性和方法
 
 ##### unknown
 
-`unknown`表示某个变量的类型是未知的，也意味着这个变量可能是任意类型的值，这个值可能是来自于动态内容。
+`unknown`表示某个变量的类型是未知的，也意味着这个变量可能是任意类型的值
 
 ``` tsx
-let value: unknown = 'akara'
-value = 100 // 不报错
+let value: unknown;
 let num: boolean = value // 报错！这里和any的表现不同
 
 let obj: unknown = {
     getName: function() {}
 }
-obj.getName() // 报错！
 ```
 
-我们可以通过类型守卫（如`typeof`）来`narrow`变量的类型范围
+使用时通常搭配类型守卫来`narrow`该变量的类型范围
 
 ``` tsx
-let value: unknown = 100
-let num: number 
-if (typeof value === 'number') {
-	num = value // 此时不报错
+let str: unknown;
+if (typeof value === 'string') {
+  value.toString() // 被断言成string类型
 }
 ```
 
 ##### never
 
-> The `never` type represents the type of values that never occur. For instance, `never` is the return type for a function expression or an arrow function expression that always throws an exception or one that never returns. Variables also acquire the type `never` when narrowed by any type guards that can never be true.
-
-``` tsx
-function error(message: string): never { 
-  throw new Error(message); // 抛出错误，函数并没有返回值
+``` ts
+function fn(value: 1 | 2) {
+  switch (value) {
+    case 1:
+    case 2:
+      return value;
+    default:
+      return neverThrow(value) // 此时value的类型为value。这种写法的好处是当其他人给联合类型时加类型时，此处会报错提醒
+  }
 }
 
-function infiniteLoop(): never {
-  while (true) {} // 函数没有返回值
+function neverThrow(value: never): never { // 函数永远不会返回值
+  throw new Error(`${value}`)
 }
 ```
 
@@ -486,19 +470,49 @@ const name = 'aka' // 'aka'
 
 
 
-### 函数
+## 函数
+
+函数对参数数量和类型有着严格的要求
+
+``` ts
+function A(name?: string): string | undefined { // name的实际类型为string | undefined
+    return name
+}
+
+function A(name = 'akara'): string { 
+    return name
+}
+```
+
+### 函数声明
 
 ```ts
 function sum(x: number, y: number): number { // 函数声明
     return x + y;
 }
 
-let mySum = function (x: number, y: number): number { // 函数表达式
+const mySum = function (x: number, y: number): number { // 函数表达式
     return x + y;
 };
+
+const mySum = (x: number, y: number): number => { // 箭头函数表达式
+  
+}
+
+// 重载函数声明
+function A(a: string, b: number): number;
+function A(a: number, b: string): string;
+function A<T extends string | number>(a: T, b: T): T | undefined {
+    if (a === '1') return b
+    if (a === 1) return b
+    return
+}
+
+A(1, '1') // ok
+A(1, 1) // 报错
 ```
 
-##### 类型表示
+### 函数类型
 
 ``` tsx
 const A: (name: string) => void = fn1
@@ -508,40 +522,24 @@ const B: {
     id: number;
 } = fn2
 
-const C: {
+type C = { // 函数重载
+  (): void;
+  (name: string): void
+}
+
+const D: {
     id: number;
     new (name: string): People;
 } = People 
 ```
 
-##### 参数
-
-TypeScript中函数对参数的长度要求很严格，可使用`?`表示可选参数，也可以使用参数默认值：
-
-``` tsx
-function A(name?: string): string | undefined { // name的实际类型为string | undefined
-    return name
-}
-```
-
-``` tsx
-function A(name = 'akara'): string { 
-    return name
-}
-```
-
-##### 匿名函数
-
-匿名函数中会自动推导参数的类型
-
-``` tsx
-let arr = [1, 2, 3]
-arr.forEach(item => console.log(item)) // 不用给item加类型注解
-```
 
 
+### this
 
-##### this
+> Tofix
+
+
 
 TypeScript对`this`的使用很严格，使用的时候需要多加注意，比如声明类的时候最好不要使用构造函数。
 
@@ -564,85 +562,11 @@ let obj = {
 }
 ```
 
-##### 重载
-
-假设对于函数A存在参数a、b，我们希望`a`为字符串时`b`为数字，`a`为数字时`b`为字符串，如果单纯使用联合类型就可能出现`a`为数字时`b`也为数字。
-
-``` ts
-function A<T extends string | number>(a: T, b: T): T | undefined {
-    if (a === '1') return b
-    if (a === 1) return b
-    return
-}
-
-A(1, 1) // 没报错，我们不希望这种情况
-```
-
-通常这种情况我们可以使用函数重载。
-
-``` ts
-function A(a: string, b: number): number;
-function A(a: number, b: string): string;
-function A<T extends string | number>(a: T, b: T): T | undefined {
-    if (a === '1') return b
-    if (a === 1) return b
-    return
-}
-
-A(1, '1') // ok
-A(1, 1) // 报错
-```
 
 
-
-### 对象类型
-
-##### 接口
-
-接口作用：①描述对象的形状，②对类的行为进行抽象。本节介绍作用①。
+## Interface
 
 ``` tsx
-interface Person {
-	name: string;
-	age: number;
-}
-
-let me: Person = {
-	name: 'akara',
-	age: 20,
-};
-```
-
-接口的属性**不可以多，也不可以少**
-
-```ts
-let me : Person = { // 报错，少了属性
-	name: 'aka' 
-}
-
-let tom : Person = { // 报错，多了属性
-	name: 'aka',
-	age: 20,
-	gender: 'male'
-}
-```
-
-**可选属性**
-
-```tsx
-interface Person {
-	name: string;
-	age?: number; // 此时age的实际类型为number | undefined
-}
-
-let tom: Person = {
-	name: 'aka' // 不报错
-};
-```
-
-**只读属性**
-
-```ts
 interface Person {
     readonly id: number;
     name: string;
@@ -659,62 +583,11 @@ let tom: Person = {
 tom.id = 9527; // 报错
 ```
 
-###### 索引类型
 
-首先，索引类型分为**字符串索引类型**和数字索引类型。
 
-``` tsx
-interface test {
-    [n: number]: number; 
-    [s: string]: number | string; // 这里的n和s除了可读性，没有任何意义
-}
-```
 
-再来看几个例子：
 
-``` tsx
-interface test {
-    name: string;
-    age: number;
-}
-
-let o: keyof test // 'name' | 'age'
-```
-
-``` tsx
-interface test {
-    [n: number]: number; // 数字索引类型
-}
-
-let o = keyof test // number
-```
-
-``` tsx
-interface test {
-    [s: string]: string; // 字符串索引类型
-}
-
-let o = keyof test // string | number
-```
-
-从中我们能得出一个结论：**数字索引类型是字符串索引类型的子集**。
-
-``` tsx
-interface test2 {
-    1: number;
-    'a': string;
-    [n: number]: number;
-    [s: string]: string | number; // 注意这里
-}
-```
-
-在这个代码例子中，接口属性有以下几种类型：数字字面量1、字符串字面量'a'、`number`、`string `。**其中数字字面量是`[n: number]`的子集，字符串字面量是`[s:string]`的子集，`[n: number]`又是`[s: string]`的子集。**
-
-所以`[s: string]`的值的类型必须包含`[n: number]`的值的类型和字面量的值的类型。
-
-> There are two types of supported index signatures: string and number. It is possible to support both types of indexers, but **the type returned from a numeric indexer must be a subtype of the type returned from the string indexer. This is because when indexing with a `number`, JavaScript will actually convert that to a `string` before indexing into an object.** That means that indexing with `100` (a `number`) is the same thing as indexing with `"100"` (a `string`), so the two need to be consistent.
-
-##### Type alias
+## Type alias
 
 `interface`和`type alias`作用基本相当，但二者还是有一些区别的，这里挑几个重点的说说
 
@@ -736,9 +609,280 @@ type B = A & {
 }
 ```
 
+## 泛型
+
+泛型主要被使用在**`interface`**和**函数**当中。
+
+``` tsx
+interface A<T> {
+    name: T;
+    age: T;
+}
+
+let a: A<string> = {
+    name: 'aka',
+    age: '20',
+}
+```
+
+``` tsx
+function A<T>(name: T, age: T): T[] {
+    return [name, age]
+} 
+A('a', 'b')
+```
+
+无论是`interface`还是函数，都存在多个变量的类型，而很多时候我们希望这些变量的类型**强关联**，所以引入了泛型的概念。
+
+函数有个好处是当我们调用的时候不需要显式传入泛型的值，它会根据函数的参数进行推导。
 
 
-### 类
+
+### 泛型约束
+
+很多时候我们需要限定泛型的值在某个范围，也就是通过`extends`来对其进行约束。
+
+``` tsx
+function A<T extends { id: number }> (name: T) {
+    console.log(name.id)
+}
+A({ id: 100 })
+
+function B<T extends 'a' | 'b'> (name: T) {
+    console.log(name)
+}
+B('a')
+```
+
+
+
+
+
+
+
+
+
+## 类型操作
+
+### `typeof`
+
+在`TypeScript`的类型上下文中可使用`typeof`获取类型
+
+``` tsx
+let source = {
+    name: 'aka',
+}
+
+let target: typeof source = {
+    name: 'bkb',
+}
+```
+
+
+
+### Union Type
+
+联合类型（Union Types）表示取值可以为多种类型中的一种。
+
+```ts
+let value : string | number
+value = 'akara'
+value = 12345
+```
+
+当 TypeScript 不确定一个联合类型的变量到底是哪个类型的时候，我们**只能访问此联合类型的所有类型里共有的属性或方法**。
+
+```ts
+// 报错！！！
+function getLength(something: string | number): number {
+ 	return something.length;
+}
+```
+
+上例中，`length` 不是 `string` 和 `number` 的共有属性，所以会报错。
+
+访问 `string` 和 `number` 的共有属性是没问题的
+
+```ts
+function getString(something: string | number): string {
+ 	return something.toString();
+}
+```
+
+
+
+### Intersection Type
+
+``` tsx
+type a = {
+    name: string;
+}
+type b = {
+    age: number;
+}
+let o: a & b = {
+    name: 'aka',
+    age: 20,
+}
+```
+
+
+
+
+
+### Indexed Access Types
+
+``` ts
+interface test {
+  	0: number;
+  	name: string;
+    [n: number]: number;  // 数字索引类型
+    [s: string]: string | number; // 字符串索引类型， number | string > number
+};
+
+type a = test[0] // number
+type b = test['name'] // string
+type c = test[number] // number
+type d = test[string] // string | number
+
+type e = test[0 | 'name'] // string | number
+```
+
+索引类型分为字符串索引类型和数字索引类型。以上代码中，`0`是数字索引类型的子集、`name`是字符串索引类型的子集、**数字索引类型是字符串索引类型的子集**
+
+
+
+
+
+### `keyof`
+
+``` tsx
+let source = {
+    name: 'aka',
+    age: 20
+}
+let target: keyof typeof source // 'name' | 'age' 
+```
+
+``` ts
+interface test {
+    [n: number]: number; // 数字索引类型
+}
+
+let o = keyof test // number
+```
+
+``` ts
+interface test {
+    [s: string]: string; // 字符串索引类型
+}
+
+let o = keyof test // string | number
+```
+
+
+
+
+
+### Conditional Types
+
+形式：`A extends B ? a : b`
+
+``` tsx
+interface IdLabel {
+  	id: number /* some fields */;
+}
+interface NameLabel {
+  	name: string /* other fields */;
+}
+
+type NameOrId<T extends number | string> = T extends number
+  ? IdLabel
+  : NameLabel;
+
+function createLabel<T extends number | string>(idOrName: T): NameOrId<T> {
+	throw "unimplemented";
+}
+```
+
+``` tsx
+type MessageOf<T extends { message: unknown }> = T["message"];
+type MessageOf<T> = T extends { message: unknown } ? T["message"] : never;
+```
+
+我们通常会使用泛型对类型进行约束，不过有的时候我们也希望当参数是约束外的类型时，有一个固定的返回值。此时可以使用第二行的写法。
+
+
+
+### `infer`
+
+使用条件类型时，我们还可以在内部使用`infer`关键字
+
+``` tsx
+type A<T> = T extends Array<infer U> ? U : T 
+                            
+type GetReturnType<Type> = Type extends (...args: never[]) => infer Return
+  ? Return
+  : never;
+```
+
+
+
+### Mapped Types
+
+``` tsx
+type A = {
+    name: string;
+    age: number
+}
+
+type B = {
+    [p in keyof A]+?: A[p]
+}
+```
+
+> Note that this syntax describes a type rather than a member. If you want to add members, you can use an intersection type
+
+``` tsx
+// 错误的写法
+type test = {
+    [K in 'a' | 'b' | 'c']?: number;
+    name: string;
+}
+
+// 正确的写法
+type test = {
+    [K in 'a' | 'b' | 'c']?: number
+} & {
+    name: string,
+}
+```
+
+
+
+### 修饰符
+
+可以使用`-readonly`、`-?`、`+readonly`、`+?`等操作符。
+
+``` tsx
+type B = {
+    [p in keyof A]-?: A[p]
+}
+
+type B = {
+    -readonly[p in keyof A]: A[p]
+}
+
+type B = {
+    [p in keyof A]?: A[p] // 等于 +?
+}
+```
+
+
+
+
+
+## Class
 
 ``` tsx
 const d: Date = new Date()
@@ -866,283 +1010,13 @@ function People (name: string, id: number) {
 
 
 
-### 泛型
 
-泛型主要被使用在**`interface`**和**函数**当中。
 
-``` tsx
-interface A<T> {
-    name: T;
-    age: T;
-}
 
-let a: A<string> = {
-    name: 'aka',
-    age: '20',
-}
-```
 
-``` tsx
-function A<T>(name: T, age: T): T[] {
-    return [name, age]
-} 
-A('a', 'b')
-```
 
-无论是`interface`还是函数，都存在多个变量的类型，而很多时候我们希望这些变量的类型**强关联**，所以引入了泛型的概念。
 
-函数有个好处是当我们调用的时候不需要显式传入泛型的值，它会根据函数的参数进行推导。
-
-
-
-##### 泛型约束
-
-很多时候我们需要限定泛型的值在某个范围，也就是通过`extends`来对其进行约束。
-
-``` tsx
-function A<T extends { id: number }> (name: T) {
-    console.log(name.id)
-}
-A({ id: 100 })
-
-function B<T extends 'a' | 'b'> (name: T) {
-    console.log(name)
-}
-B('a')
-```
-
-
-
-
-
-### 类型操作
-
-
-
-##### 联合类型
-
-联合类型（Union Types）表示取值可以为多种类型中的一种。
-
-```ts
-let value : string | number
-value = 'akara'
-value = 12345
-```
-
-当 TypeScript 不确定一个联合类型的变量到底是哪个类型的时候，我们**只能访问此联合类型的所有类型里共有的属性或方法**。
-
-```ts
-// 报错！！！
-function getLength(something: string | number): number {
- 	return something.length;
-}
-```
-
-上例中，`length` 不是 `string` 和 `number` 的共有属性，所以会报错。
-
-访问 `string` 和 `number` 的共有属性是没问题的
-
-```ts
-function getString(something: string | number): string {
- 	return something.toString();
-}
-```
-
-
-
-##### 交叉类型
-
-``` tsx
-type a = {
-    name: string;
-}
-type b = {
-    age: number;
-}
-let o: a & b = {
-    name: 'aka',
-    age: 20,
-}
-```
-
-
-
-##### `typeof`
-
-在JavaScript中`typeof`用来获取变量的基本类型，而在TypeScript中可以在`type context`使用`typeof`获取类型
-
-``` tsx
-let source = {
-    name: 'aka',
-}
-
-let target: typeof source = {
-    name: 'bkb',
-}
-```
-
-
-
-##### `keyof`
-
-``` tsx
-let source = {
-    name: 'aka',
-    age: 20
-}
-let target: keyof typeof source = 'name' // 'name' | 'age' 
-```
-
-
-
-
-
-##### `Indexed Access Types`
-
-我们的接口类型也是类似对象的结构，那么我们自然可以使用索引来获取接口类型的某个键值的类型
-
-``` tsx
-type source = {
-    name: string;
-    age: number;
-}
-
-// 获取一个键的类型
-let target: source['name'] = 'aka' // string
-
-// 获取多个键的类型
-let target: source['name' | 'age'] = 'aka' // string | number 
-target = 20
-
-// 因此也可以搭配keyof使用
-let target: source[keyof source] = 'aka' // string | number 
-```
-
-我们也可以拿到`interface`中索引类型的值：
-
-``` tsx
-interface source {
-    name: string;
-    [s: string]: string;
-}
-
-let target: source[string] = 'akara' // string
-
-// or
-
-interface source {
-    name: string;
-    [n: number]: number;
-}
-
-let target: source[number] = 0 // number
-```
-
-
-
-##### `Conditional Types`
-
-形式：`A extends B ? a : b`
-
-``` tsx
-interface IdLabel {
-  	id: number /* some fields */;
-}
-interface NameLabel {
-  	name: string /* other fields */;
-}
-
-type NameOrId<T extends number | string> = T extends number
-  ? IdLabel
-  : NameLabel;
-
-function createLabel<T extends number | string>(idOrName: T): NameOrId<T> {
-	throw "unimplemented";
-}
-```
-
-``` tsx
-type MessageOf<T extends { message: unknown }> = T["message"];
-type MessageOf<T> = T extends { message: unknown } ? T["message"] : never;
-```
-
-我们通常会使用泛型对类型进行约束，不过有的时候我们也希望当参数是约束外的类型时，有一个固定的返回值。此时可以使用第二行的写法。
-
-
-
-###### `infer`
-
-使用条件类型时，我们还可以在内部使用`infer`关键字
-
-``` tsx
-type A<T> = T extends Array<infer U> ? U : T 
-                            
-type GetReturnType<Type> = Type extends (...args: never[]) => infer Return
-  ? Return
-  : never;
-```
-
-
-
-##### Mapped Types
-
-``` tsx
-type A = {
-    name: string;
-    age: number
-}
-
-type B = {
-    [p in keyof A]+?: A[p]
-}
-```
-
-> Note that this syntax describes a type rather than a member. If you want to add members, you can use an intersection type
-
-``` tsx
-// 错误的写法
-type test = {
-    [K in 'a' | 'b' | 'c']?: number;
-    name: string;
-}
-
-// 正确的写法
-type test = {
-    [K in 'a' | 'b' | 'c']?: number
-} & {
-    name: string,
-}
-```
-
-
-
-###### 修饰符
-
-可以使用`-readonly`、`-?`、`+readonly`、`+?`等操作符。
-
-``` tsx
-type B = {
-    [p in keyof A]-?: A[p]
-}
-
-type B = {
-    -readonly[p in keyof A]: A[p]
-}
-
-type B = {
-    [p in keyof A]?: A[p] // 等于 +?
-}
-```
-
-
-
-
-
-
-
-
-
-### 工具类型实现
+## 工具类型实现
 
 ##### `Partial<T>`
 
@@ -1331,7 +1205,7 @@ type InstanceType<T extends new (...args: any) => any> = T extends new (...args:
 
 
 
-### Follow TypeScript Version
+## Follow TypeScript Version
 
 #### 4.4
 
