@@ -1,0 +1,42 @@
+
+Graphql是一门对标传统RESTful的API查询语言，它的特色在于可以在前端指定服务端返回的数据字段类型、还能够将相关的查询聚合成一个请求。
+
+通常前端可以使用`graphql-request`，这是一个小型轻便的`Graphql Client`库，相比其他的`Graphql Client`库（如`Apollo-client`）只缺少了部分高级能力。
+
+``` js
+// RESTful实现
+fetch('/api/getNameById', {
+    body: JSON.stringify({id: 1})
+})
+
+// Graphql实现
+import { request, gql } from 'graphql-request'
+
+// graphql query的简写 用于查询数据
+const query = gql`
+  {
+    Movie(title: "Inception") {
+      releaseDate
+      actors {
+        name
+      }
+    }
+  }
+`
+
+// graphql mutation 用于修改数据/上传数据
+const mutation = gql` 
+    mutation AddMovie($title: String!, $releaseDate: Int!) {
+      insert_movies_one(object: { title: $title, releaseDate: $releaseDate }) {
+        title
+        releaseDate
+      }
+    }
+  `
+
+request('https://api.graph.cool/simple/v1/movies', query).then((data) => console.log(data))
+```
+
+
+
+

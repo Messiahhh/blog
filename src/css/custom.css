@@ -1,0 +1,210 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+/* :root {
+  --ifm-color-primary: #2e8555;
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: #33925d;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+} */
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+/* [data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+}
+
+.docusaurus-highlight-code-line {
+  background-color: rgba(0, 0, 0, 0.1);
+  display: block;
+  margin: 0 calc(-1 * var(--ifm-pre-padding));
+  padding: 0 var(--ifm-pre-padding);
+}
+
+[data-theme='dark'] .docusaurus-highlight-code-line {
+  background-color: rgba(0, 0, 0, 0.3);
+} */
+
+.hero__title {
+  font-size: 2.6rem;
+}
+
+
+:root {
+  --ifm-color-primary: #ff0072;
+  --ifm-color-primary-dark: #990044;
+  --ifm-color-primary-darker: #66002e;
+  --ifm-color-primary-darkest: #330017;
+  --ifm-color-primary-light: #ff8abe;
+  --ifm-color-primary-lighter: #ffb8d8;
+  --ifm-color-primary-lightest: #ffe5f1;
+  --ifm-code-font-size: 95%;
+  --ifm-font-family-base: 'nt-dapper', -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Ubuntu, Arial, sans-serif;
+  --ifm-font-family-monospace: 'jetbrains-mono', monospace;
+  --ifm-heading-font-weight: 900;
+  --ifm-navbar-item-padding-horizontal: 20px;
+  --ifm-navbar-height: 80px;
+  --ifm-link-decoration: none;
+  --ifm-link-hover-decoration: none;
+}
+
+.docusaurus-highlight-code-line {
+  background-color: rgba(0, 0, 0, 0.1);
+  display: block;
+  margin: 0 calc(-1 * var(--ifm-pre-padding));
+  padding: 0 var(--ifm-pre-padding);
+}
+
+html[data-theme='dark'] .docusaurus-highlight-code-line {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.blogPostTitle_node_modules-\@docusaurus-theme-classic-lib-next-theme-BlogPostItem-styles-module a {
+  color: var(--chakra-colors-gray-800);
+}
+
+.blogPostTitle_node_modules-\@docusaurus-theme-classic-lib-next-theme-BlogPostItem-styles-module
+  a:hover {
+  color: var(--ifm-color-primary);
+}
+
+.navbar__brand {
+  font-size: 1.5rem;
+}
+
+.navbar__title {
+  font-weight: 900;
+}
+
+.navbar__logo {
+  height: 40px;
+}
+
+.navbar__brand:hover {
+  color: var(--ifm-navbar-link-color);
+}
+
+.navbar__item {
+  font-weight: 700;
+}
+
+.navbar.navbar--fixed-top {
+  z-index: 100;
+}
+
+.DocSearch-Container {
+  z-index: 110;
+}
+
+.hide-svg-icon svg {
+  display: none;
+}
+
+.navbar__items .button__rfpro {
+  color: #ffffff;
+  background: var(--ifm-color-primary);
+  padding: 12px 20px;
+  border-radius: 25px;
+  outline: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  -webkit-transition: 0.075s all ease-in-out;
+  transition: 0.075s all ease-in-out;
+  padding-right: 45px !important;
+  margin-left: 15px;
+  position: relative;
+}
+
+/* .navbar__items .button__rfpro:after {
+  content: url('/img/diamond.svg');
+  position: absolute;
+  width: 26px;
+  right: 12px;
+  top: 6px;
+} */
+
+.navbar__items .button__rfpro:hover {
+  color: #fff;
+  background: #cc005b;
+}
+
+.menu__link {
+  font-weight: 700;
+}
+
+.theme-doc-sidebar-item-category > .menu__link {
+  font-weight: 900;
+  color: var(--ifm-navbar-link-color);
+}
+
+.footer--dark {
+  --ifm-footer-background-color: #222138;
+  --ifm-footer-color: #eef0f2;
+  --ifm-footer-link-color: #c5cbd2;
+}
+
+.footer__title {
+  font-weight: 900;
+}
+
+.footer__item {
+  font-weight: 700;
+}
+
+.footer__item svg {
+  display: none;
+}
+
+.footer__copyright {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--ifm-footer-color);
+}
+
+.footer__copyright > a {
+  color: var(--ifm-footer-link-color);
+}
+
+.footer__copyright > a:hover {
+  text-decoration: underline;
+}
+
+.footer__links {
+  margin-bottom: 2.5rem;
+}
+
+.DocSearch-Button-Container .DocSearch-Button-Placeholder {
+  font-size: 14px;
+}
+
+.DocSearch-Button .DocSearch-Button-Container .DocSearch-Search-Icon {
+  width: 18px;
+  height: 18px;
+  color: var(--chakra-colors-gray-400);
+}
+
+.docs-wrapper table {
+  width: 100%;
+  display: table;
+}
+
+.react-flow .react-flow__attribution {
+  z-index: 6;
+}

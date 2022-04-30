@@ -1,0 +1,408 @@
+
+:::info
+
+一个组件从创建到销毁，中间会经历无数次重新渲染（渲染指调用函数生成虚拟DOM，通过Diff操作真实DOM），多次函数调用自然意味着会存在多个函数作用域。
+
+同时组件创建的时候会有一块关联的**线性存储单元**，销毁的时候会清空。那么每次执行渲染函数的时候，根据Hook在函数中出现的位置，这个Hook都有权访问（读与写）线性存储单元中对应位置中的数据，这也是为什么我们强制要求每次执行函数时Hook出现的顺序都必须一致。所以从本质上来说，多次函数调用时生成的作用域都共享着同一块数据单元。
+
+:::
+## useState
+
+组件的内部状态。 
+
+如下述例子中，`count`变量实际上是通过**读取**线性存储单元中对应位置（本例为位置0）得到的，调用`setCount`的时候实际上就是在对应位置**写入**新的值，并且会触发组件渲染（因此第二次组件渲染的时候`count`能够拿到新的值）
+
+``` jsx live
+function Example(props) {
+    let [count, setCount] = useState(0) // 初始值0
+    return (
+        <div>
+            <div>{ count }</div>
+            <Button onClick={() => setCount(count + 1)}>
+              点击
+            </Button>
+        </div>
+    )
+}
+```
+
+`setState`的参数也可以是一个函数
+
+``` js
+setState(count => count + 1)
+```
+
+## useEffect
+
+当依赖的某个状态改变时执行副作用。
+
+这意味着当执行`useEffect`时，我们需要有能力判断当前依赖数组的值是否和上一次作用域的该值发生了变化，看起来我们是在比较两个函数作用域的值，实际上我们只需要在第一次函数调用的时候把这个值记录在**线性存储单元**中，这样第二次函数调用的时候就可以取值进行比较了。
+
+
+``` jsx live
+function App() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    document.title = `You clicked ${count} times`;
+  });
+
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <Button onClick={() => setCount(count + 1)}>
+        Click me
+      </Button>
+    </div>
+  );
+}
+```
+
+我们经常会使用`useEffect`来设置定时器、事件订阅，为避免内存泄漏或其他影响，我们需要在`useEffect`的回调中返回一个函数用来清除副作用，该函数会在组件重新渲染或销毁前调用。
+
+``` javascript
+useEffect(() => {
+    const timer = setTimeout(() => {
+      // doSomething
+    }, 1000);
+    // 清除副作用
+    return () => {
+        clearTimeout(timer)
+    }
+})
+```
+
+## useRef
+
+`useRef`的作用类似`useState`，也是在线性存储单元中记录数据，但`useState`中数据的改变会引发重新渲染，如果我们又希望不同函数作用域可以引用到同一个值，又不希望这个值的更新触发渲染，这个时候就可以使用`useRef`
+
+
+``` jsx live
+function App(props) {
+    const [count, setCount] = useState(0)
+    // highlight-next-line
+    let ref = useRef(0) // ref: MutableRefObject<number>
+    return (
+      <>
+        <div>ref: { ref.current }</div>
+        <div>count: { count }</div>
+        <Space>
+          <Button onClick={() => ref.current += 1}>ref.current+1，但不重新渲染</Button>
+          <Button onClick={() => setCount(count => count + 1)}>count+1，触发重新渲染</Button>
+        </Space>
+      </>
+    )
+}
+```
+
+除了用来记录值，`useRef`还可以用来记录`DOM`节点的引用
+``` tsx
+function Test() {
+    // highlight-next-line
+    const ref = useRef<HTMLDivElement>(null!) // ref: RefObject<HTMLDivElement>
+    
+    return <div ref={ref} onClick={() => console.log(ref.current.innerText)}>点击</div>
+}
+```
+
+值得一提的是，根据`useRef`传值方式不同，其返回值的类型也不一样。
+
+``` ts 
+interface MutableRefObject<T> {
+    current: T;
+}
+
+interface RefObject<T> {
+    readonly current: T | null;
+}
+
+``` 
+
+
+
+
+
+## useMemo
+
+根据依赖的变量缓存计算的结果，很明显我们需要在线性存储空间中记录依赖的值和被缓存的结果。
+
+``` js
+const revertMsg = useMemo(() => msg.split('').reverse().join(''), [msg])
+```
+
+
+
+## useCallback
+
+根据依赖的变量缓存函数，很明显我们需要在线性存储空间中记录依赖的值和被缓存的函数。
+
+对于这样的一段代码，父组件将匿名函数（或普通函数）作为`props`传递给子组件。当父组件重新渲染，则会生成一个全新的匿名函数（地址不同）作为`props`传递给子组件，因此会**触发子组件的重新渲染**。
+
+``` jsx
+function Father () {
+    const [count, setCount] = useState(0)
+    return (
+    	<PureChildComponent onClick={() => { setCount(1) }}/>
+    )
+}
+```
+
+通过使用`useCallback`缓存该函数，因为地址相同所以可以避免不必要的组件渲染。
+
+``` jsx
+function Father () {
+    const [count, setCount] = useState(0)
+    const cb = useCallback(() => {
+       setCount(count => count + 1)
+    }, [])
+    return (
+    	<PureChildComponent onClick={cb}/>
+    )
+}
+```
+
+理论上我们也可以使用`useMemo`实现该功能，只是`useCallback`更加语义化
+
+``` jsx
+function Father () {
+    const [count, setCount] = useState(0)
+    const cb = useMemo(() => {
+       return () => setCount(count => count + 1)
+    }, [])
+    return (
+    	<PureChildComponent onClick={cb}/>
+    )
+}
+```
+
+> `useCallback(fn, deps)` 相当于 `useMemo(() => fn, deps)`
+
+## useContext
+
+> Todo
+
+
+
+## useReducer
+
+功能和`useState`一样，只是修改数据的形式不同
+
+``` jsx
+function Todos() {
+  const [todos, dispatch] = useReducer(todosReducer, []);
+
+  function handleAddClick(text) {
+    dispatch({ type: 'add', text });
+  }
+
+  // ...
+}
+
+function todosReducer(state, action) {
+  switch (action.type) {
+    case 'add':
+      return [...state, {
+        text: action.text,
+        completed: false
+      }];
+    // ... other actions ...
+    default:
+      return state;
+  }
+}
+```
+
+`useReducer`的简单实现版本如下
+
+```js
+function useReducer(reducer, initialState) {
+  const [state, setState] = useState(initialState);
+
+  function dispatch(action) {
+    const nextState = reducer(state, action);
+    setState(nextState);
+  }
+
+  return [state, dispatch];
+}
+```
+
+## useImperativeHandle
+
+通常和`forwardRef`搭配使用，`forwardRef`能够暴露组件的内部DOM元素给外部使用，而`useImperativeHandle`能够限制我们只能访问DOM元素的哪些属性或方法。
+
+比如以下代码，我们可以获取`FancyInput`组件内部的`input`元素，但是被限制只能使用`focus`来控制焦点。
+
+``` js
+// forwardRef + useImperativeHandle
+function FancyInput(props, ref) {
+  const inputRef = useRef();
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current.focus();
+    }
+  }));
+  return <input ref={inputRef} ... />;
+}
+FancyInput = forwardRef(FancyInput);
+```
+
+
+## Hook闭包陷阱
+
+在学习Hook的过程中，我们可能会听到这样的名词：“闭包陷阱”。那么什么是闭包陷阱呢，我们可以看一下以下几个代码的例子。
+
+``` jsx live
+// 测试代码1
+function Test1() {
+    const [count, setCount] = useState(0);
+    // useEffect(() => {
+    //     setInterval(() => {
+    //         console.log(count)
+    //     }, 1000)
+    // }, []) // 空数组
+
+    return (
+        <div>
+            {count}
+            <Button onClick={() => setCount(10)}>点我</Button>
+        </div>
+    )
+}
+```
+
+``` jsx live
+// 测试代码2
+function Test2() {
+    const [count, setCount] = useState(0)
+    const fn = useCallback(() => {
+      alert(count)
+    }, []) // 空数组
+    return (
+        <div>
+            {count}
+            <Button onClick={() => setCount(100)}>点我</Button>
+            <Button onClick={fn}>输出</Button> // 输出的是0而不是100
+        </div>
+    )
+}
+``` 
+
+``` jsx
+// 测试代码3
+function Test3() {
+    const [count, setCount] = useState(0)
+    useEffect(() => {
+        store.subscribe(() => {
+            setCount(count + 1)
+            // setCount(count => count + 1)
+        })
+    }, [])    
+    return (
+        <div>
+            { store.getState()}
+            { count }
+            <Button onClick={() => { store.dispatch({type: 'asc', payload: 1})}}>点我</Button>
+            <Button onClick={() => {alert(store.getState())}}>store值</Button>
+        </div>
+    )
+}
+```
+
+首先看第一个例子，看起来很简单。组件挂载后运行一个定时器周期输出`count`的值。当我们点击按钮后，`count`从0变成100，这时候定时器输出的却依然是0而不是100。
+
+再看第二个例子。我们通过`useCallback`创建一个函数，这个函数的作用是输出`count`的值。当我们点击按钮后，`count`从0变成100，这时候执行之前的函数，输出的却也是0而不是100。
+
+
+
+简单解释一下。
+
+首先每次操作`count`之后，函数组件都会重新调用一次来渲染页面，这是关键的地方。
+
+对于第一个例子，函数组件第一次调用时创建一个定时器，这个定时器引用了当前函数作用域的`count`变量。因此当函数第二次被调用时，第一个函数作用域下的定时器输出了第一个函数作用域的变量`count`的值，也就是0。
+
+对于第二个例子，函数组件第一次调用时通过`useCallback`创建了一个函数`fn`，这个函数`fn`引用了第一个函数作用域下的`count`变量，由于依赖的是空数组（或者说不依赖于其他值），当函数第二次被调用时，并不会创建一个新的函数`fn`，而是得到一个引用和`fn`相同的函数。所以，在第二个函数作用域下的函数`fn`，引用和第一个函数作用域的`fn`是相同的，所以最后输出的结果也是第一个函数作用域下的`count`，也就是0。
+
+
+
+那么想要解决以上问题，只需要让`useCallback`创建的函数依赖某个值即可。
+
+``` js
+// const fn = useCallback(() => {
+//     console.log(count)
+// }, [count]) 
+```
+
+这样子，当函数组件第二次被调用后，根据对于前后的依赖值`count`，发现`count`发现变化了，这时候就会重新创建一个新的函数`fn`，此时的函数`fn`的引用和第一次创建的`fn`的引用是不同的。因此这次的函数`fn`所引用的变量`count`，是第二个函数作用域的变量`count`，也就是100。
+
+
+
+以前有聊过`useCallback`的作用，通常函数组件每次调用都会生成一个新的作用域，所以可能会经常重复的销毁并生成新的内部函数，造成浪费。`useCallback`允许我们，即使函数组件重新调用，我们也可以得到引用相同的内部函数，除了不会浪费性能这点外，因为引用不同，即使内部函数作为`props`传递给子组件，子组件也不会重新渲染。
+
+
+
+但我们也可以看到，为了解决以上的“闭包陷阱”的问题，我们实际上在每次函数组件重新调用之后，都重新创建了内部函数，而`useCallback`最初的理念就是避免这种情况。
+
+在`react`的官方文档中，确实提供了一种方式来解决类似的问题，它所使用的是`useRef`，其实原理很简单。
+
+``` jsx live
+function Test3() {
+  const [count, setCount] = useState(0);
+  const Ref = useRef();
+
+  useEffect(() => {
+    Ref.current = count; 
+  });
+
+  const fn = useCallback(() => {
+    const currentCount = Ref.current; 
+    alert(currentCount)
+  }, [Ref]); // 
+
+  return (
+    <>
+      { count }
+      <Button onClick={() => setCount(100)}>点我</Button>
+      <Button onClick={fn}>输出</Button>
+    </>
+  );
+}
+```
+
+
+
+而在`ahooks`也提供了一个`usePersistFn`提供给我们使用。
+
+``` js
+export type noop = (...args: any[]) => any;
+
+function usePersistFn<T extends noop>(fn: T) {
+  const ref = useRef<any>(() => {
+    throw new Error('Cannot call function while rendering.');
+  });
+
+  ref.current = fn;
+
+  const persistFn = useCallback(((...args) => ref.current(...args)) as T, [ref]);
+
+  return persistFn;
+}
+
+// 使用
+const [count, setCount] = useState(0);
+const showCountPersistFn = usePersistFn(() => {
+    message.info(`Current count is ${count}`);
+});
+```
+
+本质是`ref`的`current`不断被赋予新的函数`fn`，所以可以拿到新的函数作用域下的值。
+
+
+
+参考链接：
+
+[React Hook原理](https://github.com/brickspert/blog/issues/26)
+
+[React useEffect的陷阱](https://zhuanlan.zhihu.com/p/84697185)
+
+
