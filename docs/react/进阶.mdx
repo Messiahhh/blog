@@ -1,0 +1,338 @@
+
+# 底层原理
+
+## Fiber架构
+
+React在它的V16版本推出了Fiber架构，在弄清楚什么是Fiber之前，我们应该先了解为什么需要Fiber。
+
+首先，浏览器是多线程的，这些线程包括JS引擎线程（主线程），以及GUI渲染线程，定时器线程，事件线程等工作线程。其中，JS引擎线程和GUI渲染线程是互斥的。又因为绝大多数的浏览器页面的刷新频率取决于显示器的刷新频率，即每16.6毫秒就会通过GUI渲染引擎刷新一次。所以，如果JS引擎线程一次性执行了一个长时间（大于16.6毫秒）的同步任务，就可能出现掉帧的情况，影响用户的体验。
+
+而在旧版本的React中，对于一个庞大的组件，无论是组件的创建还是更新都可能需要较长的时间。而Fiber的思路是将原本耗时较长的同步任务分片为多个任务单元，执行完一个任务单元后可以保存当前的状态，切换到GUI渲染线程去刷新页面，接下来再回到主线程并从上个断点继续执行任务。
+
+我的个人体会，React中的Fiber（纤程）类似或者说就是Coroutine（协程）。ES6的Generator本身也算是协程的一种实现，或者说是状态机，通过它能够得到一个可以暂停的函数任务；而React中的Fiber，将原本耗时很长的同步任务分成多个耗时短的分片，从而实现了浏览器中互斥的主线程与GUI渲染线程之间的调度。
+
+除此之外，对于每一个Fiber的同步任务来说，都拥有一个优先级（总共定义了6种优先级）。
+
+当主线程刚执行完一个任务A的一个分片，若此时出现了一个优先级更高的任务B，React就可能会把任务A废弃掉，待之后重新执行一次任务A。
+
+为什么这里要加一个可能，这是因为对于使用了Fiber的React来说，组件可以分为两个阶段，分别是“Render/Reconciliation phase”和"Commit phase"，可以在官方的生命周期图谱看到具体的信息。第一个阶段是没有副作用的，也因此可以被React暂停，废弃又或者重新执行；而第二个阶段会涉及到实际的DOM，是有副作用的，所以无法被React暂停，重新执行。
+
+那么结合上面两段，可以知道处于“Render/Reconciliation phase”的任务A，如果执行时出现了优先级更高的任务B，任务A就会被废弃，之后重新被执行。
+
+举个例子。由于componentWillMount已经要被React废弃了，所以在以上链接中的图谱没有被标出来，它其实也是属于"Render/Reconciliation phase"的。那么当一个组件即将挂载时，就会调用这个生命周期钩子，假如在这之后我们就碰到了优先级更高的任务，那么原本的任务就会被废弃，并在之后被重新调用。导致的结果就是componentWillMount被调用了两次，这是一个值得注意的点。
+
+## Diff策略
+
+[参考](https://zhuanlan.zhihu.com/p/20346379)
+
+1. Web UI 中 DOM 节点跨层级的移动操作特别少，可以忽略不计。
+2. 拥有相同类的两个组件将会生成相似的树形结构，拥有不同类的两个组件将会生成不同的树形结构。
+3. 对于同一层级的一组子节点，它们可以通过唯一 id 进行区分。
+
+
+
+针对第一点策略，React只对新老树进行同层的比较（Vue也是如此）。
+
+> **tree diff**
+>
+> 基于策略一，React 对树的算法进行了简洁明了的优化，即对树进行分层比较，两棵树只会对同一层次的节点进行比较。
+>
+> 既然 DOM 节点跨层级的移动操作少到可以忽略不计，针对这一现象，React 通过 updateDepth 对 Virtual DOM 树进行层级控制，只会对相同颜色方框内的 DOM 节点进行比较，即同一个父节点下的所有子节点。当发现节点已经不存在，则该节点及其子节点会被完全删除掉，不会用于进一步的比较。这样只需要对树进行一次遍历，便能完成整个 DOM 树的比较。
+
+
+
+针对第二点策略，当React遇到不同类的两个组件，它会将旧组件删除，并增加新的组件。
+
+
+
+## 服务端渲染(SSR)
+
+[完整代码例子](https://github.com/Messiahhh/react-ssr-demo)
+
+通常进行客户端渲染时，先从后端获取**空页面**，通过代码渲染出**模板页面**，再从后端获取**动态数据**，之后再渲染出**完整页面**。
+
+那么当进行服务端渲染时，我们希望**在服务端获取动态数据**，并在**服务端渲染出完整页面返回给浏览器**。
+
+我们可以在后端使用`react-dom/server`提供的`renderToString`来生成静态页面，静态页面被返回给浏览器后，我们还需要在前端使用`react-dom`提供的`hydrate`来给静态标记附加事件、生命周期等信息。
+
+``` jsx
+// server.js 后端
+import { renderToString } from 'react-dom/server'
+
+const content = renderToString(<App />)
+ctx.body = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>React App</title>
+    </head>
+    <body>
+        <div id="root">${content}</div>
+        <script src="/client.js"></script>
+    </body>
+    </html>
+`
+```
+
+``` jsx
+// client.js 前端
+import { hydrate } from 'react-dom'
+
+hydrate(<App />, document.querySelector('#root'))
+```
+
+### 同构
+
+所谓同构，指的是一份代码可以分别在前端和后端运行。
+
+比如上述代码例子中的`App`组件，分别在前后端运行了一次。值得注意的是，只有在前端使用`hydrate`后才会触发对应的生命周期或事件，而仅在后端使用`renderToString`时并不会触发组件的生命周期，所以我们无法通过生命周期在后端获取动态数据。
+
+
+
+### 服务端加载数据
+
+通常使用服务端渲染都会用到`react-router-dom`和`redux` ，要注意后端需要使用`StaticRouter`而不是`BrowserRouter`
+
+我们在服务端创建一个`store`，再调用指定的方法来获取动态数据，并更新`store`的值。在这之后再把`store`作为`Provider`的值，使用`renderToString`渲染完整的页面。
+
+
+
+浏览器收到静态页面后，使用`hydrate`给静态页面绑定事件时我们也需要给`Provider`指定`store`。所以在之前渲染完整页面时可以在页面插入一段`window.__STATE__ = XXX`，从而进行`store`在前后端的传递。
+
+``` js
+export const loadData = () => (dispatch) => {
+    dispatch(setFetching(true))
+    return axios.get('http://localhost:3000/getData')
+        .then(res => {
+            dispatch(setLists(res.data.lists))
+        })
+        .catch(err => console.log(err))
+}
+
+
+export const load = (store) => {
+    return store.dispatch(loadData())
+}
+
+export const routes = [
+    {
+        path: '/',
+        key: 'home',
+        component: Contain,
+        loadData: load, // 在这里加载数据
+        exact: true,
+    },
+    {
+        path: '/signup',
+        key: 'signup',
+        component: Signup
+    },
+]
+```
+
+``` js
+// server.js 后端
+app.use(async (ctx) => {
+    const store = configureStore(initialState) // 创建store
+    const promiseArr = []
+    routes.forEach(route => {
+        if (route.loadData) {
+            promiseArr.push(route.loadData(store)) // 加载数据
+        }
+    })
+    await Promise.all(promiseArr) // 需要等所有数据都加载完毕
+    const content = await renderToHTML(ctx.url, store) // 生成完整页面
+    ctx.body = content
+})
+
+export default async function renderToHTML(url, store) {
+    const template = await fs.readFileAsync((`./template/index.html`), 'utf8')
+      
+    const content = renderToString(
+        <Provider store={store}> // 此时store已经是最新值
+            <StaticRouter location={url}>
+                <App />
+            </StaticRouter>
+        </Provider>
+    )
+    
+    // 后端把store放在window里，从而向前端传递
+    const state = `
+        <script>
+            window.__STATE__ = ${JSON.stringify(store.getState())} 
+        </script>
+    `
+    return template
+    .replace(`<!-- CONTENT -->`, content)
+    .replace(`<!-- STATE -->`, state)
+}
+```
+
+
+``` js
+// client.js 前端
+export default function App() {
+    return (
+        <Switch>
+            {
+                routes.map(route => {
+                    return <Route  {...route}></Route> 
+                })
+            }
+        </Switch>
+    )
+}
+
+const state = window.__STATE__ // 获取后端传过来的store
+
+delete window.__STATE__
+
+const store = configureStore(state)
+
+hydrate(
+    <Provider store={store}>
+    	<Router>
+        	<App />
+        </Router>
+    </Provider>, 
+    document.querySelector('#root')
+)
+```
+
+### 服务端加载CSS
+
+在`App`组件中需要使用`import 'index.css'`来加载样式，通过`style-loader`来调用`document.createElement('style')`创建标签，又因为Node环境中并不存在`document`变量，所以这种思路是行不通的。
+
+那么我们切换一下思路，与其引入`index.css`时自动创建标签，我们实际上可以在引入`index.css`后，获取对应的样式信息，再手动的在模板HTML中添加这段信息，就像我们之前手动添加`CONTENT`和`STATE`一样。
+
+
+
+为了实现该目的，我们首先需要安装`isomorphic-style-loader`，并在`webpack`配置中替换掉原本用来转换CSS的`style-loader`。此时，我们引入样式文件时不会自动创建标签。
+
+``` js
+// webpack.config.js
+{
+    test: /\.module\.css$/,
+    use: ["isomorphic-style-loader", {
+        loader: "css-loader",
+        options: {
+            importLoaders: 1,
+            esModule: false, // 注意这里
+        }
+    },
+    "postcss-loader"
+],
+```
+
+值得注意的是，与[官网文档上的例子](https://github.com/kriasoft/isomorphic-style-loader)不同，我这里使用了`esModule: false`。这主要是`css-loader`版本的差异导致的，在一些老的教程和文档中可能使用的是`css-loader@3.x`，而最新的版本已经是`css-loader@5.x`了。[在最新的情况下](https://stackoverflow.com/questions/63458657/isomorphic-style-loader-doesnt-work-as-it-supposed-to/63983963#63983963)，`css-loader`会生成一个`es模块`，而`isomorphic-style-loader`需要一个`commonjs模块`。
+
+另外，有的教程使用`StaticRouter`的`context`来实现服务端中CSS的加载，而在`isomorphic-style-loader`的官网中，使用的是它自带的一些工具函数来实现，我可能更倾向于后者吧。
+
+
+
+总之，在配置好后，我们可以跟着官网的教程来实现服务端加载CSS了。
+
+``` js
+// server.js 后端
+const css = new Set() // CSS for all rendered React components
+const insertCss = (...styles) => styles.forEach(style => css.add(style._getCss()))
+const body = ReactDOM.renderToString(
+    <StyleContext.Provider value={{ insertCss }}>
+      <App />
+    </StyleContext.Provider>
+)
+const html = `<!doctype html>
+    <html>
+      <head>
+        <script src="client.js" defer></script>
+        <style>${[...css].join('')}</style>
+      </head>
+      <body>
+        <div id="root">${body}</div>
+      </body>
+    </html>
+`
+```
+
+``` js
+// client.js 前端
+
+import React from 'react'
+import withStyles from 'isomorphic-style-loader/withStyles'
+import s from './App.scss'
+
+function App(props, context) {
+  return (
+    <div className={s.root}>
+      <h1 className={s.title}>Hello, world!</h1>
+    </div>
+  )
+}
+
+export default withStyles(s)(App) // <--
+
+const insertCss = (...styles) => {
+  // 不过，这两行代码有必要么
+  const removeCss = styles.map(style => style._insertCss())
+  return () => removeCss.forEach(dispose => dispose())
+}
+
+ReactDOM.hydrate(
+  <StyleContext.Provider value={{ insertCss }}>
+    <App />
+  </StyleContext.Provider>,
+  document.getElementById('root')
+)
+```
+
+
+
+## Next.js
+
+`next.js`是一个React的服务端渲染框架，它有以下特点：
+
+- 对项目的目录结构进行了约束，并提供了许多有用的内部组件，从而提供快速的开发能力
+- 自带对`CSS Module`和`css-in-js`的支持
+- 通过目录结构划分前端路由，并支持动态路由等功能
+- 支持两种预渲染方案：①静态生成的页面，即在项目构建时生成静态页面；②服务端渲染，即每次收到请求时构建一次页面。
+
+总的来说，我觉得是个很优秀的框架，拿来搭建博客也是个非常不错的选择，部署在它家的`Vercel`平台也十分方便。
+
+
+
+## Create-React-App
+
+### 环境变量
+
+通常项目都会存在测试环境和正式环境，不同环境下接口请求的路径也是不同的。而`CRA`提供了`process.env`让我们在前端读取环境变量，从而可以根据环境的不同设置不同的接口参数。
+
+``` json
+// process.env 默认值
+{
+    NODE_ENV: "development" | "production" | "test"
+    PUBLIC_URL: ""
+    WDS_SOCKET_HOST: undefined
+    WDS_SOCKET_PATH: undefined
+    WDS_SOCKET_PORT: undefined
+}
+```
+
+我们用的最多的是`NODE_ENV`这个环境变量，通常当我们使用`npm start`、`npm build`或`npm test`时，`NODE_ENV`的值分别为`development`、`production`、`test`。另外`PUBLIC_URL`也可以在模板HTML中看到它的使用方式。
+
+我们也可以自己设置环境变量，不过需要注意的是我们设置的环境变量必须以`REACT_APP_`开头才能被`process.env`读取到，比如可以这么写：
+
+``` json
+{
+    "dev": "cross-env REACT_APP_MY_ENV=development react-scripts start"
+}
+```
+
+
+
+### rewired
+
+使用`create-react-app`创建的项目，其`webpack`配置等信息对我们是不可见的，也是不可直接修改的。
+
+然而在有些场合我们还是希望能适度修改配置，除了`eject`我们也可以使用像`react-app-rewired`这样的库来拓展配置信息。
