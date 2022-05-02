@@ -104,9 +104,9 @@ function Test() {
     return <div ref={ref} onClick={() => console.log(ref.current.innerText)}>点击</div>
 }
 ```
-
+:::note
 值得一提的是，根据`useRef`传值方式不同，其返回值的类型也不一样。
-
+:::
 ``` ts 
 interface MutableRefObject<T> {
     current: T;
@@ -174,14 +174,45 @@ function Father () {
     )
 }
 ```
-
-> `useCallback(fn, deps)` 相当于 `useMemo(() => fn, deps)`
-
+:::note
+`useCallback(fn, deps)` 相当于 `useMemo(() => fn, deps)`
+:::
 ## useContext
+通过使用`useContext`，我们能够在组件内部获取到外层`<MyContext.Provider value={value}>`传递下来的值，免去了一层一层传`props`的烦恼。
 
-> Todo
+:::caution
+但需要注意的是，一旦我们组件使用了`useContext()`，那么一旦`Provider`传递的`value`地址发生了改变，就会触发我们组件的重新渲染。
+:::
+``` jsx 
+const MyContext = createContext(null);
 
+function App() {
+  const [count, setCount] = useState(0);
 
+  return (
+    // 当count改变，第二次渲染时value是个地址不同的新对象，导致使用`useContext`的组件也会渲染
+    // highlight-start
+    <MyContext.Provider value={{ 
+        name: 'aka',
+        age: 20
+    }}>
+    // highlight-end
+      <Button onClick={() => setCount(count => count + 1)}></Button>
+      <Child />
+    </MyContext.Provider>
+  );
+}
+
+const Child = memo(() => {
+  useContext(MyContext);
+  console.log('render'); 
+  return <div>hello</div>;
+});
+```
+
+:::info
+实际上这是[设计成这样的](https://github.com/facebook/react/issues/15156#issuecomment-474590693)，不过这样可能会导致我们使用的时候渲染太频繁，目前我们也有一些[方法](https://blog.axlight.com/posts/4-options-to-prevent-extra-rerenders-with-react-context/)避免重复的渲染
+:::
 
 ## useReducer
 
@@ -229,10 +260,9 @@ function useReducer(reducer, initialState) {
 
 ## useImperativeHandle
 
-通常和`forwardRef`搭配使用，`forwardRef`能够暴露组件的内部DOM元素给外部使用，而`useImperativeHandle`能够限制我们只能访问DOM元素的哪些属性或方法。
-
-比如以下代码，我们可以获取`FancyInput`组件内部的`input`元素，但是被限制只能使用`focus`来控制焦点。
-
+:::note
+`useImperativeHandle`必须与`forwordRef`搭配使用
+:::
 ``` js
 // forwardRef + useImperativeHandle
 function FancyInput(props, ref) {
@@ -242,10 +272,15 @@ function FancyInput(props, ref) {
       inputRef.current.focus();
     }
   }));
-  return <input ref={inputRef} ... />;
+  return <input ref={inputRef} />;
 }
 FancyInput = forwardRef(FancyInput);
 ```
+
+## 自定义Hook
+简单来说只要一个函数内部用到了Hook就可以叫做自定义Hook，只不过一般会约定函数名前缀为`use`。
+
+我们只需要保证对于一个组件多次调用时内部Hook（eg: `useState`、`useEffect`）出现的次序保持一致即可，所谓的自定义Hook其实起到的只是一种**组合**的功能，用于将相关的逻辑抽离到一个函数内部。
 
 
 ## Hook闭包陷阱
@@ -256,11 +291,11 @@ FancyInput = forwardRef(FancyInput);
 // 测试代码1
 function Test1() {
     const [count, setCount] = useState(0);
-    // useEffect(() => {
-    //     setInterval(() => {
-    //         console.log(count)
-    //     }, 1000)
-    // }, []) // 空数组
+    useEffect(() => {
+        setInterval(() => {
+            console.log(count)
+        }, 3000)
+    }, []) // 空数组
 
     return (
         <div>
@@ -328,9 +363,9 @@ function Test3() {
 那么想要解决以上问题，只需要让`useCallback`创建的函数依赖某个值即可。
 
 ``` js
-// const fn = useCallback(() => {
-//     console.log(count)
-// }, [count]) 
+const fn = useCallback(() => {
+    console.log(count)
+}, [count]) 
 ```
 
 这样子，当函数组件第二次被调用后，根据对于前后的依赖值`count`，发现`count`发现变化了，这时候就会重新创建一个新的函数`fn`，此时的函数`fn`的引用和第一次创建的`fn`的引用是不同的。因此这次的函数`fn`所引用的变量`count`，是第二个函数作用域的变量`count`，也就是100。
