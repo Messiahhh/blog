@@ -1,55 +1,9 @@
 
 # 基础
 
-## JSX
-
-``` jsx
-const element = <h1 class="hello">hello, world!</h1>
-const component = <App /> 
-```
-
-在React中我们能够编写这种被称为JSX风格的代码，该代码实际会被`babel`和`@babel/preset-react`编译成`React.createElement`函数调用，它等价于以下代码
-
-``` jsx
-const element = React.createElement('h1', { class: 'hello' }, 'hello, world')
-const component = React.createElement(App, null, null)
-```
-
-而`React.createElement`函数的返回值对象被我们称作**虚拟DOM**
-
-``` js
-// element 
-{
-    $$typeof: Symbol(react.element)
-    key: null
-    props: {class: "hello", children: "hello, world!"}
-    ref: null
-    type: "h1"
-    _owner: null
-    _store: {validated: false}
-    _self: null
-    _source: {fileName: "*\src\index.js", lineNumber: 21, columnNumber: 17}
-    __proto__: Object
-}
-
-// component
-{
-    $$typeof: Symbol(react.element)
-    key: null
-    props: {}
-    ref: null
-    type: class App
-    _owner: null
-    _store: {validated: false}
-    _self: null
-    _source: {fileName: "C:\Users\Messiah\Desktop\workshop\learn-react\src\index.js", lineNumber: 22, columnNumber: 19}
-    __proto__: Object
-}
-```
-
 ## 组件
 
-React组件分为**class组件**和**函数组件**，函数组件没有内部状态和生命周期，但是可以使用`Hook`实现类似的效果，我会在后面详细介绍`Hook`，本节将着重介绍类组件。
+React组件包括class组件和函数组件。
 
 ``` jsx live 
 class Welcome extends React.Component {
@@ -69,9 +23,9 @@ function Hello(props) {
 }
 ```
 
-Vue和React都是数据驱动视图的更新。Vue采用对数据的劫持，因此知道具体数据的改变，当父组件发生重新渲染时子组件不一定会重新渲染；而React通常只要父组件发生了重新渲染，子组件也会进行重新渲染，这种组件被称为**非纯组件**。
+当组件内部`state`改变或`props`地址改变的时候组件会重新渲染，并且对于非纯组件来说，父组件的渲染也会引起子组件的渲染。
 
-为了避免额外的开销我们可以使用**纯组件**，**父组件的渲染不会触发纯组件的渲染。**
+我们可以使用`React.PureComponent`或`React.memo`实现纯组件。
 
 ``` jsx
 class Akara extends React.PureComponent { // 纯类组件
@@ -81,7 +35,6 @@ class Akara extends React.PureComponent { // 纯类组件
 const App = React.memo(() => <div>akara</div>) // 纯函数组件
 ```
 
-无论何种组件，当通过`setState`修改数据或`props`改变时（浅对比），组件就会重新渲染。
 
 ### 状态
 

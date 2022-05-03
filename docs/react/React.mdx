@@ -3,7 +3,104 @@ sidebarDepth: 4
 ---
 # React
 
+## 虚拟DOM
 
+``` jsx
+const element = <h1 class="hello">hello, world!</h1>
+const component = <App /> 
+```
+
+上方的代码被称之为`JSX`语法，实际上会被编译成`React.createElement`，因此等价于以下代码
+
+
+``` jsx
+const element = React.createElement('h1', { class: 'hello' }, 'hello, world')
+const component = React.createElement(App, null, null)
+```
+
+实际上`React.createElement`返回的是一个普通的对象，这种对象被称之为`JSX.Element`或`React.ReactElement`，也可以被叫做**虚拟DOM**
+
+``` js
+const element = {
+    $$typeof: Symbol(react.element),
+    key: null,
+    props: {class: "hello", children: "hello, world!"},
+    ref: null,
+    type: "h1",
+}
+
+const component = {
+    $$typeof: Symbol(react.element),
+    key: null,
+    props: {},
+    ref: null,
+    // highlight-next-line
+    type: App(), // 渲染函数
+}
+```
+
+## Fiber Node
+
+:::note
+从上述代码中我们能了解到，虚拟DOM本身不存在指向其他虚拟DOM的指针，实际上除了我们最初传给`ReactDOM.render`的虚拟DOM，大多数虚拟DOM都是在渲染函数**运行时**动态生成的，通过在运行时递归调用渲染函数我们能够构建出一颗真正的树。
+
+:::
+
+``` jsx
+function App() {
+  return <Test />;
+}
+
+function Test() {
+  return <div>test</div>;
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+```
+
+对于上方的代码，通过`ReactDOM.render`我们能够递归调用渲染函数，并且对于每一个组件实例（或者说虚拟DOM）我们都会创建一个`Fiber Node`，因为是运行时创建所以`Fiber Node`能够知道其所关联（`parent`、`child`、`sibling`）`Fiber Node`
+是谁。
+
+值得一提的是`Hook`所使用的`memorizedState`就是`Fiber Node`的一个属性。
+
+
+:::caution
+伪代码，主要用来表达`FiberNode`之间的连接关系
+:::
+
+``` jsx
+{
+    type: App(),
+    fiberNode: { // fiberNode1
+        child: fiberNode2,
+        return: null, // parent
+        memoizedState: {},
+        ...rest,
+    } 
+}
+
+{
+    type: Test(),
+    fiberNode: { //  fiberNode2
+        child: fiberNode3,
+        return: fiberNode1
+    }
+}
+
+{
+    type: 'div',
+    fiberNode: { //  fiberNode3
+        child: null,
+        return: fiberNode2,
+    }
+}
+```
+
+:::info 总结
+
+`ReactDOM.render`以我们传入的虚拟DOM为入口，递归调用渲染函数生成虚拟DOM，并且每个虚拟DOM都有对应的一个`Fiber Node`，这些`Fiber Node`通过地址形成了一颗完整的树。
+
+:::
 
 
 
