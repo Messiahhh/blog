@@ -4,7 +4,95 @@ sidebarDepth: 4
 
 > 参考https://react-typescript-cheatsheet.netlify.app/
 
-### 函数组件
+
+## 常用类型
+
+### `React.ReactElement` ｜ `JSX.Element`
+
+``` tsx
+type Key = string | number
+interface ReactElement<T, P> { // 伪代码
+    type: T,
+    props: P,
+    Key: Key | null
+}
+namespace JSX {
+    interface Element extends React.ReactElement<any, any> {}
+}
+```
+
+``` tsx
+const App = (): JSX.Element => <div>test</div>;
+```
+
+### `React.ReactNode`
+
+``` tsx
+type ReactNode = ReactChild | ReactFragment | ReactPortal | boolean | null | undefined;
+
+type ReactText = string | number
+type ReactChild = ReactElement | ReactText
+```
+``` tsx
+const App = ({ children }: { children?: React.ReactNode}) => {}
+```
+
+### `React.ComponentProps`
+``` ts
+type ComponentProps<T extends keyof JSX.IntrinsicElements | JSXElementConstructor<any>> =
+    T extends JSXElementConstructor<infer P>
+        ? P
+        : T extends keyof JSX.IntrinsicElements
+            ? JSX.IntrinsicElements[T]
+            : {};
+```
+``` tsx
+const App = (props: { name: string } & React.ComponentProps<'button'>) => {
+    const { name, ...rest } = props
+    return <button {...rest} />
+}
+
+type Test = React.ComponentProps<typeof App>
+```
+
+:::info
+需要注意的是`JSX.IntrinsicElements`会包括一个额外的`ref`字段，并且类型为`LegacyRef`
+``` ts
+type LegacyRef<T> = string | Ref<T>;
+interface ClassAttributes<T> extends Attributes {
+    ref?: LegacyRef<T> | undefined;
+}
+```
+实际情况下我们更多会使用`ComponentPropsWithoutRef`获取组件或HTML元素的`props`，而对于通过`forwardRef`创建的组件我们可以使用`ComponentPropsWithRef`获取其`props`
+:::
+
+
+
+### `React.CSSProperties`
+
+``` tsx
+type props = {
+    style: React.CSSProperties;
+}
+```
+
+
+
+### Form and Event
+
+``` tsx
+type props = {
+    onClick(event: React.MouseEvent<HTMLButtonElement>): void;
+    onClick2: React.MouseEventHandler<HTMLButtonElement>;
+};
+```
+
+:::info
+如果不关心事件的具体类型，我们可以指定其为`React.SyntheticEvent`
+:::
+
+
+## 函数组件
 
 ``` tsx
 type myProps = {
@@ -13,7 +101,7 @@ type myProps = {
 const App = ({ count }: myProps) => <div>{count}</div>
 ```
 
-### 类组件
+## 类组件
 
 ``` tsx
 type myProps = {
@@ -36,112 +124,7 @@ class Parent extends React.Component<myProps, myState> {
 ```
 
 
-
-### 常见类型
-
-##### `React.ReactElement`
-
-``` tsx
-type Key = string | number
-interface ReactElement<T, P> { // 伪代码
-    type: T,
-    props: P,
-    Key: Key | null
-}
-```
-
-``` tsx
-const el: React.ReactElement = <div>hello</div>
-// 等价于
-const el: React.ReactElement = React.createElement('div', null, 'hello')
-```
-
-##### `JSX.Element`
-
-近似于`ReactElement`
-
-``` tsx
-namespace JSX {
-    interface Element extends React.ReactElement<any, any> {}
-}
-```
-
-##### `React.ReactText`
-
-``` tsx
-type ReactText = string | number
-```
-
-``` tsx
-const el: React.ReactText = 'aka'
-```
-
-##### `React.ReactChild`
-
-``` tsx
-type ReactChild = ReactElement | ReactText
-```
-
-##### `React.ReactNode`
-
-``` tsx
-interface ReactNodeArray extends Array<ReactNode> {}
-type ReactFragment = {} | ReactNodeArray;
-type ReactNode = ReactChild | ReactFragment | ReactPortal | boolean | null | undefined;
-```
-
-
-
-##### `React.CSSProperties`
-
-``` tsx
-type props = {
-    style: React.CSSProperties;
-}
-```
-
-
-
-##### 事件类型
-
-``` tsx
-type props = {
-    onClick(event: React.MouseEvent<HTMLButtonElement>): void;
-}
-```
-
-
-
-##### `React.ComponentPropsWithRef<E>`
-
-可以用来获取元素的原生属性：
-
-``` tsx
-type ChildProps = {
-    style?: React.CSSProperties;
-} & React.ComponentPropsWithoutRef<'input'>
-
-function Child(props: ChildProps) {
-    const {
-        style,
-        ...rest
-    } = props
-    return <input style={style} {...rest} />
-}
-```
-
-### 表单
-
-``` tsx
-handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {}
-handleChange = (e: React.FormEvent<HTMLInputElement>) => {}
-
-// or
-
-handleChange: React.ChangeEventHandler = (e) => {}
-```
-
-### Ref
+## Ref
 
 ``` tsx
 export default class App extends React.Component<appProps, appState> {
@@ -178,9 +161,9 @@ const FancyButton = React.forwardRef<HTMLButtonElement, myProps>((props, ref) =>
 
 
 
-### 常见问题
+## 常见问题
 
-##### class组件和函数组件的返回值类型不同
+### class组件和函数组件的返回值类型不同
 
 因为历史遗留原因，`class`组件返回值类型为`React.ReactNode`；而函数组件的返回值类型为`JSX.Element | null`。
 
@@ -196,7 +179,7 @@ function B() {
 }
 ```
 
-##### 不推荐使用React.FC
+### 不推荐使用React.FC
 
 今天的普遍共识是不要去使用`React.FC`。
 

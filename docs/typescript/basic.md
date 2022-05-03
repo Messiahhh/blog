@@ -533,6 +533,14 @@ type Distributed = NakedUsage<number | boolean > // = NakedUsage<number> | Naked
 type NotDistributed = WrappedUsage<number | boolean > // "NO"   
 ```
 
+利用这个特性，我们还可以实现以下功能
+``` ts
+type Test<T> = T extends any ? T[] : any;
+type Test2<T> = T[]
+
+type A = Test<number | string> // number[] | string[]
+type B = Test2<number | string> // (number | string)[]
+```
 
 
 
