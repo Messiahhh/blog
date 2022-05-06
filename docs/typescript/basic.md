@@ -250,602 +250,7 @@ const obj: {} = {
 
 
 
-
-
-
-
-
-
-
-
-
-## Interface
-
-``` tsx
-interface Person {
-    readonly id: number;
-    name: string;
-    age?: number;
-    [propName: string]: any;
-}
-
-let tom: Person = {
-    id: 89757,
-    name: 'Tom',
-    gender: 'male'
-};
-
-tom.id = 9527; // 报错
-```
-
-
-
-
-
-## Type Alias
-
-`interface`和`type alias`作用基本相当，但二者还是有一些区别的，这里挑几个重点的说说
-
-``` tsx
-interface A {
-    name: string
-}
-interface B extends A {
-    age: number
-}
-
-// ----- 分割线 -----
-
-type A = {
-    name: string
-}
-type B = A & {
-    age: number
-}
-```
-
-## 泛型
-
-泛型主要被使用在**`interface`**和**函数**当中。
-
-``` tsx
-interface A<T> {
-    name: T;
-    age: T;
-}
-
-let a: A<string> = {
-    name: 'aka',
-    age: '20',
-}
-```
-
-``` tsx
-function A<T>(name: T, age: T): T[] {
-    return [name, age]
-} 
-A('a', 'b')
-```
-
-无论是`interface`还是函数，都存在多个变量的类型，而很多时候我们希望这些变量的类型**强关联**，所以引入了泛型的概念。
-
-函数有个好处是当我们调用的时候不需要显式传入泛型的值，它会根据函数的参数进行推导。
-
-
-
-### 泛型约束
-
-很多时候我们需要限定泛型的值在某个范围，也就是通过`extends`来对其进行约束。
-
-``` tsx
-function A<T extends { id: number }> (name: T) {
-    console.log(name.id)
-}
-A({ id: 100 })
-
-function B<T extends 'a' | 'b'> (name: T) {
-    console.log(name)
-}
-B('a')
-```
-
-
-
-
-
-## 类型操作
-
-### `typeof`
-
-我们可以在类型上下文使用`typeof`获取值所对应的类型
-
-``` tsx
-let source = {
-    name: 'aka',
-}
-
-let target: typeof source = {
-    name: 'bkb',
-}
-```
-
-
-
-### `keyof`
-
-``` tsx
-let source = {
-    name: 'aka',
-    age: 20
-}
-let target: keyof typeof source // 'name' | 'age' 
-```
-
-``` ts
-interface test {
-    [n: number]: number; // 数字索引类型
-}
-
-let o = keyof test // number
-```
-
-``` ts
-interface test {
-    [s: string]: string; // 字符串索引类型
-}
-
-let o = keyof test // string | number
-```
-
-
-
-
-
-### Union Type
-
-联合类型（Union Types）表示取值可以为多种类型中的一种。
-
-```ts
-let value : string | number
-value = 'akara'
-value = 12345
-```
-
-当 TypeScript 不确定一个联合类型的变量到底是哪个类型的时候，我们**只能访问此联合类型的所有类型里共有的属性或方法**。
-
-```ts
-// 报错！！！
-function getLength(something: string | number): number {
- 	return something.length;
-}
-```
-
-上例中，`length` 不是 `string` 和 `number` 的共有属性，所以会报错。
-
-访问 `string` 和 `number` 的共有属性是没问题的
-
-```ts
-function getString(something: string | number): string {
- 	return something.toString();
-}
-```
-
-
-
-### Intersection Type
-
-``` tsx
-type a = {
-    name: string;
-}
-type b = {
-    age: number;
-}
-let o: a & b = {
-    name: 'aka',
-    age: 20,
-}
-```
-
-### Indexed Access Types
-
-``` ts
-interface test {
-  	0: number;
-  	name: string;
-    [n: number]: number;  // 数字索引类型
-    [s: string]: string | number; // 字符串索引类型， number | string > number
-};
-
-type a = test[0] // number
-type b = test['name'] // string
-type c = test[number] // number
-type d = test[string] // string | number
-
-type e = test[0 | 'name'] // string | number
-```
-
-索引类型分为字符串索引类型和数字索引类型。以上代码中，`0`是数字索引类型的子集、`name`是字符串索引类型的子集、**数字索引类型是字符串索引类型的子集**
-
-
-
-
-
-
-
-
-
-### Conditional Types
-
-形式：`A extends B ? a : b`
-
-``` tsx
-interface IdLabel {
-  	id: number /* some fields */;
-}
-interface NameLabel {
-  	name: string /* other fields */;
-}
-
-type NameOrId<T extends number | string> = T extends number
-  ? IdLabel
-  : NameLabel;
-
-function createLabel<T extends number | string>(idOrName: T): NameOrId<T> {
-	throw "unimplemented";
-}
-```
-
-``` tsx
-type MessageOf<T extends { message: unknown }> = T["message"];
-type MessageOf<T> = T extends { message: unknown } ? T["message"] : never;
-```
-
-我们通常会使用泛型对类型进行约束，不过有的时候我们也希望当参数是约束外的类型时，有一个固定的返回值。此时可以使用第二行的写法。
-
-#### `infer`
-
-使用条件类型时，我们还可以在内部使用`infer`关键字
-
-``` tsx
-type A<T> = T extends Array<infer U> ? U : T 
-                            
-type GetReturnType<Type> = Type extends (...args: never[]) => infer Return
-  ? Return
-  : never;
-```
-
-
-
-#### [Distributive Conditional Types](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-8.html#distributive-conditional-types)
-
-当`Conditional Types`中被检查的`type parameter`是[naked type parameter](https://stackoverflow.com/questions/51651499/typescript-what-is-a-naked-type-parameter)时，我们称之为Distributive Conditional Types（分布式条件类型），`naked type paramter`指的是类型参数并没有被其他类型包裹（包括`Array`、`tuple`、`function`或者其他范型）。
-
-``` ts
-type NakedUsage<T> = T extends boolean ? "YES" : "NO"
-type WrappedUsage<T> = [T] extends [boolean] ? "YES" : "NO"; // wrapped in a tuple
-```
-
-比如这里第一行就是分布式条件类型，此时当类型参数`T`被实例化为联合类型时，那么条件类型将会分发给联合类型的每一个成员。
-
-``` ts
-type Distributed = NakedUsage<number | boolean > // = NakedUsage<number> | NakedUsage<boolean> =  "NO" | "YES" 
-type NotDistributed = WrappedUsage<number | boolean > // "NO"   
-```
-
-利用这个特性，我们还可以实现以下功能
-``` ts
-type Test<T> = T extends any ? T[] : any;
-type Test2<T> = T[]
-
-type A = Test<number | string> // number[] | string[]
-type B = Test2<number | string> // (number | string)[]
-```
-
-
-
-
-
-
-### Mapped Types
-
-``` tsx
-type A = {
-    name: string;
-    age: number
-}
-
-type B = {
-    [p in keyof A]+?: A[p]
-}
-```
-
-> Note that this syntax describes a type rather than a member. If you want to add members, you can use an intersection type
-
-``` tsx
-// 错误的写法
-type test = {
-    [K in 'a' | 'b' | 'c']?: number;
-    name: string;
-}
-
-// 正确的写法
-type test = {
-    [K in 'a' | 'b' | 'c']?: number
-} & {
-    name: string,
-}
-```
-
-
-
-### 修饰符
-
-可以使用`-readonly`、`-?`、`+readonly`、`+?`等操作符。
-
-``` tsx
-type B = {
-    [p in keyof A]-?: A[p]
-}
-
-type B = {
-    -readonly[p in keyof A]: A[p]
-}
-
-type B = {
-    [p in keyof A]?: A[p] // 等于 +?
-}
-```
-
-
-
-## 类型守卫
-
-`TypeScript`的`Control Flow Analysis`（控制流分析）能够根据**代码逻辑**把联合类型`narrow`到一个更小范围的类型，同时对于`unknown`的类型我们也可以`narrow`成一个更具体的类型，这样的代码类型一般称为类型守卫（`type guard`）
-
-常见的类型守卫有这些`typeof`、`instanceof`、`in`、`switch...case...`等
-
-``` ts
-if (typeof value === 'string') {}
-if (value instanceof Array) {}
-if ('type' in value) {}
-
-value // string | number
-if (value.length) {} // value: string
-```
-
-``` ts
-type V = {type: 'a', name: string } | {type: 'b', age: number }
-switch (value.type) {
-  case 'a':
-    return value.name
-  case 'b'
-    return value.age;
-  default:
-    throw new Error('')
-}
-```
-
-除了这些基础的类型守卫，我们还可以自己定义类型守卫函数，比如常见的`Array.isArray`就是一个典型的类型守卫函数
-
-``` ts
-type fn = {
-  // highlight-next-line
-  isArray(arg: any): arg is any[];
-}
-```
-
-``` ts
-type A = {
-  type: 'a',
-  name: string;
-}
-
-type B = {
-  type: 'b',
-  age: number;
-}
-
-function isA(value: A | B): value is A {
-  return 'name' in value
-}
-
-function fn(value: A | B) {
-  if (isA(value)) {
-    return value.name
-  }
-  return value.age;
-}
-```
-
-
-
-## 类型断言
-
-``` tsx
-const el = document.querySelector('.el') as HTMLCanvasElement 
-
-// or
-
-const el = <HTMLCanvasElement>document.querySelector('.el')
-```
-
-
-
-### const assertion
-
-``` tsx
-let obj = {
-    name: 'aka' // string
-}
-
-let obj = {
-    name: 'aka' // readonly 'aka' 
-} as const
-```
-
-`const`断言还可以把数组断言成只读元组：
-
-``` tsx
-let arr = [1, 2, 3] as const
-```
-
-
-
-### Not-null assertion
-
-``` tsx
-function liveDangerously(x?: number | undefined) {
-  console.log(x!.toFixed());
-}
-```
-
-
-
-### assertion function
-
-``` ts
-function isNumber(value: unknown): asserts value is number {
-    if (typeof value !== 'number') throw new Error('Assert Error')
-}
-
-declare const value: unknown;
-isNumber(value)
-
-value.toFixed()
-value.toPrecision()
-```
-
-
-
-## 声明合并
-
-### Merging Interfaces
-
-``` ts
-interface A {
-    name: string;
-}
-
-interface A {
-    age: number;
-}
-
-let a: A = {
-    name: 'aaa',
-    age: 20
-}
-```
-
-``` ts
-class D {
-    name = 'ddd'
-
-    run() {
-
-    }
-}
-
-interface D {
-    age: number;
-}
-
-let d: D = {
-    name: 'ddd',
-    run() {},
-    age: 20,
-}
-```
-
-
-
-### Merging Namespaces
-
-``` ts
-namespace B {
-    export interface C {
-        name: string;
-    }
-    export const name = 10;
-}
-
-namespace B {
-    export interface C {
-        age: number;
-    }
-    export const age = 20;
-}
-
-let c: B.C = {
-    name: 'ccc',
-    age: 20
-}
-
-let c2 = B.age
-let c3 = B.name;
-```
-
-
-
-### Merging Namespaces With Value
-
-我们知道像`变量`、`函数`只能在值上下文中使用，`interface`、`type alias`只能在类型上下文中使用，而`class`、`enum`既可以在值上下文中使用也可以在类型上下文中使用。
-
-而`namespace`则更加特殊，这个关键字原本在`TypeScript`中代表的含义是内部模块（`internal module`），主要的作用是将相关的类型和值挂载在一个对象上，事实上在编译后我们能够得到的就是一个对象。
-
-``` ts
-namespace Obj {
-   export const age = 20;
-}
-
-// --- 等价于 ---
-
-const Obj = {
-   age: 20
-}
-```
-
-因此我们可以使用`namespace`来给`Classes`、`Functions`、`Enums`合并静态的属性或方法（后者本质上都是对象）
-
-``` ts
-function fn() {
-    
-}
-
-namespace fn {
-    export const age = 20;
-}
-
-console.log(fn.age);
-```
-
-``` ts
-enum Color {
-    One,
-    Two,
-}
-
-namespace Color { 
-    export const age = 20;
-}
-
-console.log(Color.One, Color.Two, Color[0], Color[1], Color.age)
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Class
+### Class
 
 ``` tsx
 const d: Date = new Date()
@@ -942,379 +347,99 @@ class Car implements Alarm, Light {
 }
 ```
 
-
-
-
-
-以及一些代码例子以供参考：
+## Interface
 
 ``` tsx
-// 如果在TypeScript中使用construct function的方式创建类，感觉很多问题
-
-
-// 错误
-// 'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.
-function A() {}
-new A()
-
-// 错误
-// Type '() => void' is not assignable to type 'new () => void'.
-// Type '() => void' provides no match for the signature 'new (): void'.
-const A: new() => void = function() {}
-
-
-// 错误！
-// 'this' implicitly has type 'any' because it does not have a type annotation.
-function People (name: string, id: number) {
-    this.name = name 
-    this.id = id 
-}
-```
-
-
-
-
-
-
-
-
-
-## 工具类型实现
-
-##### `Partial<T>`
-
-``` typescript
-// example
-interface Todo {
-  title: string;
-  description: string;
+interface Person {
+    readonly id: number;
+    name: string;
+    age?: number;
+    [propName: string]: any;
 }
 
-function updateTodo(todo: Todo, fieldsToUpdate: Partial<Todo>) {
-  return { ...todo, ...fieldsToUpdate };
-}
-
-const todo1 = {
-  title: "organize desk",
-  description: "clear clutter"
+let tom: Person = {
+    id: 89757,
+    name: 'Tom',
+    gender: 'male'
 };
 
-const todo2 = updateTodo(todo1, {
-  description: "throw out trash"
-});
+tom.id = 9527; // 报错
+```
 
-// implement
-type Partial<T> = {
-    [P in keyof T]?: T[P]
+
+
+
+
+## Type Alias
+
+`interface`和`type alias`作用基本相当，但二者还是有一些区别的，这里挑几个重点的说说
+
+``` tsx
+interface A {
+    name: string
+}
+interface B extends A {
+    age: number
+}
+
+// ----- 分割线 -----
+
+type A = {
+    name: string
+}
+type B = A & {
+    age: number
 }
 ```
 
+## 泛型
 
+泛型主要被使用在**`interface`**和**函数**当中。
 
-##### `Require<T>`
-
-``` typescript
-type Require<T> = {
-    [P in keyof T]-?: T[P]
-}
-```
-
-
-
-##### `Readonly<T>`
-
-``` typescript
-type Readonly<T> = {
-    readonly [P in keyof T]: T[P]
-}
-```
-
-
-
-##### `Pick<T, K>`
-
-``` typescript
-// example
-interface Todo {
-  title: string;
-  description: string;
-  completed: boolean;
+``` tsx
+interface A<T> {
+    name: T;
+    age: T;
 }
 
-type TodoPreview = Pick<Todo, "title" | "completed">;
-
-const todo: TodoPreview = {
-  title: "Clean room",
-  completed: false
-};
-
-// implement
-type Pick<T, K extends keyof T> = {
-    [P in K]: T[P]
+let a: A<string> = {
+    name: 'aka',
+    age: '20',
 }
-```
-
-
-
-##### `Exclude<T, U>`
-
-``` typescript
-// example
-type T0 = Exclude<"a" | "b" | "c", "a">; // "b" | "c"
-type T1 = Exclude<"a" | "b" | "c", "a" | "b">; // "c"
-type T2 = Exclude<string | number | (() => void), Function>; // string | number
-
-// implement
-// extends搭配 ?: 运算符使用
-type Exclude<T, U> = T extends U ? never : T;
-
-// 相当于: type A = 'a' 
-type A = Exclude<'x' | 'a', 'x' | 'y' | 'z'>
-```
-
-
-
-##### `Extract<T, U>`
-
-``` typescript
-type Extract<T, K> = T extends K ? T : never
-```
-
-
-
-
-
-##### `Omit<T, K>`
-
-``` typescript
-// example
-interface Todo {
-  title: string;
-  description: string;
-  completed: boolean;
-}
-
-type TodoPreview = Omit<Todo, "description">;
-
-const todo: TodoPreview = {
-  title: "Clean room",
-  completed: false
-};
-
-// implement
-
-type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
-// or
-type Omit<T, K> = {
-    [P in Exclude<keyof T, K>]: T[P]
-}
-```
-
-
-
-##### `Record<K, T>`
-
-``` typescript
-type _Record<K extends keyof any, T> = {
-    [P in K]: T
-}
-```
-
-
-
-##### `NonNullable<T>`
-
-``` typescript
-type NonNullable<T extends keyof any> = T extends null | undefined ? never : T
-```
-
-
-
-##### `Parameters<T>`
-
-``` typescript
-// infer 关键字
-type Parameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? P : never;
-```
-
-
-
-##### `ReturnType<T>`
-
-``` typescript
-// infer 关键字
-type ReturnType<T extends (...args: any) => any> = T extends (...args: any) => infer R ? R : never
-```
-
-
-
-##### `ConstructorParameters<T>`
-
-``` typescript
-type ConstructorParameters<T extends new (...args: any) => any> = T extends new (...args: infer P) => any ? P : never;
-```
-
-
-
-##### `InstanceType<T>`
-
-``` typescript
-type InstanceType<T extends new (...args: any) => any> = T extends new (...args: any) => infer R ? R : any;
-```
-
-
-
-
-
-
-
-## Follow TypeScript Version
-
-#### 4.4
-
-1. 索引类型支持Symbol、模板字符串类型、联合类型
-2. Try...Catch 中err的类型默认为any，现在可以通过`--useUnknownInCatchVariables`将默认值改为`unknown`
-3. `--exactOptionalPropertyTypes`。可选符号应该意味着属性可以存在可以不存在，但不应该代表该属性的值可以为undefined
-
-#### 4.3 
-
-1. 允许set和get访问器拥有不同的类型。
-
-   ``` ts
-   class A {
-       #size = 1
-       
-       // 4.3以前会报错
-       // 'get' and 'set' accessor must have the same type
-       get size(): number { 
-           return this.#size;
-       }
-   
-       set size(value: number | string) {
-           if (typeof value === 'string') {
-               this.#size = 0
-           } else {
-               this.#size = value  
-           }
-       }
-   }
-   ```
-
-   ``` ts
-   // Now valid!
-   interface Thing {
-       get size(): number
-       set size(value: number | string | boolean);
-   }
-   ```
-
-2. 新增override关键字用来在类的继承中显式声明方法的重写，同时新增`--noImplicitOverride`来禁止隐式重写（即必须使用override关键字重写，减少出错的可能）
-
-3. 扩展私有域，支持#method()
-
-#### 4.2
-
-1. 元组支持可选参数和rest参数
-
-
-
-#### 4.1
-
-1. 模板字符串字面量类型
-
-
-
-#### 4.0
-
-##### Variadic Tuple Types
-
-``` typescript
-function tail<T extends any[]>(arr: readonly [any, ...T]) {
-  const [_ignored, ...rest] = arr;
-  return rest;
-}
-
-
-// spreads
-type Strings = [string, string];
-type Numbers = [number, number];
-
-type StrStrNumNumBool = [...Strings, ...Numbers, boolean];
-```
-
-
-
-##### labeld tuple
-
-``` typescript
-type Range = [start: number, end: number];
-```
-
-
-
-#### 3.8
-
-1. import type {}
-
-   ``` tsx
-   export const People = 'p1';
-   export type People2 = 'p2';
-   
-   const p: typeof People = 'p1'; // ok
-   const p2: People2 = 'p2'; // ok
-   const p3 = People; // "People" 是使用 "import type" 导入的，因此不能用作值。
-   ```
-
-2. 私有字段（#xxx）
-
-3. export * as xxx from xx
-
-4. top-level await（只能在模块中用）
-
-
-
-
-
-#### 3.7 
-
-1. 可选链
-2. 支持??（*nullish coalescing operator* ）
-
-
-
-### 随手记录
-
-``` typescript
-const test = <T extends unknown>(a: T): T[] => {
-    return [a]
-}
-
-function test2<T>(a: T): T[] {
-    return [a]
-}
-
-
-// class组件内的Ref
-class Button extends React.Component {
-    myRef: React.RefObject<HTMLButtonElement> // <button></button
-    // <HTMLDivElement> <div></div>
-    // <HTMLInputElement> <input />
-    constructor(props: any) {
-        super(props)
-        this.myRef = React.createRef()
-    }
-    render() {
-        return (
-            <button ref={this.myRef}>{this.props.children}</button>
-        )
-    }
-}
- 
 ```
 
 ``` tsx
-function sum<T extends number>(a: T, b: T): T {
-    return (a + b) as T // 不加T报错
-}
+function A<T>(name: T, age: T): T[] {
+    return [name, age]
+} 
+A('a', 'b')
 ```
+
+无论是`interface`还是函数，都存在多个变量的类型，而很多时候我们希望这些变量的类型**强关联**，所以引入了泛型的概念。
+
+函数有个好处是当我们调用的时候不需要显式传入泛型的值，它会根据函数的参数进行推导。
+
+
+
+### 泛型约束
+
+很多时候我们需要限定泛型的值在某个范围，也就是通过`extends`来对其进行约束。
+
+``` tsx
+function A<T extends { id: number }> (name: T) {
+    console.log(name.id)
+}
+A({ id: 100 })
+
+function B<T extends 'a' | 'b'> (name: T) {
+    console.log(name)
+}
+B('a')
+```
+
+
+
+
+
+
 

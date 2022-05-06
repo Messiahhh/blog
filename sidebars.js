@@ -69,7 +69,31 @@ const sidebars = {
         {
           type: 'doc',
           id:  'typescript/basic',
-          label: '类型系统'
+          label: '基础'
+        },
+        {
+          type: 'doc',
+          id:  'typescript/类型操作',
+        },
+        {
+          type: 'doc',
+          id:  'typescript/类型守卫',
+        },
+        {
+          type: 'doc',
+          id:  'typescript/类型断言',
+        },
+        {
+          type: 'doc',
+          id:  'typescript/声明合并',
+        },
+        {
+          type: 'doc',
+          id:  'typescript/工具类型',
+        },
+        {
+          type: 'doc',
+          id:  'typescript/版本更新日志',
         },
       ],
     },
