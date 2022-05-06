@@ -89,6 +89,10 @@ const sidebars = {
         },
         {
           type: 'doc',
+          id:  'typescript/逆变与协变',
+        },
+        {
+          type: 'doc',
           id:  'typescript/工具类型',
         },
         {
