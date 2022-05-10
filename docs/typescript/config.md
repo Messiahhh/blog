@@ -196,7 +196,7 @@ let str: string | undefined // 通常需要这样写
 
 
 
-### extends
+## extends
 
 继承配置文件。
 
