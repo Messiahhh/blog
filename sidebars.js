@@ -73,7 +73,7 @@ const sidebars = {
         },
         {
           type: 'doc',
-          id:  'typescript/类型操作',
+          id:  'typescript/类型操作.mdx',
         },
         {
           type: 'doc',
@@ -97,7 +97,7 @@ const sidebars = {
         },
         {
           type: 'doc',
-          id:  'typescript/版本更新日志',
+          id:  'typescript/版本更新日志.mdx',
         },
       ],
     },
