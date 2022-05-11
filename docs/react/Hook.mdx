@@ -18,9 +18,9 @@ function Example(props) {
     return (
         <div>
             <div>{ count }</div>
-            <Button onClick={() => setCount(count + 1)}>
+            <button onClick={() => setCount(count + 1)}>
               点击
-            </Button>
+            </button>
         </div>
     )
 }
@@ -50,9 +50,9 @@ function App() {
   return (
     <div>
       <p>You clicked {count} times</p>
-      <Button onClick={() => setCount(count + 1)}>
+      <button onClick={() => setCount(count + 1)}>
         Click me
-      </Button>
+      </button>
     </div>
   );
 }
@@ -86,10 +86,8 @@ function App(props) {
       <>
         <div>ref: { ref.current }</div>
         <div>count: { count }</div>
-        <Space>
-          <Button onClick={() => ref.current += 1}>ref.current+1，但不重新渲染</Button>
-          <Button onClick={() => setCount(count => count + 1)}>count+1，触发重新渲染</Button>
-        </Space>
+        <button onClick={() => ref.current += 1}>ref.current+1，但不重新渲染</button>
+        <button onClick={() => setCount(count => count + 1)}>count+1，触发重新渲染</button>
       </>
     )
 }
@@ -197,7 +195,7 @@ function App() {
         age: 20
     }}>
     // highlight-end
-      <Button onClick={() => setCount(count => count + 1)}></Button>
+      <button onClick={() => setCount(count => count + 1)}></button>
       <Child />
     </MyContext.Provider>
   );
@@ -301,7 +299,7 @@ function Test1() {
     return (
         <div>
             <div>{count}</div>
-            <Button onClick={() => setCount(10)}>重新渲染</Button>
+            <button onClick={() => setCount(10)}>重新渲染</button>
         </div>
     )
 }
@@ -334,10 +332,8 @@ function Test2() {
     return (
         <div>
             <div>{count}</div>
-            <Space>
-              <Button onClick={() => setCount(100)}>重新渲染</Button>
-              <Button onClick={fn}>输出结果</Button> 
-            </Space>
+            <button onClick={() => setCount(100)}>重新渲染</button>
+            <button onClick={fn}>输出结果</button> 
         </div>
     )
 }
@@ -371,8 +367,8 @@ function App() {
   return (
     <>
       {count}
-      <Button onClick={() => setCount(100)}>点我</Button>
-      <Button onClick={fn}>输出</Button>
+      <button onClick={() => setCount(100)}>点我</button>
+      <button onClick={fn}>输出</button>
     </>
   );
 }
@@ -400,7 +396,7 @@ function usePersistFn<T extends noop>(fn: T) {
 // 使用
 const [count, setCount] = useState(0);
 const showCountPersistFn = usePersistFn(() => {
-    message.info(`Current count is ${count}`);
+    alert(`Current count is ${count}`);
 });
 ```
 

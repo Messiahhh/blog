@@ -17,9 +17,13 @@ const config = {
   projectName: 'blog', // Usually your repo name.
   deploymentBranch: 'gh-pages',
   plugins: ['@docusaurus/theme-live-codeblock'],
+  i18n: {
+    defaultLocale: 'zh-Hans',
+    locales: ['zh-Hans'],
+  },
   presets: [
     [
-      '@docusaurus/preset-classic', 
+      'classic',
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
@@ -56,6 +60,10 @@ const config = {
         hideOnScroll: true,
         items: [
           {
+            type: 'search',
+            position: 'right',
+          },
+          {
             type: 'doc',
             docId: 'HTML',
             position: 'right',
@@ -77,7 +85,15 @@ const config = {
       colorMode: {
         respectPrefersColorScheme: true
       },
-      
+      algolia: {
+        // The application ID provided by Algolia
+        appId: 'BWG0DEIDEP',
+    
+        // Public API key: it is safe to commit it
+        apiKey: 'd3f9fff64e1510e7299229fb32996203',
+    
+        indexName: 'messiahhh',
+      }
     }),
 };
 
