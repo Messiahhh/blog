@@ -44,12 +44,12 @@
 
 
 :root {
-  --ifm-color-primary: #ff0072;
-  --ifm-color-primary-dark: #990044;
-  --ifm-color-primary-darker: #66002e;
-  --ifm-color-primary-darkest: #330017;
-  --ifm-color-primary-light: #ff8abe;
-  --ifm-color-primary-lighter: #ffb8d8;
+  --ifm-color-primary: #827397;
+  --ifm-color-primary-dark: #4D4C7D;
+  --ifm-color-primary-darker: #4D4C7D;
+  --ifm-color-primary-darkest: #363062;
+  --ifm-color-primary-light: #E9D5DA;
+  --ifm-color-primary-lighter: #E9D5DA;
   --ifm-color-primary-lightest: #ffe5f1;
   --ifm-code-font-size: 95%;
   --ifm-font-family-base: 'nt-dapper', -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI',
