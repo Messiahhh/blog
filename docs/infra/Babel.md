@@ -1,3 +1,10 @@
+
+:::tip 扩展阅读
+
+如果想要了解Babel的底层原理，可以看[编译原理一节](https://messiahhh.github.io/blog/docs/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86)
+
+:::
+
 `@babel/core`是`babel`的核心库，提供了**`JS`代码的编译功能**。`@babel/cli`允许我们在命令行中使用`babel`；而我们大多数情况是在`webpack`中搭配使用`@babel/core`，此时需要额外安装`babel-loader`。
 
 默认情况下编译前后代码格式一样，我们需要**使用插件来指定转化功能**。
