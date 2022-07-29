@@ -2,7 +2,7 @@
 
 > 刚开始学
 
-[Rust Book](https://doc.rust-lang.org/book/title-page.html)
+[参考：Rust Book](https://doc.rust-lang.org/book/title-page.html)
 
 
 
@@ -125,15 +125,13 @@ println!("{}", hp) // 100.12
 
 
 
-### 数据类型
+### 基本数据类型
 
 #### 标量类型（scalar）
 
-
-
 - 整数
   - 符号整数，如`i32`、`i64`
-  - 非符号整数，如`u32`、`u64`
+  - 无符号整数，如`u32`、`u64`
 - 浮点数
   - 如`f32`、`f64`
 - 布尔值
@@ -166,7 +164,7 @@ fn main() {
 
 ##### 数组
 
-每一项的类型可以不同，长度同样固定（这一点和JavaScript不同）
+每一项的类型必须相同，长度同样固定（这一点和JavaScript不同）
 
 ``` rust
 fn main() {
@@ -223,7 +221,7 @@ println!("{:?}", value) // ()
 
 ### 控制流
 
-#### if表达式
+#### if expression
 
 Rust不会自动把目标值转化为对应的布尔值
 
@@ -246,7 +244,9 @@ println!("The value of number is: {number}");
 
 
 
-#### loop
+#### loop expression
+
+通过`loop`关键字循环执行某些操作，通过`break`退出当前循环，同时`break`的值会作为`loop`表达式的求值结果进行返回。
 
 ``` rust
 fn main() {
@@ -266,7 +266,7 @@ fn main() {
 
 ##### loop label
 
-多个`loop`表达式嵌套的情况下，我们可以给`loop`一个`label`，`break`的之后可以`break`指定`label`对应的`loop`
+通过给`loop`一个指定的名称，在多个`loop`表达式嵌套的情况下，我们可以`break`某个具名的`loop`
 
 ``` rust
 fn main() {
@@ -285,7 +285,7 @@ fn main() {
 ``` rust
 fn main() {
   while true {
-    
+    // do somethign
   }
 }
 ```
@@ -320,46 +320,65 @@ fn main() {
 
 ### 所有权（Ownership）
 
-- Each value in Rust has an *owner*.
-- There can only be one owner at a time.
-- When the owner goes out of scope, the value will be dropped.
+> - Each value in Rust has an *owner*.
+> - There can only be one owner at a time.
+> - When the owner goes out of scope, the value will be dropped.
 
-C、C++的内存管理是手动分配和释放;而更多的语言是使用GC来进行垃圾回收;Rust通过所有权的机制来实现对堆内存中用不到的数据进行回收.
+Rust中有一个独特的概念叫做**所有权**。对于像C、C++这类的传统语言，我们需要在运行时手动进行内存的分配与释放，这会增大我们的心智负担；因此更多的语言（如Go、Java、JavaScript），都是通过垃圾收集（GC）实现对无用的内存进行自动的回收，一种常见的做法是“引用计数”，我们会收集堆内存被引用的情况，当一块堆内存不再被任何指针指向，我们就会自动释放这块内存空间。GC可以降低我们的心智负担，但同时也会降低运行效率。而Rust引入的所有权概念，就是专门用来管理堆内存何时回收的。
 
-对于JavaScript来说,可以同时存在a、b、c变量指向同一块堆内存,因此只有当a、b、c都被释放后GC才会回收那块内存;而对于Rust,同时只能有一个变量拥有这块内存的所有权
-
-``` rust
-let a = String::from("hello");
-let b = a;
-let c = b;
-
-a.as_bytes(); // error
-```
-
-此时,a和b都已经无效了,本质上是堆内存的所有权已经从a转移(move)到b再move到c上.
-
-
-
-当拥有所有权的变量离开当前作用域时,就会自动释放对应的堆内存.
-
-
-
-所以本质上,一块堆内存只能由一个指针指向,因此在该变量离开作用域的时候就能够直接释放内存了.
-
-所有权的转移不仅发生在赋值操作,比如函数的传参、返回值也会发生move
-
-
-
-那么,当我们把一个变量的所有权move到函数内的变量,又需要在函数外继续使用的话,就要求函数把内部的参数又return出去,很麻烦
-
-
-
-所以此时引出一个“reference”和“borrow”, `&a`
+对于一块堆内存，可能存在多个变量同时指向，因此我们很难知道什么时候才去释放这块内存。而所有权表示着这块内存只能被一个变量所有，此时其他的变量都无法访问这块内存，因此当该变量离开作用域的时候我们可以无负担的释放掉这块内存。
 
 ``` rust
-let a = String::from("hello")
-let b = &a;
+fn test() {
+  let A = String::from("hello");
+	let B = A;
+
+	A.as_bytes(); // error
+}
+
+test();
 ```
+
+对于上方代码，我们通过`String::from("hello")`分配了一块堆内存，变量A的指针指向着这块堆内存，此时变量A拥有这块堆内存的所有权。当我们执行`let B = A`的时候，会把变量A的指针赋值给变量B，那么此时变量A和变量B都指向着这块堆内存，但这块内存的所有权也同时从变量A转移到变量B身上了，因此虽然变量A的指针是指向着这块堆内存的，但它已经无权访问这块堆内存了，具体的表现是我们不再能调用`A.as_bytes()`这种方法了。而当函数调用完成后，变量A就离开作用域了，此时我们会自动释放变量A所指向的堆内存。
+
+#### 所有权转移
+
+所有权的转移不仅发生在赋值操作中，函数的传参、返回值，都可能发生所有权的转移。
+
+``` rust
+fn main() {
+    let A = String::from("hello");
+
+    let B = test(A);
+  	B.as_bytes();
+}
+
+fn test(C: String) -> String {
+    println!("{:?}", C.as_bytes());
+    C
+}
+```
+
+对于上方代码，`main`函数中变量A指向着一块堆内存，调用`test`函数的时候所有权从变量A转移到函数内部的参数C身上，为了能在后续继续使用这块内存我们又需要从`test`函数从把C返回出来，从而实现把所有权从参数C转移到变量B身上。
+
+可以看出虽然所有权很大程度解决了内存回收的问题，但使用起来很麻烦，因此Rust又引入了一个新的概念**引用**，来解决这种问题。
+
+#### 引用
+
+``` rust
+let A: String = String::from("hello");
+let B: &String = &A;
+```
+
+在这个例子中，我们通过`&A`创建了一个引用B，B通过地址指向A，而A又通过指针指向堆内存。A拥有这块堆内存的所有权，而B则通过A来间接读/写这块内存，因此也被称为借用`borrow`
+
+
+
+
+
+
+
+
 
 
 
@@ -371,7 +390,13 @@ struct People {
     age: u32,
     male: bool
 }
+```
 
+#### impl
+
+通过`impl`关键字定义结构体的方法（类似原型方法），第一个参数不是实例`self`的方法被称作关联函数`associted function`（类似静态方法）
+
+``` rust
 impl People {
     fn is_male(&self) -> bool {
         self.male == true
@@ -387,22 +412,43 @@ impl People {
 }
 
 fn main() {
-    let p1 = People {
-        name: String::from("akara"),
-        age: 20,
-        male: true
-    };
-    
-    let p2 = People::create(String::from("akara"), 20, false);
-    let p3 = People {
-        age: 30,
-        ..p2 // 两个点
-    };
-    println!("{}, {}", p1.is_male(), p3.age)
+  let p1 = People {
+    name: String::from("akara"),
+    age: 20,
+    male: true
+};
+
+let p2 = People::create(String::from("akara"), 20, false);
 }
 ```
 
+#### struct update syntax
 
+类似扩展运算符`spread syntax`，Rust通过`..`来根据一个结构体生成一个新的结构体
+
+``` rust
+let p3 = People {
+    age: 30,
+    ..p2 // 两个点
+};
+println!("{}, {}", p1.is_male(), p3.age)
+```
+
+#### tuple struct
+
+``` rust
+struct Point(i32, i32, i32);
+
+let p = Point(1, 1, 0)
+```
+
+#### unit-like struct
+
+``` rust
+struct Point;
+
+let p = Point;
+```
 
 
 
@@ -413,7 +459,6 @@ fn main() {
 ### Enum
 
 ``` rust
-
 enum Days {
     One,
     Two(u32),
@@ -441,14 +486,20 @@ fn test(e: Days) -> u32 {
 
 #### `Option<T>`
 
-Rust中不存在null空值的概念,通过`Option<T>`可以模拟某个变量值为空的情况.
+Rust中不存在空值的概念，一般通过内置的`Option<T>`模拟可能为空值的情况
+
+``` rust
+enum Option<T> {
+    None,
+    Some(T),
+}
+```
 
 ``` rust
 fn main() {
     let a = test(Option::Some(20));
     println!("{}", a)
 }
-
 
 fn test(o: Option<u32>) -> u32 {
     match o {
@@ -460,11 +511,17 @@ fn test(o: Option<u32>) -> u32 {
 }
 ```
 
+#### match expression
+
+Rust中的`match`表达式类似一般的`switch`但功能更加强大，因为它支持模式匹配`pattern match `，模式可以是字面量的值、变量名、`wildcards`、以及其他的东西。
+
+`match`经常被用来对枚举进行模式匹配，并能够获取到对应的枚举内部值。
+
 
 
 #### If let
 
-match语法糖
+Rust还提供了`match`的语法糖，`if let`可以让我们快速匹配某个模式并提取值
 
 ``` rust
 
@@ -548,88 +605,90 @@ fn main() {
 
 
 
-### 集合
+### 集合类型
+
+Rust提供了一些常用的内置集合类型，如`Vec`、`String`、`HashMap`、`Range`，这些类型都是通过`struct`实现的
 
 #### Vec
 
+`Vec`是长度可变，参数类型相同的集合。也可以通过`Vec`存枚举，来间接实现长度可变，类型不同的集合
+
 ``` rust
-let mut value: Vec<i32> = Vec::new();
-value.push(1);
-value.push(2);
+fn main() {
+  let mut value: Vec<i32> = Vec::new();
+  value.push(1);
+  value.push(2);
 
-let mut value2 = vec![1, 2, 3]; // macro
+  let mut value2 = vec![1, 2, 3]; // macro
 
-let a: &mut i32 = &mut value2[0];
-*a = 4;
-println!("{}", a);
+  let a: &mut i32 = &mut value2[0];
+  *a = 4;
+  println!("{}", a);
 
-let b: Option<&i32> = value2.get(1);
-if let Some(x) = b {
-    println!("{}", x);
+  let b: Option<&i32> = value2.get(1);
+  if let Some(x) = b {
+      println!("{}", x);
+  }
+
+
+
+  for i in &mut value2 {
+      *i = 20;
+      println!("{}", i);
+  }
+
+  // ---
+
+
+  fn largest(list: &[i32]) -> i32 {
+      let mut largest = list[0];
+
+      for &item in list { // 18章,模式匹配
+          if item > largest {
+              largest = item;
+          }
+      }
+
+      largest
+  }
 }
-
-
-
-for i in &mut value2 {
-    *i = 20;
-    println!("{}", i);
-}
-
-// ---
-
-
-fn largest(list: &[i32]) -> i32 {
-    let mut largest = list[0];
-
-    for &item in list { // 18章,模式匹配
-        if item > largest {
-            largest = item;
-        }
-    }
-
-    largest
-}
-
 ```
-
-Vec是存储长度可变的,但类型相同的数据
-
-可以搭配enum来存储长度可变,类型不相同的数据(通过枚举内部值实现)
-
-
-
-
 
 
 
 #### String
 
+需要注意的是`String`并不支持直接通过索引进行取值
+
 ``` rust
-let mut s = String::from("hello");
-s.push_str(" world");
-s.push('!'); // char是单引号
-println!("{}", s);
+fn main() {
+  let mut s = String::from("hello");
+  s.push_str(" world");
+  s.push('!'); // char是单引号
+  println!("{}", s); 
+}
+
 ```
-
-String不应该通过索引取值
-
-
 
 
 
 #### HashMap
 
-标准库中,而不是语言本身内置,需要手动引入
+虽然都在标准库当中，但是由于不像`Vec`、`String`使用的那么频繁，因此`HashMap`并没有被`preclude`，所以使用的时候需要通过`use`手动引入
 
 ``` rust
-let mut scores = HashMap::new();
+use std::collections::HashMap;
 
-    scores.insert(String::from("Blue"), 10);
-    scores.insert(String::from("Yellow"), 50);
+fn main() {
+  let mut scores = HashMap::new();
+  scores.insert(String::from("Blue"), 10);
+  scores.insert(String::from("Yellow"), 50);
 
-    for (key, value) in &scores {
-        println!("{}: {}", key, value);
-    }
+  for (key, value) in &scores {
+      println!("{}: {}", key, value);
+  }
+}
+
 ```
 
 
@@ -644,21 +703,17 @@ let v: Vec<i32> = (1..4).into_iter().map( |x| x * x).collect();
 
 
 
-
-
-
-
-
-
 ### 错误处理
 
-两种错误,可恢复错误和不可恢复错误(此时panic)
+Rust把错误分为两种类型，可恢复错误和不可恢复错误。
+
+可恢复错误，比如说读取一个文件，如果文件不存在时我们应该让外部能够感知到；不可恢复错误，比如越界访问数组，一旦出现了这种不安全的内存访问BUG我们可能会直接通过`panic!`来退出进程。
 
 
 
-panic存在两种,unwind(默认)和abort,前者会释放程序内存,但需要一些工作量(二进制体积更大);后者直接退出,内存需要操作系统手动释放
+#### panic
 
-
+`panic`也存在两种行为，默认的`unwind`和`abort`。其中`unwind`意味着退出程序的时候Rust会自动展开堆栈并清空数据，但这会有一些工作量。而一旦采用`abort`，那么程序中使用的内存就不会被自动回收，我们需要通过操作系统来手动进行清除。一般通过修改配置文件来调整该行为。
 
 ``` toml
 # cargo.toml
@@ -668,21 +723,85 @@ panic = 'abort'
 
 
 
-
-
 #### Result
 
-枚举,ok和error
+``` rust
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+```
+
+在枚举一节中，我们了解到可以使用`Option<T>`来包装表明某个值可能为空。类似的道理，我们通过`Result<T, E>`来作为函数的返回值，来表明这个函数可能会存在异常情况。
+
+``` rust
+use std::fs::File;
+
+fn main() {
+    let f = File::open("hello.txt");
+
+    let f = match f {
+        Ok(file) => file,
+        Err(error) => panic!("Problem opening the file: {:?}", error),
+    };
+}
+```
+
+一般通过`match`来匹配枚举的不同可能值，但这有些冗余，因此`Result`实现了一些方便的方法
 
 
 
-unwrap和expect,ok返回内部值,error时panic
+##### unwrap
+
+`unwrap`方法能够在`Result`为`Ok`的时候返回内部值，为`Err`的时候`panic`。
+
+``` rust
+fn main() {
+    let f = File::open("hello.txt").unwrap();
+}
+```
 
 
 
-Result? , 类似unwrap和expect,但是err的时候会把err返回而不是panic(用在函数中)
+##### expect
 
-Wrap_or_else 闭包
+与`unwrap`功能一致，区分在于我们可以指定报错时显示给用户的信息
+
+``` rust
+fn main() {
+    let f = File::open("hello.txt").expect("错误信息");
+}
+```
+
+
+
+##### propagating errors
+
+当一个函数的实现调用了可能报错的其他函数时，我们可以手动对错误进行处理，但也可以直接把错误抛出去，这被称为`propagating errors`，`Result`提供了`?`操作符来快速实现。
+
+对于以下代码，当`Result`为`Ok`时会返回内部值，为`Err`的时候会直接把`Err`作为`test`函数的返回值返回出去。
+
+``` rust
+fn test() {
+    let f = File::open("hello.txt")?;
+}
+```
+
+
+
+##### unwrap_or_else
+
+之前提到的`unwrap`和`expect`都会在`Err`的时候直接`panic`，这可能不是我们想要的结果，这时候我们需要使用`unwrap_or_else`并传递一个闭包作为参数
+
+
+
+``` rust
+fn main() {
+    let f = File::open("hello.txt").unwrap_or_else(|error| {
+      // do something
+  	})
+}
+```
 
 
 
