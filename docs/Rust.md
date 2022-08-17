@@ -341,7 +341,7 @@ test();
 
 对于上方代码，我们通过`String::from("hello")`分配了一块堆内存，变量A的指针指向着这块堆内存，此时变量A拥有这块堆内存的所有权。当我们执行`let B = A`的时候，会把变量A的指针赋值给变量B，那么此时变量A和变量B都指向着这块堆内存，但这块内存的所有权也同时从变量A转移到变量B身上了，因此虽然变量A的指针是指向着这块堆内存的，但它已经无权访问这块堆内存了，具体的表现是我们不再能调用`A.as_bytes()`这种方法了。而当函数调用完成后，变量A就离开作用域了，此时我们会自动释放变量A所指向的堆内存。
 
-#### 所有权转移
+#### 所有权转移（move）
 
 所有权的转移不仅发生在赋值操作中，函数的传参、返回值，都可能发生所有权的转移。
 
@@ -363,7 +363,7 @@ fn test(C: String) -> String {
 
 可以看出虽然所有权很大程度解决了内存回收的问题，但使用起来很麻烦，因此Rust又引入了一个新的概念**引用**，来解决这种问题。
 
-#### 引用
+#### 引用（borrow）
 
 ``` rust
 let A: String = String::from("hello");
@@ -458,11 +458,19 @@ let p = Point;
 
 ### Enum
 
+在Rust中使用`enum`定义枚举，其实等价于定义了一组类型相同的`struct`。如下方我们通过`enum Days`定义了四个枚举的变体`variants`，这四个变体其实分别是`unit-like struct`、`tuple struct`以及普通的`struct`，它们的类型都用`Days`表示。
+
+
+
 ``` rust
 enum Days {
     One,
     Two(u32),
-    Three(bool),
+    Three(bool, bool),
+  	Four {
+        x: i32,
+        y: i32,
+  	}
 }
 
 fn main() {
@@ -473,11 +481,13 @@ fn main() {
 
 fn test(e: Days) -> u32 {
     match e {
-        Days::One => 1,
+        Days::One => (),
         Days::Two(num) => {
             num
         },
-        _ => 3
+      	Days::Three(a, b) => (),
+      	Days::Four { x, y } => (),
+        _ => (),
     }
 }
 ```
@@ -543,65 +553,245 @@ fn test(o: Option<u32>) -> u32 {
 
 
 
-### 模块化
+
+
+### 模式匹配（pattern match）
+
+模式（`pattern`）通常由以下内容组成：
+
+- 字面量，如`1`
+- 变量，如`x`
+- 解构数组、元祖、结构体、枚举，如`[x, y, z]`、`(a, b, c)`、`Point { x, y }`、`Some(x)`
+- 通配符与占位符，如`_`或以`_`开头的变量
+
+
+
+模式主要在以下地方使用：
+
+- match
+
+  ``` rust
+  match VALUE {
+      PATTERN => EXPRESSION,
+      PATTERN => EXPRESSION,
+      PATTERN => EXPRESSION,
+  }
+  ```
+
+- if let
+
+  ``` rust
+  if let Some(x) = y {
+    
+  } else if xx {
+    
+  } else if let Some(z) = w {
+    
+  } else {
+    
+  }
+  ```
+
+- while let
+
+  ``` rust
+  while let Some(x) = y {
+    
+  }
+  ```
+
+- for...in
+
+  ``` rust
+  let vector = vec![Point { x: 100, y: 200}, Point { x: 200, y: 400}];
+  for &Point { x, y } in vector.iter() {
+      println!("{}, {}", x, y);
+  }
+  ```
+
+- let
+
+  事实上`let`语句中的变量名也是表达式
+
+  ``` rust
+  let x = 5; // let PATTERN = EXPRESSION;
+  ```
+
+- 函数参数
+
+  ``` rust
+  fn print_coordinates(&(x, y): &(i32, i32)) {
+      println!("Current location: ({}, {})", x, y);
+  }
+  
+  fn main() {
+      let point = (3, 5);
+      print_coordinates(&point);
+  }
+  ```
+
+
+
+
+
+#### `refutable`、`irrefutable`
+
+模式的两种形式，`refutable`和`irrefutable`
+
+- `irrefutable`，指的是能够匹配任何可能的值，如`let x = 1`中的模式`x`，或者结构体，又或者只有一个变体的枚举
+- `refutable`，值得是可能存在无法匹配的情况，如`if let Some(x) = y`中的模式`Some(x)`，当`y`为`None`时匹配失败
+
+函数参数、`let`语句、`for`循环只接收`irrefutable`模式，即我们不能使用类似这样的语法`let Some(x) = 100`；而`if let`、`while let`接收任何模式，只是在接收`irrefutable`的模式时会进行警告，因为一般不推荐这么做，如`if let x = 100`。
+
+
+
+
+
+#### Multiple patterns
 
 ``` rust
-// src/main.rs
-mod aaa {
-    pub fn test() {
-        println!("aaa")
-    }
-}
-mod bbb;
+let x = 1;
 
-fn main() {
-    aaa::test();
-    bbb::test();
-    bbb::ccc::test();
-}
-
-// src/bbb.rs
-pub fn test() {
-    println!("bbb")
-}
-
-pub mod ccc;
-
-// src/bbb/ccc.rs
-pub fn test() {
-    println!("ccc")
+match x {
+    1 | 2 => println!("one or two"),
+    3 => println!("three"),
+    _ => println!("anything"),
 }
 ```
 
 
 
-#### use
-
-path太长,use来提供快捷方式
+#### 匹配范围`..=`
 
 ``` rust
-mod bbb;
+let x = 5;
 
-use bbb::ccc::test;
+match x {
+    1..=5 => println!("one through five"),
+    _ => println!("something else"),
+}
+```
 
-fn main() {
-    test(); // bbb::ccc::test()
+``` rust
+let x = 'c';
+
+match x {
+    'a'..='j' => println!("early ASCII letter"),
+    'k'..='z' => println!("late ASCII letter"),
+    _ => println!("something else"),
 }
 ```
 
 
 
-#### pub 
+#### 解构赋值
 
-默认只能取sibling和parent的内容,需要把模块内部的东西变成pub才能取
+##### 解构Struct
+
+``` rust
+let p = Point { x: 0, y: 7 };
+
+let Point { x: a, y: b } = p;
+```
+
+##### 解构枚举
+
+通常来说枚举存在多个变体`variants`，这些变体的类型都是相同的。对于只有一种变体的枚举会被视为`irrefutable`，可以通过`let`直接解构赋值，而存在多个变体的枚举通常都需要使用`match`来匹配每一种变体
+
+``` rust
+enum Akara {
+    P2 { x: u32, y: u32},
+}
+
+let aka = Akara::P2 { x: 100, y: 200 };
+let Akara::P2 { x, y } = aka; // success
+```
+
+``` rust
+enum Akara {
+    P1,
+    P2 { x: u32, y: u32},
+}
+
+let aka = Akara::P2 { x: 100, y: 200 };
+let Akara::P2 { x, y } = aka; // error
+
+match aka {
+    Akara::P1 => (),
+    Akara::P2 { x, y } => (),
+    _ => () 
+}
+```
+
+##### 解构元组
+
+``` rust
+let ((feet, inches), Point { x, y }) = ((3, 10), Point { x: 3, y: -10 });
+```
 
 
 
-##### struct
+#### 省略变量
 
-结构体自身的private和pub、字段的private和pub(默认private)
+通过`_`或者以`_`开头的变量来省略变量，`_`和`_x`的区别在于`_x`仍然会绑定具体的值只不过编译器并不会报错，而`_`并不会绑定任何的值。
 
-枚举enum的字段默认pub
+``` rust
+struct Point {
+    x: i32,
+    y: i32,
+    z: i32,
+}
+
+let origin = Point { x: 0, y: 0, z: 0 };
+
+match origin {
+    Point { x, .. } => println!("x is {}", x),
+}
+```
+
+#### Match Guard
+
+在`match`表达式中，对于一些模式难以表达的复杂逻辑我们可以使用`match guard`来辅助加强模式的功能，所谓`match guard`指的是`match`分支中模式后面的`if`条件
+
+``` rust
+let num = Some(4);
+
+match num {
+    Some(x) if x % 2 == 0 => println!("The number {} is even", x),
+    Some(x) => println!("The number {} is odd", x),
+    None => (),
+}
+```
+
+
+
+#### @bindings
+
+``` rust
+enum Akara {
+    P1,
+    P2 { x: u32, y: u32},
+}
+
+let aka = Akara::P2 { x: 100, y: 200 };
+match aka {
+   Akara::P1 => (),
+   Akara::P2 { x: 1..=200, y} => println!("{}, {}", x, y), // error. cannot find value `x` in this scope
+   _ => () 
+}
+```
+
+对于上述情况，我们需要使用`@`进行显式的绑定
+
+``` rust
+match aka {
+   Akara::P1 => (),
+   Akara::P2 { x: xx @ 1..=200, y} => println!("{}, {}", xx, y),
+   _ => () 
+}
+```
+
+
 
 
 
@@ -805,6 +995,10 @@ fn main() {
 
 
 
+### 泛型
+
+> 泛型没什么好说的，略过
+
 ### trait
 
 类似interface,稍微不同
@@ -915,4 +1109,96 @@ Deref、drop
 #### RefCell
 
 
+
+
+
+
+
+
+
+### 模块化
+
+``` rust
+// src/main.rs
+mod aaa {
+    pub fn test() {
+        println!("aaa")
+    }
+}
+mod bbb;
+
+fn main() {
+    aaa::test();
+    bbb::test();
+    bbb::ccc::test();
+}
+
+// src/bbb.rs
+pub fn test() {
+    println!("bbb")
+}
+
+pub mod ccc;
+
+// src/bbb/ccc.rs
+pub fn test() {
+    println!("ccc")
+}
+```
+
+
+
+#### use
+
+path太长,use来提供快捷方式
+
+``` rust
+mod bbb;
+
+use bbb::ccc::test;
+
+fn main() {
+    test(); // bbb::ccc::test()
+}
+```
+
+
+
+#### pub 
+
+默认只能取sibling和parent的内容,需要把模块内部的东西变成pub才能取
+
+
+
+##### struct
+
+结构体自身的private和pub、字段的private和pub(默认private)
+
+枚举enum的字段默认pub
+
+
+
+
+
+## 高级特性
+
+### Unsafe Rust
+
+
+
+### Advanced Traits
+
+#### 
+
+### Advanced Type
+
+
+
+
+
+### Advanced Function 
+
+
+
+### Macro
 

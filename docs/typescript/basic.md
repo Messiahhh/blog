@@ -57,25 +57,113 @@ const name = 'aka' // 'aka'
 
 
 
-### 数组
 
-数组只可以储存一种数据类型，数组长度可变。
 
-``` tsx
-let arr: number[] = [1, 2, 3]
-let arr: Array<number> = [1, 2, 3]
+
+
+### 数组与元祖
+
+`JavaScript`中只存在数组的概念，`TypeScript`在数组的基本上抽象出元祖的概念，但本质都是一样的。
+
+`TypeScript`中数组只可以存储一种数据类型，数组的长度可变；而元祖可以存储不同的数据类型，但元祖的长度不可变。
+
+#### 数组
+
+##### 定义
+
+``` typescript
+let a1: Array<number> = [1, 2, 3];
+let a2: number[] = [1, 2, 3];
+let a3 = [1, 2, 3];
 ```
 
-### 元组
+##### 本质
 
-元组可以储存多种数据类型，但是元组长度不可变。
+``` typescript
+type arr1 = [1, 2, 3];
+type arr1 = { 
+  	[x: number]: number;
+    length: number;
+    // 其他方法
+}
 
-```ts
-let arr: [number, number] = [1, 2]
-arr = [1, 2, 3] // 报错
+// readonly的本质
+type arr2 = readonly [1, 2, 3];
+type arr2 = { 
+  	[x: number]: number;
+    readonly length: number;
+    // 其他方法
+}
+```
 
-let arr2: [numer, number?] = [1]
-arr2 = [1, 2] // 不报错
+
+
+#### 元组
+
+##### 定义
+
+``` typescript
+let t1: [number, number] = [1, 2];
+let t2 = [1, 2] as const;
+```
+
+通过`as const`能够将一个数组断言为`readonly`元组
+
+
+
+
+
+##### 本质
+
+``` typescript
+type tuple = [1, 2, 3];
+type tuple = {
+  	[x: number]: 1 | 2 | 3;
+    0: 1;
+    1: 2;
+    2: 3;
+    length: 3;
+    // 其他方法
+}
+
+// readonly的本质
+type tuple = readonly [1, 2, 3];
+type tuple = {
+  	[x: number]: 1 | 2 | 3;
+    readonly 0: 1;
+    readonly 1: 2;
+    readonly 2: 3;
+    readonly length: 3;
+    // 其他方法
+}
+```
+
+
+
+#### any[]
+
+所有非`readonly`元组都是`any[]`的子类型，所有元组都是`readonly any[]`的子类型。（`any[]`是`readonly any[]`的子类型）
+
+因此如果我们的泛型可以同时接收数组和元组，可以使用`T extends readonly any[]`进行约束
+
+
+
+``` typescript
+type B = number[] extends readonly number[] ? true : false; // true
+type A = readonly number[] extends number[] ? true : false; // false
+
+// 对比 
+
+type A = {
+  readonly age: number;
+}
+
+type B = {
+  age: number;
+}
+
+type Test = A extends B ? true : false; // true
+type Test2 = B extends A ? true : false; // true
 ```
 
 
