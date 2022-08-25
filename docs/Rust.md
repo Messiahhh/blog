@@ -324,9 +324,9 @@ fn main() {
 > - There can only be one owner at a time.
 > - When the owner goes out of scope, the value will be dropped.
 
-Rust中有一个独特的概念叫做**所有权**。对于像C、C++这类的传统语言，我们需要在运行时手动进行内存的分配与释放，这会增大我们的心智负担；因此更多的语言（如Go、Java、JavaScript），都是通过垃圾收集（GC）实现对无用的内存进行自动的回收，一种常见的做法是“引用计数”，我们会收集堆内存被引用的情况，当一块堆内存不再被任何指针指向，我们就会自动释放这块内存空间。GC可以降低我们的心智负担，但同时也会降低运行效率。而Rust引入的所有权概念，就是专门用来管理堆内存何时回收的。
+Rust中有一个独特的概念叫做**所有权**。对于像C、C++这类的传统语言，我们需要在运行时手动进行内存的分配与释放，这会增大我们的心智负担；因此更多的语言（如Go、Java、JavaScript），都是通过垃圾收集（GC）实现对无用的内存进行自动的回收，一种常见的做法是“引用计数”，我们会收集内存被引用的情况，当一块内存不再被任何指针指向，我们就会自动释放这块内存空间。GC可以降低我们的心智负担，但同时也会降低运行效率。而Rust引入的所有权概念，就是专门用来管理内存回收的。
 
-对于一块堆内存，可能存在多个变量同时指向，因此我们很难知道什么时候才去释放这块内存。而所有权表示着这块内存只能被一个变量所有，此时其他的变量都无法访问这块内存，因此当该变量离开作用域的时候我们可以无负担的释放掉这块内存。
+对于一块内存，可能存在多个变量同时指向，因此我们很难知道什么时候才去释放这块内存。而所有权表示着这块内存只能被一个变量所有，此时其他的变量都无法访问这块内存，因此当该变量离开作用域的时候我们可以无负担的释放掉这块内存。
 
 ``` rust
 fn test() {
@@ -341,9 +341,11 @@ test();
 
 对于上方代码，我们通过`String::from("hello")`分配了一块堆内存，变量A的指针指向着这块堆内存，此时变量A拥有这块堆内存的所有权。当我们执行`let B = A`的时候，会把变量A的指针赋值给变量B，那么此时变量A和变量B都指向着这块堆内存，但这块内存的所有权也同时从变量A转移到变量B身上了，因此虽然变量A的指针是指向着这块堆内存的，但它已经无权访问这块堆内存了，具体的表现是我们不再能调用`A.as_bytes()`这种方法了。而当函数调用完成后，变量A就离开作用域了，此时我们会自动释放变量A所指向的堆内存。
 
-#### 所有权转移（move）
 
-所有权的转移不仅发生在赋值操作中，函数的传参、返回值，都可能发生所有权的转移。
+
+
+
+#### 所有权转移（move）
 
 ``` rust
 fn main() {
@@ -359,9 +361,15 @@ fn test(C: String) -> String {
 }
 ```
 
-对于上方代码，`main`函数中变量A指向着一块堆内存，调用`test`函数的时候所有权从变量A转移到函数内部的参数C身上，为了能在后续继续使用这块内存我们又需要从`test`函数从把C返回出来，从而实现把所有权从参数C转移到变量B身上。
+所有权的转移不仅发生在赋值操作中，函数的传参、返回值，都会发生所有权的转移。
 
-可以看出虽然所有权很大程度解决了内存回收的问题，但使用起来很麻烦，因此Rust又引入了一个新的概念**引用**，来解决这种问题。
+对于以上代码，`main`函数中变量A指向着一块堆内存，调用`test`函数的时候所有权从变量A转移到函数内部的参数C身上，为了能在后续继续使用这块内存我们又需要从`test`函数从把C返回出来，从而实现把所有权从参数C转移到变量B身上。
+
+可以看出虽然所有权很大程度解决了内存释放的问题，但使用起来却很麻烦，Rust引入了**引用**的概念来处理这样的问题。
+
+
+
+
 
 #### 引用（borrow）
 
@@ -370,7 +378,82 @@ let A: String = String::from("hello");
 let B: &String = &A;
 ```
 
-在这个例子中，我们通过`&A`创建了一个引用B，B通过地址指向A，而A又通过指针指向堆内存。A拥有这块堆内存的所有权，而B则通过A来间接读/写这块内存，因此也被称为借用`borrow`
+在这个例子中，我们通过`&A`创建了一个引用B，B通过地址指向A，而A又通过指针指向堆内存。A拥有这块堆内存的所有权，而B则通过A来间接读/写这块内存，因此也被称为借用`borrow`。
+
+Rust中指针和引用的区别在于，指针通常除了地址`ptr`外，还会保存`len`和`capacity`，即指针是拥有所指向内存的所有权的；而一般引用只会保存地址`ptr`，一种特别的引用`Slice`除了保存地址外还会保存`len`，但无论如何引用都不会保存`capacity`，因此不拥有任何的所有权。
+
+
+
+
+
+#### 生命周期
+
+引用的生命周期，指的是从该引用被创建（或者叫`borrow`）到最后一次用到的这段区间。
+
+通过引入所有权和引用的概念，Rust中实际上会存在多个地址指向同一块内存，只不过只有一个地址（即指针）拥有这块内存的所有权，当该指针离开作用域时会自动释放对应的内存。所以在编译时Rust编译器会通过Borrow Checker来对所有引用的生命周期进行检查，Borrow Checker有几条规则，其中一条最显而易见的就是引用的生命周期应该在对应指针的生命周期范围内。
+
+
+
+比如以下例子中，我们创建了指针`s`，同时创建了一个`s`的引用赋值给`r`，当块级作用域结束时`s`变量释放，我们不能再通过`r`去获取该内存，这类问题会在编译时就提前暴露出来。
+
+``` rust
+fn main() {
+    let r;
+    {
+        let s = String::from("hello");
+        r = &s; // 报错
+    }
+    r.as_bytes();
+}
+```
+
+
+
+#### Generic Lifetimes Parameter
+
+Rust中的泛型除了常见的类型参数（`type parameter`，如`T`）还支持一个特殊的参数，叫做生命周期参数（`lifetimes parameter`，如`'a`）。类型参数`T`用来实现多个参数和返回值的类型的显式关联，对应的生命周期参数`'a`用来实现多个参数和返回值的生命周期的显式关联。
+
+我们之前提到过在编译时Rust需要通过Borrow Checker来检查所有引用的生命周期是否都是有效的，以下方的代码举例，函数`longest`接收两个引用作为参数，并会将其中的一个引用作为函数返回值。在使用该函数的时候，我们无法确定确定`longest`返回值的生命周期，因此无法通过Borrow Checker的检查。为了解决这个问题，在定义`longest`函数的时候我们需要通过`lifetimes parameter`显式的建立参数和返回值的生命周期的联系。
+
+``` rust
+fn main() {
+    let string1 = String::from("abcd");
+    let string2 = "xyz";
+
+    let result = longest(string1.as_str(), string2);
+    println!("The longest string is {}", result);
+}
+
+fn longest(x: &str, y: &str) -> &str { // 报错
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
+
+``` rust
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str { // 正确
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
+
+
+
+
+
+#### Static Lifetimes
+
+``` rust
+let s: &str = "hello world"
+```
+
+所有的字符串字面量都是直接存储在程序的二进制当中，在整个程序的任何时候都是可用的，因此它们的引用的生命周期被用`'static`标识，表示这个引用可以在整个程序的周期中存在。
 
 
 
@@ -382,43 +465,44 @@ let B: &String = &A;
 
 
 
-### Struct
+### 结构体（Struct）
+
+#### impl
+
+通过`impl`关键字实现结构体的方法（类似原型方法），第一个参数不是实例`self`的方法被称作关联函数`associted function`（类似静态方法）
 
 ``` rust
 struct People {
     name: String,
     age: u32,
-    male: bool
+    male: bool,
 }
-```
 
-#### impl
-
-通过`impl`关键字定义结构体的方法（类似原型方法），第一个参数不是实例`self`的方法被称作关联函数`associted function`（类似静态方法）
-
-``` rust
 impl People {
     fn is_male(&self) -> bool {
-        self.male == true
-    } 
+        self.male
+    }
 
-    fn create(name: String, age: u32, male: bool) -> People { // associted function
+    fn is_young(&self) -> bool {
+        self.age < 20
+    }
+
+    fn new(name: String, age: u32, male: bool) -> People {
         People {
-        name,
-        age,
-        male,
+            name,
+            age,
+            male,
         }
-    } 
+    }
 }
 
 fn main() {
-  let p1 = People {
-    name: String::from("akara"),
-    age: 20,
-    male: true
-};
+   let p = People::new(String::from("akara"), 20, true);
 
-let p2 = People::create(String::from("akara"), 20, false);
+   let is_male = p.is_male();
+   let is_young = p.is_young();
+
+   println!("{}, {}, {}", p.name, is_male, is_young);
 }
 ```
 
@@ -997,61 +1081,70 @@ fn main() {
 
 ### 泛型
 
-> 泛型没什么好说的，略过
+略
 
-### trait
 
-类似interface,稍微不同
+
+### Trait
+
+Rust中的*trait*类似于通常的*interface*，有以下几个比较明显的区别
+
+- *trait*可以提供方法的默认实现
+- 在使用实现了某个*trait*的结构体时，我们需要通过*use*把该*trait*引入
 
 ``` rust
 struct People {
-  name: String;
-  age: i32;
+    name: String,
 }
 
-impl xxx for People {
-  fn say() -> bool;
+trait Test {
+    fn run(&self) { // 可以提供默认实现
+        println!("run") 
+    } 
+    fn get_name(&self) -> &str;
+}
+
+impl Test for People {
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+}
+
+fn main() {
+    let p = People {
+        name: String::from("akara"),
+    };
+    p.run();
+    println!("{}", p.get_name());
 }
 ```
 
-使用对应方法的时候需要通过use引入对应的trait
 
 
+#### Trait Bound
 
-trait内的方法,也可以提供默认实现.其他人实现的时候可以保留默认实现,或者覆盖
-
-
-
-``` rust
-pub fn notify(item: &impl Summary) {
-    println!("Breaking news! {}", item.summarize());
-}
-```
-
-类型约束,item必须要实现Summary这个trait
-
-实际上是下面代码的语法糖,下述被称为trait bound(类似泛型约束)
+*trait bound*类似于泛型约束，如以下代码中要求类型参数T必须实现了*Summary*这个*trait*
 
 ``` rust
 pub fn notify<T: Summary>(item: &T) {
     println!("Breaking news! {}", item.summarize());
 }
+
+// 语法糖
+pub fn notify(item: &impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
 ```
 
-
-
-多个特征的情况(TS中是&, T extends A & B )
+当类似参数需要满足多个特征时，使用`+`进行关联，类似*TS*中的`&`
 
 ``` rust
-pub fn notify(item: &(impl Summary + Display)) {
+pub fn notify<T: Summary + Display>(item: &T);
   
-  
-pub fn notify<T: Summary + Display>(item: &T) {
+pub fn notify(item: &(impl Summary + Display));
 ```
 
-
-
-Where子句(trait bounds太长了怎么办,写在参数列表后面)
+当trait bound太长时，我们可以使用Where子句来优化写法
 
 ``` rust
 // before
@@ -1064,13 +1157,46 @@ fn some_function<T, U>(t: &T, u: &U) -> i32
 {}
 ```
 
-### 引用生命周期
-
-
-
 
 
 ### 闭包
+
+在*JavaScript*中，声明函数的时候我们会在该函数的`[[scope]]`属性中记录该函数的作用域链（执行上下文的变量对象VO组成的数组），在调用该函数的时候创建新的函数执行上下文，该函数执行上下文中包括函数自身的变量对象以及作用域链，执行时如果在当前作用域找不到某个变量，则会沿着作用域链向上查找。
+
+对于这种，在声明函数时捕获函数作用域的行为通常也被称作闭包。
+
+与*JavaScript*不同，*Rust*中的函数不会捕获当前的作用域，也就意味着以下的代码是无效的
+
+``` rust
+fn main() {
+    let s = "hello";
+    fn test() {
+        println!("{}", s) // 错误
+    }
+
+    test();
+}
+```
+
+为了解决这样的问题，Rust也引入了闭包函数，闭包可以捕获当前作用域，通常是作为匿名函数保存在变量中、或者直接作为函数的参数使用。
+
+``` rust
+fn main() {
+    let s = "hello";
+    let f = |name: &str| {
+        println!("{}, {}", s, name)
+    };
+    f("world");
+}
+```
+
+``` rust
+let f = File::open("hello.txt").unwrap_or_else(|error| {
+		// do something
+})
+```
+
+
 
 
 
