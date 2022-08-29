@@ -523,7 +523,9 @@ println!("{}, {}", p1.is_male(), p3.age)
 ``` rust
 struct Point(i32, i32, i32);
 
-let p = Point(1, 1, 0)
+let p = Point(1, 1, 0);
+let People(x, y, z) = p;
+let a = p.0;
 ```
 
 #### unit-like struct
@@ -1081,7 +1083,42 @@ fn main() {
 
 ### 泛型
 
-略
+#### 单态化
+
+Rust提供了强大的类型系统，但是使用泛型并不会给运行时带来任何额外的开销，即并不会降低运行时的效率，这依赖于Rust在编译时对所有泛型类型进行**单态化（*monomorphization*）**。
+
+``` rust
+fn main() {
+		let integer = Some(5);
+		let float = Some(5.0);
+}
+```
+
+即对于以上代码，会被编译成以下代码，这也被称为**静态分发（*static dispatch*）**
+
+``` rust
+enum Option_i32 {
+    Some(i32),
+    None,
+}
+
+enum Option_f64 {
+    Some(f64),
+    None,
+}
+
+fn main() {
+    let integer = Option_i32::Some(5);
+    let float = Option_f64::Some(5.0);
+}
+```
+
+单态化最大的好处是零运行时开销，但也存在着对应的缺点：
+
+1. 产物体积增大
+2. 编译时间变长
+
+
 
 
 
@@ -1159,6 +1196,38 @@ fn some_function<T, U>(t: &T, u: &U) -> i32
 
 
 
+#### Trait Object
+
+泛型的功能很强大，但却难以表达异构（*heterogeneous*）集合，如以下代码中虽然我们使用*Trait Bound*对类型参数*T*进行了约束，但最终Vec集合的每一项类型都是相同的。
+
+``` rust
+pub trait Draw {
+    fn draw(&self);
+}
+
+pub struct Screen<T: Draw> {
+    pub components: Vec<T>,
+}
+```
+
+通过使用*Trait Object*可以解决上述问题，这里的`Box<dyn Draw>`就是Trait Object，一个泛型类型参数只能被一个具体的类型替换，而Trait Object允许在运行时被多个具体的类型替换。
+
+``` rust
+pub trait Draw {
+    fn draw(&self);
+}
+
+pub struct Screen {
+    pub components: Vec<Box<dyn Draw>>,
+}
+```
+
+> Recall in the [“Performance of Code Using Generics”](https://doc.rust-lang.org/book/ch10-01-syntax.html#performance-of-code-using-generics) section in Chapter 10 our discussion on the monomorphization process performed by the compiler when we use trait bounds on generics: the compiler generates nongeneric implementations of functions and methods for each concrete type that we use in place of a generic type parameter. The code that results from monomorphization is doing *static dispatch*, which is when the compiler knows what method you’re calling at compile time. This is opposed to *dynamic dispatch*, which is when the compiler can’t tell at compile time which method you’re calling. In dynamic dispatch cases, the compiler emits code that at runtime will figure out which method to call.
+
+
+
+
+
 ### 闭包
 
 在*JavaScript*中，声明函数的时候我们会在该函数的`[[scope]]`属性中记录该函数的作用域链（执行上下文的变量对象VO组成的数组），在调用该函数的时候创建新的函数执行上下文，该函数执行上下文中包括函数自身的变量对象以及作用域链，执行时如果在当前作用域找不到某个变量，则会沿着作用域链向上查找。
@@ -1202,16 +1271,45 @@ let f = File::open("hello.txt").unwrap_or_else(|error| {
 
 
 
-### 迭代器
+### 迭代器（iteration）
 
-对于常见的集合，都部署了迭代器方法，我们也可以手动调用迭代器方法拿到迭代器对象
+常见的集合类型，如*Vector*部署的`.iter()`、`.into_iter()`等方法将会返回迭代器对象，迭代器都实现了*Iterator*这个*trait*，即可以通过不断调用`next`方法访问集合中的元素。
 
-#### iter tier_mut into_iter
+- `.iter()`
 
-> Also note that the values we get from the calls to `next` are immutable references to the values in the vector. The `iter` method produces an iterator over immutable references. If we want to create an iterator that takes ownership of `v1` and returns owned values, we can call `into_iter` instead of `iter`. Similarly, if we want to iterate over mutable references, we can call `iter_mut` instead of `iter`.
+- `.iter_mut()`
+- `.into_iter()`
+
+
+
+
+
+#### *consuming adaptors*
+
+在内部调用`next`方法的方法也被称为*consuming adaptor*，如`sum`方法
 
 ``` rust
-let v: Vec<i32> = vec![1, 2, 3].into_iter().map( |x| x * x).collect();
+fn main() {
+    let v = vec![1, 2, 3];
+    let sum: u32 = v.iter().sum();
+    println!("{}", sum);
+}
+```
+
+
+
+
+
+#### *Iterator adaptors*
+
+返回一个新的迭代器的方法也被称为*iterator adaptor*，如`map`方法
+
+``` rust
+fn main() {
+    let v = vec![1, 2, 3];
+    let sum: u32 = v.iter().map(|x| 2 * x).sum();
+    println!("{}", sum);
+}
 ```
 
 https://stackoverflow.com/questions/65766866/why-the-closure-passed-to-map-does-not-take-a-reference-while-the-one-passed-t 
@@ -1224,17 +1322,185 @@ https://stackoverflow.com/questions/65766866/why-the-closure-passed-to-map-does-
 
 ### 智能指针
 
-Deref、drop
+智能指针，通常指的是具备更强大能力的指针。智能指针通常由结构体实现，同时实现了`Deref`和`Drop`这两个*Trait*，我们之前使用到的String和Vector就是典型的智能指针，下文介绍标准库中比如重要的几个智能指针。
 
 
 
-#### Box
+#### *Deref*
 
-#### Rc
+通过实现*Deref Trait*将允许我们自定义对结构体的解引用操作符`*`行为，使得其表现的和引用一样（引用可以直接进行解引用操作）
 
-#### RefCell
+``` rust
+fn main() {
+    let x = 5;
+    let y = &x;
+
+    assert_eq!(5, x);
+    assert_eq!(5, *y);
+}
+```
+
+``` rust
+use std::ops::Deref;
+
+impl<T> Deref for MyBox<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+```
+
+`*y`实际上等价于`*(y.deref())`
 
 
+
+
+
+
+
+#### *Drop*
+
+通过实现*Drop Trait*将允许我们自定义变量离开作用域时的行为，主要用来释放文件资源或者网络连接。
+
+``` rust
+struct CustomSmartPointer {
+    data: String,
+}
+
+impl Drop for CustomSmartPointer {
+    fn drop(&mut self) {
+        println!("Dropping CustomSmartPointer with data `{}`!", self.data);
+    }
+}
+
+fn main() {
+    let c = CustomSmartPointer {
+        data: String::from("my stuff"),
+    };
+    let d = CustomSmartPointer {
+        data: String::from("other stuff"),
+    };
+    println!("CustomSmartPointers created.");
+}
+```
+
+
+
+
+
+#### `Box<T>`
+
+用来在堆内存分配值。
+
+#### `Rc<T>`
+
+引用计数智能指针，多个指针拥有同一块内存的所有权，只有当所有指针都离开作用域时才释放这块内存。
+
+#### `RefCell<T>`
+
+
+
+
+
+### 多线程编程
+
+``` rust
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+    thread::spawn(|| {
+        for i in 1..10 {
+            println!("hi number {} from the spawned thread!", i);
+            thread::sleep(Duration::from_millis(1));
+        }
+    });
+
+    for i in 1..5 {
+        println!("hi number {} from the main thread!", i);
+        thread::sleep(Duration::from_millis(1));
+    }
+}
+```
+
+通过`thread::spawn`创建新的子线程，当主线程结束时会自动结束所有子线程。
+
+#### Join Handles
+
+`thread::spawn`返回值的类型为`JoinHandle`，当我们调用它的`join`方法时，会等待该线程结束，并可以通过`unwrap`方法获取该线程的返回值。
+
+``` rust
+fn main() {
+    let handle: JoinHandle<u32> = thread::spawn(|| {
+        thread::sleep(Duration::from_secs(1));
+        println!("一秒后");
+        100 + 200
+    });
+    
+    let value = handle.join().unwrap();
+
+    println!("{}", value); // 300
+}
+```
+
+#### move 闭包
+
+核心问题在于：Rust不知道子线程将运行多久，因此难以对闭包中捕获的引用进行静态分析（Borrow Check）
+
+``` rust
+use std::thread;
+
+fn main() {
+    let v = vec![1, 2, 3];
+
+    let handle = thread::spawn(|| { // error
+        println!("Here's a vector: {:?}", v);
+    });
+
+    handle.join().unwrap();
+}
+```
+
+解决办法：在创建线程时传入的闭包中显式指定`move`来转移所有权，而不是让Rust去隐式推导。
+
+``` rust
+use std::thread;
+
+fn main() {
+    let v = vec![1, 2, 3];
+
+    let handle = thread::spawn(move || {
+        println!("Here's a vector: {:?}", v);
+    });
+
+    handle.join().unwrap();
+}
+```
+
+
+
+#### 线程间通信
+
+通过使用*channel*实现线程间的通信，下方的`tx`和`rx`分别表示着`transmitter`和`receiver`
+
+``` rust
+use std::sync::mpsc;
+use std::thread;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        let val = String::from("hi");
+        tx.send(val).unwrap();
+    });
+
+    let received = rx.recv().unwrap();
+    println!("Got: {}", received);
+}
+```
 
 
 
