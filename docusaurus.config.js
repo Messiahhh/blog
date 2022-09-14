@@ -81,6 +81,7 @@ const config = {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
         defaultLanguage: 'javascript',
+        additionalLanguages: ['rust'],
       }, 
       colorMode: {
         respectPrefersColorScheme: true
