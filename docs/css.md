@@ -296,35 +296,83 @@ sidebarDepth: 4
 
 
 
+## 写CSS的常见姿势
 
-
-
-
-
-
-## CSS Module
-
-形如`xx.module.css`的文件通常称为css模块。
+### 传统姿势
 
 ``` css
-.Root {
-    color: pink;
+.test {
+    color: red;
 }
 ```
 
 ``` js
-import style from './style.module.css'
+import './test.css'
 
 function App() {
-    return <div className={style.Root}></div>
+    return <div className="test"></div>
 }
 ```
 
 
 
+### CSS Modules
 
+``` css
+.test {
+    color: red;
+}
+```
 
+``` js
+import styles from './test.css'
+function App() {
+    return <div className={styles.test}></div>
+}
+```
 
+使用`CSS Module`时有几个需要注意的点
+
+1. 通常会对类名进行转化，如定义了`.test`时，编译后的类名可能为`.test_index-xxx`
+
+2. 为了使某些类名不被进行转化，可以使用`:global`，如
+
+   ``` css
+   .test {
+       color: red;
+   }
+   
+   :global {
+       .test2 {
+           background: blue;
+       }
+   }
+   ```
+
+   ``` js
+   import styles from './test.css'
+   function App() {
+       return <>
+           <div className={styles.test}></div>
+           <div className="test2"></div>
+       </>
+   }
+   ```
+
+   
+
+### CSS-in-JS
+
+以`emotion`库举例。
+
+``` js
+import { css } from 'emotion'
+function App() {
+    return <div className={css({
+        color: 'red'
+    })}></div>
+}
+```
 
 
 

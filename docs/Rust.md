@@ -1750,3 +1750,51 @@ let sql = sql!(SELECT * FROM posts WHERE id=1);
 ## WebAssembly
 
 ### wasm-pack
+
+
+
+## 其他
+
+### r#...#
+
+用来表示原始字符串，不用再手动转义
+
+``` rust
+let html = r#"
+    <!DOCTYPE html>
+    <meta charset="utf-8">
+    <title>Hello, world!</title>
+    <h1 class="foo">Hello, <i>world!</i></h1>
+"#;
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 发布二进制
+
+1. `cargo login`
+2. `cargo publish`
+3. `cargo install <name>`
+
+通过`cargo publish`将源代码推送到crates.io，其他人cargo install的时候会拉下代码并自动通过cargo build --release生成二进制产物
+
+
+
+
+
+## 内置模块
+
+### std::fs
+
