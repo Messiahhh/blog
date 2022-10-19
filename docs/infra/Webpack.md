@@ -1,82 +1,21 @@
+# Webpack
+
+## Setup
+
 ``` bash
 npm install webpack webpack-cli webpack-dev-server -D
 npx webpack
 npx webpack serve --open
 ```
 
-``` js
-// webpack.config.js
-const path = require("path");
-const htmlWebpackPlugin = require("html-webpack-plugin");
 
-module.exports = {
-  mode: "development",
-  entry: {
-      main: './src/main.js',
-      lib: './src/lib.js'
-  },
-  output: {
-    path: path.join(__dirname, "./dist"),
-    filename: "js/[name].[contenthash].js",
-    clean: true,  
-    chunkFilename: '[contenthash].js'
-  },
-  plugins: [
-    new htmlWebpackPlugin({
-      template: path.join(__dirname, "./public/index.html"),
-    }),
-  ],
-  module: {
-      rules: [
-          {
-            test: /.css$/,
-            use: ['style-loader', 'css-loader'] 
-          },
-          {
-              test: /.txt$/,
-              type: 'asset/source' 
-          },
-          {
-            test: /.jpg$/,
-            type: 'asset/resource',
-            generator: {
-              filename: 'images/[hash][ext]'
-            }
-          },
-          {
-            test: /.png$/,
-            type: 'asset/inline',
-          },
-      ]
-  },
-  devServer: {
-    static: './dist'
-  },
-  devtool: "inline-source-map",
-  optimization: {
-    splitChunks: {
-      chunks: 'all'
-    },    
-    runtimeChunk: 'single',
-  },
-  externals: {
-    lodash: '_'
-  },
-  resolve: {
-    extensions: [".js", ".ts"],
-    alias: {
-      
-    }
-  },
-};
-```
 
-## mode 
+## Mode 
 
 - `development`，即开发模式。此时代码没有`tree shaking`、也没有经过压缩处理。
 - `production`，即生产模式，是配置的默认值。此时打包`ES`模块时默认开启`tree shaking`，代码经过压缩处理。
 
-## entry
+## Entry
 
 `webpack`能够从一个入口模块出发，递归查找所有被依赖的模块，将其打包生成构建产物。通常来说一个入口文件对应一个构建产物`js`（称之为`chunk`），但是通过代码分割技术（见后续章节），一个入口文件是能够对应多个构建产物`js`（多个`chunk`，主要那个`chunk`被称为`initial-chunk`，其余的都被称为`non-initial-chunk`）的。
 
@@ -94,7 +33,7 @@ entry: {
 },
 ```
 
-## output
+## Output
 
 用来指示构建产物的存放路径和文件名等信息
 
@@ -111,55 +50,31 @@ output: {
 },
 ```
 
-### [name]
-
-`chunk`名，如上述配置的`home`、`test`
 
 
+## Modules
 
-### [contenthash]
-
-`chunk`内容的哈希值
-
-
-
-## loader
-
-在`webpack`只能理解`js`模块之间的引用关系，如果我们想要在`js`文件中引入其他类型的文件就需要使用对应的`loader`，简单来说`loader`起到一个转化的功能。
+Webpack默认只能理解JavaScript模块之间的引用关系，为了引用非JavaScript文件我们需要通过*loader*来将目标文件转化为我们可以理解的内容。
 
 需要注意的是`loader`的执行顺序是**从右往左**，如`['style-loader', 'css-loader']`表示当被依赖的模块是`css`文件时，会先将`css`文件内容传给`css-loader`处理，处理后的结果再传给`style-loader`处理，最终处理的结果会被依赖该`css`文件的模块所使用。
 
+### loader
 
+#### style-loader
 
-### style-loader
+主要用于动态生成*style*标签实现样式的插入。
 
-在`js`模块中引入`css`文件的常见做法只直接`import './style.css'`，实际上`style-loader`的作用是返回一段`js`代码，这段代码的作用是动态生成一个`style`标签，标签的内容是`css`文件内表达的样式。
+#### css-loader
 
+> The `css-loader` interprets `@import` and `url()` like `import/require()` and will resolve them.
 
+除此之外还提供了CSS Modules的能力（默认情况下只有`.module.css`的文件才能使用该功能，可通过`options.modules: true`来令所有`css`文件都能这样引用）
 
-### css-loader
-
-用来处理`css`文件，并会将处理后的内容交给`style-loader`来动态生成`style`标签从而注入样式。除此之外，还提供了`css module`的能力，允许我们通过`import xx from './style.module.css'`从`css`文件中导入具体的内容（默认情况下只有`.module.css`的文件才能使用该功能，可通过`options.modules: true`来令所有`css`文件都能这样引用）
-
-```js
-module.exports = {
-  module: {
-    rules: [
-      {
-        test: /\.css$/,
-        use: [
-          { loader: 'style-loader' },
-          {
-            loader: 'css-loader',
-            options: {
-              modules: true,
-            },
-          },
-        ],
-      },
-    ],
-  },
-};
+``` json
+ {
+    test: /\.css$/,
+    use: ['style-loader', 'css-loader'],
+ }
 ```
 
 ``` css
@@ -179,17 +94,75 @@ function App() {
 
 
 
+#### sass-loader
+
+``` shell
+npm i sass sass-loader -D
+```
+
+``` json
+{
+    test: /\.s?css$/i,
+    use: ['style-loader', 'css-loader', 'sass-loader'],
+}
+```
 
 
-## asset modules
 
-`webpack5`通过`asset modules`内置了`raw-loader`、`url-loader`、`file-loader`的功能
+#### @svgr/webpack
+
+用于将SVG转化为React组件。
+
+``` shell
+npm i @svgr/webpack -D
+```
+
+``` js
+{
+    test: /\.svg$/i,
+    issuer: /\.[jt]sx?$/,
+    use: ['@svgr/webpack'],
+}
+```
+
+``` tsx
+import Star from './star.svg'
+
+const Example = () => (
+  <div>
+    <Star />
+  </div>
+)
+```
 
 
 
-### type/resource
+#### esbuild-loader
 
-等同于`file-loader`
+``` js
+{
+    test: /\.(t|j)sx?$/,
+    loader: 'esbuild-loader',
+    options: {
+      loader: 'tsx', // Or 'ts' if you don't need tsx
+      target: 'es2015',
+    },
+},
+```
+
+
+
+
+
+### asset modules
+
+*webpack5*通过*asset modules*内置了*Webpack4*中`raw-loader`、`url-loader`、`file-loader`的功能
+
+
+
+#### type/resource
+
+> 等同于`file-loader`
 
 ``` js
 module.exports = {
@@ -198,7 +171,10 @@ module.exports = {
      // webpack5
      {
        test: /\.png/,
-       type: 'asset/resource'
+       type: 'asset/resource',
+       generator: {
+          filename: 'static/[hash][ext][query]',
+       },
      },
      
      // webpack4 使用file-loader实现
@@ -223,43 +199,9 @@ img.src = mainImage; // '/dist/151cfcfa1bd74779aadb.png'
 
 
 
-默认情况下资源会存放在`output.path`根目录，我们可以使用`output.assetModuleFilename`或`Rule.generator`调整资源的生成目录。
+#### type/inline
 
-``` js
-module.exports = {
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    assetModuleFilename: 'images/[hash][ext][query]', // 
-  },
-  module: {
-    rules: [
-      {
-        test: /\.png/,
-        type: 'asset/resource'
-     	},
-      {
-        test: /\.html/,
-        type: 'asset/resource',
-        generator: {
-          filename: 'static/[hash][ext][query]',
-        },
-      },
-    ],
-  },
-};
-```
-
-
-
-
-
-
-
-
-
-### type/inline
-
-等同于`url-loader`
+>  等同于`url-loader`
 
 ``` js
 module.exports = {
@@ -296,17 +238,15 @@ el.style.background = `url(${svg})`; // url(data:image/svg+xml;base64,xxxxxx)
 
 
 
-
-
-### type
+#### type
 
 根据资源的大小自动选择`type/resource`和`type/inline`，`url-loader`其实也内置了`file-loader`，以前也是一样通过`url-loader`根据资源的大小选择不同的处理方式
 
 
 
-### type/source
+#### type/source
 
-等同于`raw-loader`
+> 等同于`raw-loader`
 
 ``` js
 module.exports = {
@@ -341,7 +281,7 @@ console.log(txt) // hello world
 
 
 
-## plugins
+## Plugins
 
 插件，顾名思义，就是对`webpack`功能进行拓展。
 
@@ -352,16 +292,59 @@ plugins: [
 ]
 ```
 
+### 内置插件
+
+#### DefinePlugin
+
+该插件在**编译时**对源码中的**变量**（大概是通过AST解析出，而不是简单的字符串匹配）进行替换。
+
+``` js
+new webpack.DefinePlugin({
+    PRODUCTION: JSON.stringify(true),
+    VERSION: JSON.stringify('5fa3b9'),
+    BROWSER_SUPPORTS_HTML5: true,
+    TWO: '1+1',
+    'typeof window': JSON.stringify('object'),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+});
+```
 
 
-### html-webpack-plugin
+
+#### ProvidePlugin
+
+> Automatically load modules instead of having to `import` or `require` them everywhere.
+
+- 作用一：在每个*TSX*文件中都手动引入*React*会显得比较麻烦，可以通过该插件自动加载模块。
+
+``` js
+new ProvidePlugin({
+    React: 'react',
+})
+```
+
+- 作用二：**Webpack5不再默认提供Node核心模块的Poyfill**，因此需要我们自行解决。其中对于像`process`、`Buffer`这类的Node内置变量我们可以通过该插件来提供*Poyfill*，而对于`import buffer from 'buffer'`、`import stream from 'stream'`这样的模块我们需要使用`resolve.fallback`来提供*Poyfill*
+
+``` js
+new ProvidePlugin({
+    process: 'process/browser',
+    Buffer: ['buffer/', 'Buffer'], // 相当于 require('buffer/').Buffer
+}),
+```
+
+
+
+
+
+### 第三方插件
+
+#### html-webpack-plugin
 
 `webpack`本身的作用是构建出`bundle.js`，然后构建文件需要在我们的`html`中使用。
 
 `html-webpack-plugin`插件的作用是每次使用`webpack`命令，都会自动在`dist`（指构建出口）生成一个`html`文件，这个`html`文件会自动引入我们的`bundle.js`
 
 ``` js
-// npm i -D html-webpack-plugin
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const webpackConfig = {
@@ -386,12 +369,11 @@ const webpackConfig = {
 </body>
 ```
 
-### clean-webpack-plugin
+#### clean-webpack-plugin
 
 通常每次使用`webpack`进行构建，都希望能先清除上次构建的产物
 
 ``` js
-// npm i -D clean-webpack-plugin
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 const webpackConfig = {
@@ -401,7 +383,7 @@ const webpackConfig = {
 };
 ```
 
-## resolve
+## Resolve
 
 ### extensions
 
@@ -427,7 +409,7 @@ const path = require('path');
 module.exports = {
   	resolve: {
     	alias: {
-      		Test: path.resolve(__dirname, 'src/test/'),
+      		Test: path.join(__dirname, 'src/test/'),
     	},
   	},
 };
@@ -437,13 +419,32 @@ module.exports = {
 import Test from 'Test/index.js' // src/test/index.js
 ```
 
+
+
+### fallback
+
+当解析一个模块失败时提供一个向后兼容的选项。一种常见的情况是项目所引用的第三方库引用了Node内置模块，此时我们需要将其替换成对应的可用模块。
+
+``` js
+module.exports = {
+  resolve: {
+    fallback: {
+      stream: require.resolve('stream-browserify'), // npm i stream-browserify
+      buffer: require.resolve('buffer/') // npm i buffer
+    }
+  }
+}
+```
+
+
+
 ### mainFields
 
 [Node#package.json](https://messiahhh.github.io/blog/frontend/node.html#browser-module)
 
 
 
-## devtool
+## Devtool
 
 构建的时候生成`sourceMap`
 
@@ -507,7 +508,7 @@ var __webpack_modules__ = {
 
 
 
-## devServer
+## DevServer
 
 ``` bash
 npx webpack serve
@@ -536,6 +537,27 @@ module.exports = {
 
 ### Hot Module Replacement
 
+Webpack中存在两个容易混淆的概念，*Live Reloading*和*Hot Module Replacement*（又叫Hot Reloading、热加载）
+
+- Live Reloading。当监听到任何依赖中的文件修改后，通知浏览器重新刷新页面，此时页面状态全部丢失。
+- Hot Module Replacement。当监听到任何依赖中的文件修改后，通知浏览器，浏览器获取修改后的新模块，并进行局部更新且不会丢失状态。
+
+可以看出Hot Module Replacement是基于Live Reloading上做了进一步的体验提升。hmr下如果不写module.hot.accpet的话会兜底的刷新页面，写了的话可以实现局部刷新，一般用react提供的fast refresh实现
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 模块热替换功能应该只用在开发环境当中，可以通过`npx webpack serve --hot`来开启该功能，此时`webpack`会自动使用`HotModuleReplacementPlugin`内置插件。
 
 对于CSS文件由于我们使用了`style-loader`，文件的改变会自动触发热更新；而对于JS文件我们需要额外加一些代码，如下代码当我们修改了`child.js`会进行模块热替换。
@@ -547,7 +569,7 @@ if (module.hot) { // 通过该守卫来避免生产环境报错
 }
 ```
 
-## optimization
+## Optimization
 
 ### runtimeChunk
 
@@ -575,7 +597,7 @@ module.exports = {
 
 
 
-## externals
+## Externals
 
 ``` typescript
 import _ from 'lodash'
@@ -752,5 +774,4 @@ output: {
     }
 },
 ```
-
 

@@ -183,17 +183,26 @@ const path = require('path')
 ### `path.resolve`
 
 ```js
-const url = path.resolve('static')
+const url = path.resolve('./static')
+// 等价于
+const url = path.join(process.cwd(), './static')
 ```
 
-根据传入的参数解析出对应的**绝对路径**。
+根据当前所在目录，即`process.cwd()`和传入的路径参数，解析出完整的**绝对路径**
 
-- 当传入的参数是相对路径，如 `index`、`../index`，会算出相对**`process.cwd()`**的绝对路径
 
-  ```js
-  const url = path.resolve('.') // 等于process.cwd()
-  ```
-- 当传入的参数是绝对路径，如 `/index`，会算出相对**根路径**的绝对路径
+
+### `require.resolve`
+
+> 作为拓展阅读
+
+``` js
+const url = require.resolve('webpack') // /path/to/project/node_modules/webpack/lib/index.js
+```
+
+
+
+
 
 ### `path.join`
 
@@ -204,6 +213,8 @@ const path1 = path.join('a', 'b') // 'a/b'
 const path2 = path.join('a', 'b', '../c') // 'a/c'
 const path3 = path.join(__dirname, '..', 'b') 
 ```
+
+
 
 ## process模块
 
@@ -231,32 +242,13 @@ $node index.js abc
 ] // process.argv
 ```
 
-### `process.stdout`
 
-标准输出流
-
-```js
-process.stdout.write('Hello world')
-```
-
-### `process.stdin`
-
-标准输入流
-
-```js
-process.stdin.on('data', (chunk) => {
-    process.stdout.write('Hello' + chunk)
-    process.exit()
-})
-```
-
-## 环境变量
 
 ### `process.env`
 
 在 `Node`中可以通过 `process.env`拿到环境变量，从而根据不同的环境执行不同的代码。
 
-### cross-env
+#### cross-env
 
 通常不同系统设置环境变量的方式不同，为此可以使用第三方库 `cross-env`来设置环境变量。
 
@@ -269,7 +261,7 @@ process.stdin.on('data', (chunk) => {
 }
 ```
 
-### dotenv
+#### dotenv
 
 除了在命令行中设置环境变量，我们也可以使用单独的文件 `.env`来保存环境变量，并搭配 `dotenv`库来读取 `.env`文件中的环境变量。
 
@@ -304,6 +296,31 @@ module.exports = {
 const { NODE_ENV, name } = require('./config.js')
 console.log(NODE_ENV, name)
 ```
+
+
+
+### `process.stdin`
+
+标准输入流
+
+```js
+process.stdin.on('data', (chunk) => {
+    process.stdout.write('Hello' + chunk)
+    process.exit()
+})
+```
+
+### `process.stdout`
+
+标准输出流
+
+```js
+process.stdout.write('Hello world')
+```
+
+### 
+
+
 
 ## util模块
 
