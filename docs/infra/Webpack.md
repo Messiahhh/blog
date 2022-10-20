@@ -50,9 +50,37 @@ output: {
 },
 ```
 
+### publicPath
+
+一般本地开发时该字段取默认值即可，而在进行生产环境部署时，我们通常会将静态资源部署到TOS中并借助CDN实现资源的缓存，因此此时`publicPath`通常为该TOS的地址，如：
+
+``` js
+module.exports = {
+		output: {
+				publicPath: 'https://tos.xxx.com/yyy/'
+		}
+}
+```
+
+此时我们构建后生成的HTML页面中是通过类似这样的形式引用静态资源的
+
+``` html
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+<script defer src="https://tos.xxx.com/yyy/js/main.5883839b305c23966b80.js"></script></head>
+<body>
+    <div id="root">hello</div>
+</body>
+</html>
+```
 
 
-## Modules
+
+
+
+## Module
 
 Webpack默认只能理解JavaScript模块之间的引用关系，为了引用非JavaScript文件我们需要通过*loader*来将目标文件转化为我们可以理解的内容。
 
@@ -285,28 +313,27 @@ console.log(txt) // hello world
 
 插件，顾名思义，就是对`webpack`功能进行拓展。
 
-``` js
-plugins: [
-    new HtmlWebpackPlugin({}),
-    new webpack.HotModuleReplacementPlugin({}),
-]
-```
+
 
 ### 内置插件
 
 #### DefinePlugin
 
-该插件在**编译时**对源码中的**变量**（大概是通过AST解析出，而不是简单的字符串匹配）进行替换。
+该插件在**编译时**对源码中的**变量**进行替换。
 
 ``` js
-new webpack.DefinePlugin({
-    PRODUCTION: JSON.stringify(true),
-    VERSION: JSON.stringify('5fa3b9'),
-    BROWSER_SUPPORTS_HTML5: true,
-    TWO: '1+1',
-    'typeof window': JSON.stringify('object'),
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
-});
+module.exports = {
+    plugins: [
+        new webpack.DefinePlugin({
+            PRODUCTION: JSON.stringify(true),
+            VERSION: JSON.stringify('5fa3b9'),
+            BROWSER_SUPPORTS_HTML5: true,
+            TWO: '1+1',
+            'typeof window': JSON.stringify('object'),
+            'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+        });
+    ],
+};
 ```
 
 
@@ -318,18 +345,26 @@ new webpack.DefinePlugin({
 - 作用一：在每个*TSX*文件中都手动引入*React*会显得比较麻烦，可以通过该插件自动加载模块。
 
 ``` js
-new ProvidePlugin({
-    React: 'react',
-})
+module.exports = {
+    plugins: [
+        new webpack.ProvidePlugin({
+            React: 'react',
+        })
+    ],
+};
 ```
 
 - 作用二：**Webpack5不再默认提供Node核心模块的Poyfill**，因此需要我们自行解决。其中对于像`process`、`Buffer`这类的Node内置变量我们可以通过该插件来提供*Poyfill*，而对于`import buffer from 'buffer'`、`import stream from 'stream'`这样的模块我们需要使用`resolve.fallback`来提供*Poyfill*
 
 ``` js
-new ProvidePlugin({
-    process: 'process/browser',
-    Buffer: ['buffer/', 'Buffer'], // 相当于 require('buffer/').Buffer
-}),
+module.exports = {
+		plugins: [
+        new webpack.ProvidePlugin({
+            process: 'process/browser',
+            Buffer: ['buffer/', 'Buffer'], // 相当于 require('buffer/').Buffer
+        }),
+    ]
+}
 ```
 
 
@@ -340,56 +375,31 @@ new ProvidePlugin({
 
 #### html-webpack-plugin
 
-`webpack`本身的作用是构建出`bundle.js`，然后构建文件需要在我们的`html`中使用。
-
-`html-webpack-plugin`插件的作用是每次使用`webpack`命令，都会自动在`dist`（指构建出口）生成一个`html`文件，这个`html`文件会自动引入我们的`bundle.js`
+每次构建时都根据模板HTML文件生成新的HTML文件，并会自动引入我们打包后的JS产物。
 
 ``` js
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const webpackConfig = {
-    plugins: [
-        new HtmlWebpackPlugin({
-    		template: path.resolve(__dirname, 'public/index.html'),
-		}),
+        plugins: [
+            new HtmlWebpackPlugin({
+            template: path.resolve(__dirname, 'public/index.html'),
+        }),
     ],
 };
 ```
 
-``` html
-<!-- public/index.html 模板文件 -->
-<body>
-    <div id="root"></div>
-</body>
 
-<!-- dist/index.html 自动生成的文件 -->
-<body>
-    <div id="root"></div>
-    <script src="bundle.js"></script>
-</body>
-```
-
-#### clean-webpack-plugin
-
-通常每次使用`webpack`进行构建，都希望能先清除上次构建的产物
-
-``` js
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-
-const webpackConfig = {
-    plugins: [
-        new CleanWebpackPlugin(),
-    ],
-};
-```
 
 ## Resolve
 
 ### extensions
 
 ``` js
-resolve: {
-    extensions: [".js", ".mjs", ".cjs", ".jsx", ".tsx"]
+module.exports = {
+		resolve: {
+        extensions: [".js", ".mjs", ".cjs", ".jsx", ".tsx"]
+    }
 }
 ```
 
@@ -427,12 +437,12 @@ import Test from 'Test/index.js' // src/test/index.js
 
 ``` js
 module.exports = {
-  resolve: {
-    fallback: {
-      stream: require.resolve('stream-browserify'), // npm i stream-browserify
-      buffer: require.resolve('buffer/') // npm i buffer
+    resolve: {
+        fallback: {
+            stream: require.resolve('stream-browserify'), // npm i stream-browserify
+            buffer: require.resolve('buffer/') // npm i buffer
+        }
     }
-  }
 }
 ```
 
@@ -510,64 +520,62 @@ var __webpack_modules__ = {
 
 ## DevServer
 
-``` bash
-npx webpack serve
-```
+### static
 
-### publicPath
-
-> Imagine that the server is running under `http://localhost:8080` and [`output.filename`](https://webpack.js.org/configuration/output/#outputfilename) is set to `bundle.js`. By default the `devServer.publicPath` is `'/'`, so your bundle is available as `http://localhost:8080/bundle.js`.
-
-```javascript
+``` js
 module.exports = {
-  //...
-  devServer: {
-    publicPath: 'http://localhost:8080/assets/',
-  },
-};
+		devServer: {
+      	open: true,
+      	port: 9100,
+      	static: {
+          	directory: path.join(__dirname, 'dist'),
+          	publicPath: "/",
+        }
+    }
+}
 ```
 
-> The bundle will also be available as `http://localhost:8080/assets/bundle.js`.
 
-### contentBase
-
-主要用来访问非构建生成的静态资源，默认值为当前工作目录，也就是说当前目录的所有文件都能通过开发服务器获取。
-
->  Content not from webpack is served from ~/workshop/repo
 
 ### Hot Module Replacement
 
-Webpack中存在两个容易混淆的概念，*Live Reloading*和*Hot Module Replacement*（又叫Hot Reloading、热加载）
+Webpack中存在两个容易混淆的概念，*Live Reloading*（对应配置中的`liveReload`字段）和*Hot Module Replacement*（对应配置中的`hot`字段，简称为HMR，又被称为热加载Hot Reloading）
 
 - Live Reloading。当监听到任何依赖中的文件修改后，通知浏览器重新刷新页面，此时页面状态全部丢失。
-- Hot Module Replacement。当监听到任何依赖中的文件修改后，通知浏览器，浏览器获取修改后的新模块，并进行局部更新且不会丢失状态。
+- Hot Module Replacement。浏览器与本地服务器之间建立WebSocket连接，当检测到本地文件修改时服务器将主动通知浏览器，浏览器将会获取修改后的新模块进行局部替换，从而实现状态的保存。
 
-可以看出Hot Module Replacement是基于Live Reloading上做了进一步的体验提升。hmr下如果不写module.hot.accpet的话会兜底的刷新页面，写了的话可以实现局部刷新，一般用react提供的fast refresh实现
+可以看出HMR在Live Reloading的基础上做了进一步体验提升，默认情况下Webpack会开启HMR（即`hot: true`），此时需要在业务代码中手动实现新模块的接收与替换（即`module.hot.accept`），如果我们没有实现该功能，Webpack则会自动降级成Live Reloading，即刷新完整的页面。
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-模块热替换功能应该只用在开发环境当中，可以通过`npx webpack serve --hot`来开启该功能，此时`webpack`会自动使用`HotModuleReplacementPlugin`内置插件。
-
-对于CSS文件由于我们使用了`style-loader`，文件的改变会自动触发热更新；而对于JS文件我们需要额外加一些代码，如下代码当我们修改了`child.js`会进行模块热替换。
+不同种类的项目中，模块替换的实现自然存在着差异，拿React项目举例的话一下代码实现了一个非常简陋的HMR，此时当我们修改*Child.tsx*时，浏览器会主动向服务器发送`xxx.hot-update.json`和`xxx.hot.js`请求获取新模块的内容。
 
 ``` js
-// parent.js
-if (module.hot) { // 通过该守卫来避免生产环境报错
-    module.hot.accept('./child.js')
+if (module.hot) {
+    module.hot.accept('./Child.tsx', function() {
+        ReactDOM.render(<App />, document.getElementById('root'));
+    })
 }
 ```
+
+当然这样的实现是很脆弱的，因此建议使用React官方提供的实现。以前通常使用`React-Hot-Loader`来实现，但是现在推荐使用最新的**[React Fast Refresh](https://github.com/pmmmwh/react-refresh-webpack-plugin)**
+
+
+
+### proxy
+
+``` js
+module.exports = {
+		devServer: {
+      	proxy: {
+          '/api': {
+            target: 'http://localhost:9100', // 把接口代理给本地后端服务器
+            changeOrigin: true,
+          },
+        },
+    }
+}
+```
+
+
 
 ## Optimization
 
@@ -575,9 +583,9 @@ if (module.hot) { // 通过该守卫来避免生产环境报错
 
 ``` js
 module.exports = {
-  optimization: {
-    runtimeChunk: 'single',
-  },
+    optimization: {
+        runtimeChunk: 'single',
+    },
 }
 ```
 
@@ -587,11 +595,22 @@ module.exports = {
 
 ``` js
 module.exports = {
-  optimization: {
-    splitChunks: {
-      chunks: 'all'
-    },    
-  },
+    optimization: {
+        splitChunks: {
+          	chunks: 'all',
+            maxInitialRequests: Infinity,
+            minSize: 15000,
+          	cacheGroups: {
+                babel: {
+                  test: /[\\/]node_modules[\\/]@babel[\\/]/,
+                  minChunks: 1,
+                  chunks: 'all',
+                  name: 'babel',
+                  priority: 20,
+                },
+            }
+        },    
+    },
 }    
 ```
 
