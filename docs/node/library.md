@@ -573,7 +573,9 @@ app.use(async ctx => {
 
 ## NestJS
 
-NestJS是个使用装饰器模式（风格类似前端的Angular）的Node后端框架，同时对TypeScript支持良好。
+NextJS使用装饰器模式（风格类似前端的Angular）、依赖注入模式、对TypeScript支持友好，是一门广泛被应用的Node后端Web框架。
+
+在NextJS中通过*Module*进行功能模块的划分，每个*Module*通常包括Controller和Service，Controller用于提供后端接口，Service则用于提供各种服务，一个*Module*内定义的Service可以通过放在*exports*中向外暴露，再另一个模块中可以通过*imports*来引入该模块，从而使用该模块暴露出的Service服务。
 
 ```js
 npm i -g @nestjs/cli
@@ -602,9 +604,12 @@ import { AppService } from './app.service';
   imports: [],
   controllers: [AppController, MyController],
   providers: [AppService],
+ 	exports: [],
 })
 export class AppModule {}
 ```
+
+
 
 ### Controller
 
@@ -690,7 +695,7 @@ export class MyController {
 
 ### Service
 
-我们使用 `Controller`来进行路由控制，具体的数据操作或逻辑操作由 `Service`（`Service`是一种 `Provider`）负责。
+我们使用 `Controller`来进行路由控制，具体的数据操作或逻辑操作由 `Service`负责（`Service`是一种 `Provider`）
 
 首先创建 `Service`类，并在 `app.module.ts`中声明该 `Service`为 `Provider`，然后 `Controller`的构造函数添加一个入参（为 `Service`类的实例）。
 
