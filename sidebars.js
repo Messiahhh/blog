@@ -124,7 +124,7 @@ const sidebars = {
         {
           type: 'doc',
           id: 'node/stream',
-          label: 'Stream'
+          label: '二进制与编码'
         },
         {
           type: 'doc',
