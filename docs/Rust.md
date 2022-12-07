@@ -689,6 +689,514 @@ fn test(o: Option<u32>) -> u32 {
 
 
 
+
+
+### Collections
+
+Rust提供了一些常用的内置集合类型，如`Vec`、`String`、`HashMap`、`Range`，这些类型都是通过`struct`实现的
+
+#### Vec
+
+`Vec`是长度可变，参数类型相同的集合。也可以通过`Vec`存枚举，来间接实现长度可变，类型不同的集合
+
+``` rust
+fn main() {
+  let mut value: Vec<i32> = Vec::new();
+  value.push(1);
+  value.push(2);
+
+  let mut value2 = vec![1, 2, 3]; // macro
+
+  let a: &mut i32 = &mut value2[0];
+  *a = 4;
+  println!("{}", a);
+
+  let b: Option<&i32> = value2.get(1);
+  if let Some(x) = b {
+      println!("{}", x);
+  }
+
+
+
+  for i in &mut value2 {
+      *i = 20;
+      println!("{}", i);
+  }
+
+  // ---
+
+
+  fn largest(list: &[i32]) -> i32 {
+      let mut largest = list[0];
+
+      for &item in list { // 18章,模式匹配
+          if item > largest {
+              largest = item;
+          }
+      }
+
+      largest
+  }
+}
+```
+
+
+
+#### String
+
+需要注意的是`String`并不支持直接通过索引进行取值
+
+``` rust
+fn main() {
+  let mut s = String::from("hello");
+  s.push_str(" world");
+  s.push('!'); // char是单引号
+  println!("{}", s); 
+}
+
+```
+
+
+
+#### HashMap
+
+虽然都在标准库当中，但是由于不像`Vec`、`String`使用的那么频繁，因此`HashMap`并没有被`preclude`，所以使用的时候需要通过`use`手动引入
+
+``` rust
+use std::collections::HashMap;
+
+fn main() {
+  let mut scores = HashMap::new();
+  scores.insert(String::from("Blue"), 10);
+  scores.insert(String::from("Yellow"), 50);
+
+  for (key, value) in &scores {
+      println!("{}: {}", key, value);
+  }
+}
+
+```
+
+
+
+#### Range
+
+``` rust
+use core::ops::Range;
+
+let v: Vec<i32> = (1..4).into_iter().map( |x| x * x).collect();
+```
+
+
+
+### 迭代器（iteration）
+
+常见的集合类型，如*Vector*部署的`.iter()`、`.into_iter()`等方法将会返回迭代器对象，迭代器都实现了*Iterator*这个*trait*，即可以通过不断调用`next`方法访问集合中的元素。
+
+- `.iter()`
+
+- `.iter_mut()`
+- `.into_iter()`
+
+
+
+
+
+#### *consuming adaptors*
+
+在内部调用`next`方法的方法也被称为*consuming adaptor*，如`sum`方法
+
+``` rust
+fn main() {
+    let v = vec![1, 2, 3];
+    let sum: u32 = v.iter().sum();
+    println!("{}", sum);
+}
+```
+
+
+
+
+
+#### *Iterator adaptors*
+
+返回一个新的迭代器的方法也被称为*iterator adaptor*，如`map`方法
+
+``` rust
+fn main() {
+    let v = vec![1, 2, 3];
+    let sum: u32 = v.iter().map(|x| 2 * x).sum();
+    println!("{}", sum);
+}
+```
+
+https://stackoverflow.com/questions/65766866/why-the-closure-passed-to-map-does-not-take-a-reference-while-the-one-passed-t 
+
+
+
+### Trait
+
+遵从着组合大于继承的原则，在Rust中通过结构体而不是传统的类来组织数据，并引入Trait（特征）来实现逻辑的组合。Trait类似Java中的Interface，但是可以提供方法的默认实现。
+
+``` rust
+struct People {
+    name: String,
+}
+
+trait Test {
+    fn run(&self) { // 可以提供默认实现
+        println!("run") 
+    } 
+    fn get_name(&self) -> &str;
+}
+
+impl Test for People {
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+}
+
+fn main() {
+    let p = People {
+        name: String::from("akara"),
+    };
+    p.run();
+    println!("{}", p.get_name());
+}
+```
+
+
+
+#### 泛型与静态分发
+
+Rust也提供了泛型，可以被使用在函数、结构体、枚举等地方。值得一提的是，使用泛型并不会给运行时带来任何额外的开销，这依赖于Rust在编译时对所有泛型类型进行**单态化（*monomorphization*）**。
+
+``` rust
+fn main() {
+		let integer = Some(5);
+		let float = Some(5.0);
+}
+```
+
+以上源码会被编译成以下代码，这也被称为**静态分发（*static dispatch*）**
+
+``` rust
+enum Option_i32 {
+    Some(i32),
+    None,
+}
+
+enum Option_f64 {
+    Some(f64),
+    None,
+}
+
+fn main() {
+    let integer = Option_i32::Some(5);
+    let float = Option_f64::Some(5.0);
+}
+```
+
+单态化最大的好处是零运行时开销，但也存在着对应的缺点：
+
+1. 产物体积增大
+2. 编译时间变长
+
+
+
+
+
+
+
+#### Trait Bound
+
+在TypeScript中我们通过`extends`来进行泛型约束，而在Rust中也提供了类似的语法实现对泛型参数的约束，这被称为*Trait Bound*。拿以下代码为例，我们约束泛型参数T必须实现了*Summary*这个*Trait*。
+
+``` rust
+pub fn notify<T: Summary>(item: &T) {
+    println!("Breaking news! {}", item.summarize());
+}
+
+// 语法糖
+pub fn notify(item: &impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+```
+
+我们还可以使用加号来约束泛型参数必须同时实现了多个*Trait*
+
+``` rust
+pub fn notify<T: Summary + Display>(item: &T);
+  
+pub fn notify(item: &(impl Summary + Display));
+```
+
+当Trait Bound太长时，我们也可以使用Where子句来优化写法
+
+``` rust
+fn some_function<T: Display + Clone, U: Clone + Debug>(t: &T, u: &U) -> i32 {}
+  
+fn some_function<T, U>(t: &T, u: &U) -> i32
+    where T: Display + Clone,
+          U: Clone + Debug
+{}
+```
+
+
+
+#### Trait Object
+
+Rust中虽然泛型的功能很强大，但却难以表达异构（*heterogeneous*）集合，比如对于以下代码编译器会抛出错误。
+
+``` rust
+trait Run {}
+
+struct Dog {
+    age: u32,
+}
+
+struct Cat {
+    age: u32,
+}
+
+impl Run for Dog {}
+
+impl Run for Cat {}
+
+fn main() {
+    test(vec![Dog { age: 10 }, Cat { age: 5 }]) // mismatched types expected struct `Dog`, found struct `Cat`
+}
+
+fn test<T: Run>(a: Vec<T>) {}
+```
+
+为了实现这样的效果，我们可以使用Trait Object，详情将在下章进行介绍。
+
+
+
+### Dynamically Sized Type
+
+在Rust中绝大部分类型所占据的空间是在编译时已知的，相对应的编译时大小未知的类型通常被称之为**Dynamically Sized Type（DST）**，或者叫Unsized Type。**切片类型（Slice）**和**Trait Object**都属于这种情况。并且由于在编译时大小未知，因此通常我们不能直接在代码中使用这些类型，而是需要**通过引用**来间接操作。
+
+
+
+#### Slice
+
+通常可以对String、Vec、数组进行切片操作来获得对应的切片类型，切片的类型用`[T]`表示，切片引用的类型用`&[T]`表示。
+
+``` rust
+let v1 = vec![1, 2, 3, 4];
+let v2: &[i32] = &v1[..]; // slice
+
+let a1 = [1, 2, 3, 4];
+let a2: &[i32] = &a1[..]; // slice
+```
+
+而String对应的切片并不是用`[String]`表示，而是用`str`来表示，对应的String的切片引用则是通过`&str`来进行表示
+
+``` rust
+let s1 = String::from("hello");
+let s2: &str = &s1[..];
+```
+
+我们又知道其实字符串字面量的类型就是`&str`，变量通过指针指向着程序二进制数据中记录的实际字符串内容。
+
+
+
+
+
+#### Trait Object
+
+在上一章节我们提到泛型难以表达异构集合，并给出了一个代码例子。通常这种情况下我们可以使用Trait Object来实现。
+
+一般使用`dyn Trait A`的语法来表示Trait Object的类型，又因为Trait Object是DST需要借助引用来使用，所以实际上大部分我们看到的是类似这样的语法`&dyn TraitA`、`Box<dyn myTrait>`（这里的区别在于后者拥有实例数据的所有权）
+
+``` rust
+trait Run {}
+
+struct Dog {
+    age: u32,
+}
+
+struct Cat {
+    age: u32,
+}
+
+impl Run for Dog {}
+
+impl Run for Cat {}
+
+fn main() {
+    test2(vec![&Dog { age: 20 }, &Cat { age: 10 }]);
+    test3(vec![Box::new(Dog { age: 20 }), Box::new(Cat { age: 10 })]);
+}
+
+fn test2(v: Vec<&dyn Run>) {}
+fn test3(v: Vec<Box<dyn Run>>) {}
+```
+
+
+
+#### DST与胖指针
+
+如同上文所属，DST通常需要通过引用来进行操作，并且这里的引用不再是一个普通的指针，而是一个胖指针。
+
+- 对于Slice类型的引用，除了需要包含了位置的指针外，还需要记录切片的长度。
+- 对于Trait Object类型的引用，除了需要包含了实例位置的指针外，还需要能指向vtable（虚拟表），从而在编译时可以知道访问哪些方法。
+
+
+
+
+
+### 错误处理
+
+Rust把错误分为两种类型，可恢复错误和不可恢复错误。
+
+可恢复错误，比如说读取一个文件，如果文件不存在时我们应该让外部能够感知到；不可恢复错误，比如越界访问数组，一旦出现了这种不安全的内存访问BUG我们可能会直接通过`panic!`来退出进程。
+
+
+
+#### panic
+
+`panic`也存在两种行为，默认的`unwind`和`abort`。其中`unwind`意味着退出程序的时候Rust会自动展开堆栈并清空数据，但这会有一些工作量。而一旦采用`abort`，那么程序中使用的内存就不会被自动回收，我们需要通过操作系统来手动进行清除。一般通过修改配置文件来调整该行为。
+
+``` toml
+# cargo.toml
+[profile.release]
+panic = 'abort'
+```
+
+
+
+#### Result
+
+``` rust
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+```
+
+在枚举一节中，我们了解到可以使用`Option<T>`来包装表明某个值可能为空。类似的道理，我们通过`Result<T, E>`来作为函数的返回值，来表明这个函数可能会存在异常情况。
+
+``` rust
+use std::fs::File;
+
+fn main() {
+    let f = File::open("hello.txt");
+
+    let f = match f {
+        Ok(file) => file,
+        Err(error) => panic!("Problem opening the file: {:?}", error),
+    };
+}
+```
+
+一般通过`match`来匹配枚举的不同可能值，但这有些冗余，因此`Result`实现了一些方便的方法
+
+
+
+##### unwrap
+
+`unwrap`方法能够在`Result`为`Ok`的时候返回内部值，为`Err`的时候`panic`。
+
+``` rust
+fn main() {
+    let f = File::open("hello.txt").unwrap();
+}
+```
+
+
+
+##### expect
+
+与`unwrap`功能一致，区分在于我们可以指定报错时显示给用户的信息
+
+``` rust
+fn main() {
+    let f = File::open("hello.txt").expect("错误信息");
+}
+```
+
+
+
+##### propagating errors
+
+当一个函数的实现调用了可能报错的其他函数时，我们可以手动对错误进行处理，但也可以直接把错误抛出去，这被称为`propagating errors`，`Result`提供了`?`操作符来快速实现。
+
+对于以下代码，当`Result`为`Ok`时会返回内部值，为`Err`的时候会直接把`Err`作为`test`函数的返回值返回出去。
+
+``` rust
+fn test() {
+    let f = File::open("hello.txt")?;
+}
+```
+
+
+
+##### unwrap_or_else
+
+之前提到的`unwrap`和`expect`都会在`Err`的时候直接`panic`，这可能不是我们想要的结果，这时候我们需要使用`unwrap_or_else`并传递一个闭包作为参数
+
+
+
+``` rust
+fn main() {
+    let f = File::open("hello.txt").unwrap_or_else(|error| {
+      // do something
+  	})
+}
+```
+
+
+
+
+
+
+
+### 闭包
+
+在*JavaScript*中，声明函数的时候我们会在该函数的`[[scope]]`属性中记录该函数的作用域链（执行上下文的变量对象VO组成的数组），在调用该函数的时候创建新的函数执行上下文，该函数执行上下文中包括函数自身的变量对象以及作用域链，执行时如果在当前作用域找不到某个变量，则会沿着作用域链向上查找。
+
+对于这种，在声明函数时捕获函数作用域的行为通常也被称作闭包。
+
+与*JavaScript*不同，*Rust*中的函数不会捕获当前的作用域，也就意味着以下的代码是无效的
+
+``` rust
+fn main() {
+    let s = "hello";
+    fn test() {
+        println!("{}", s) // 错误
+    }
+
+    test();
+}
+```
+
+为了解决这样的问题，Rust也引入了闭包函数，闭包可以捕获当前作用域，通常是作为匿名函数保存在变量中、或者直接作为函数的参数使用。
+
+``` rust
+fn main() {
+    let s = "hello";
+    let f = |name: &str| {
+        println!("{}, {}", s, name)
+    };
+    f("world");
+}
+```
+
+``` rust
+let f = File::open("hello.txt").unwrap_or_else(|error| {
+		// do something
+})
+```
+
+
+
+
+
+
+
 ### 模式匹配（pattern match）
 
 模式（`pattern`）通常由以下内容组成：
@@ -924,443 +1432,6 @@ match aka {
    _ => () 
 }
 ```
-
-
-
-
-
-### 集合类型
-
-Rust提供了一些常用的内置集合类型，如`Vec`、`String`、`HashMap`、`Range`，这些类型都是通过`struct`实现的
-
-#### Vec
-
-`Vec`是长度可变，参数类型相同的集合。也可以通过`Vec`存枚举，来间接实现长度可变，类型不同的集合
-
-``` rust
-fn main() {
-  let mut value: Vec<i32> = Vec::new();
-  value.push(1);
-  value.push(2);
-
-  let mut value2 = vec![1, 2, 3]; // macro
-
-  let a: &mut i32 = &mut value2[0];
-  *a = 4;
-  println!("{}", a);
-
-  let b: Option<&i32> = value2.get(1);
-  if let Some(x) = b {
-      println!("{}", x);
-  }
-
-
-
-  for i in &mut value2 {
-      *i = 20;
-      println!("{}", i);
-  }
-
-  // ---
-
-
-  fn largest(list: &[i32]) -> i32 {
-      let mut largest = list[0];
-
-      for &item in list { // 18章,模式匹配
-          if item > largest {
-              largest = item;
-          }
-      }
-
-      largest
-  }
-}
-```
-
-
-
-#### String
-
-需要注意的是`String`并不支持直接通过索引进行取值
-
-``` rust
-fn main() {
-  let mut s = String::from("hello");
-  s.push_str(" world");
-  s.push('!'); // char是单引号
-  println!("{}", s); 
-}
-
-```
-
-
-
-#### HashMap
-
-虽然都在标准库当中，但是由于不像`Vec`、`String`使用的那么频繁，因此`HashMap`并没有被`preclude`，所以使用的时候需要通过`use`手动引入
-
-``` rust
-use std::collections::HashMap;
-
-fn main() {
-  let mut scores = HashMap::new();
-  scores.insert(String::from("Blue"), 10);
-  scores.insert(String::from("Yellow"), 50);
-
-  for (key, value) in &scores {
-      println!("{}: {}", key, value);
-  }
-}
-
-```
-
-
-
-#### Range
-
-``` rust
-use core::ops::Range;
-
-let v: Vec<i32> = (1..4).into_iter().map( |x| x * x).collect();
-```
-
-
-
-### 错误处理
-
-Rust把错误分为两种类型，可恢复错误和不可恢复错误。
-
-可恢复错误，比如说读取一个文件，如果文件不存在时我们应该让外部能够感知到；不可恢复错误，比如越界访问数组，一旦出现了这种不安全的内存访问BUG我们可能会直接通过`panic!`来退出进程。
-
-
-
-#### panic
-
-`panic`也存在两种行为，默认的`unwind`和`abort`。其中`unwind`意味着退出程序的时候Rust会自动展开堆栈并清空数据，但这会有一些工作量。而一旦采用`abort`，那么程序中使用的内存就不会被自动回收，我们需要通过操作系统来手动进行清除。一般通过修改配置文件来调整该行为。
-
-``` toml
-# cargo.toml
-[profile.release]
-panic = 'abort'
-```
-
-
-
-#### Result
-
-``` rust
-enum Result<T, E> {
-    Ok(T),
-    Err(E),
-}
-```
-
-在枚举一节中，我们了解到可以使用`Option<T>`来包装表明某个值可能为空。类似的道理，我们通过`Result<T, E>`来作为函数的返回值，来表明这个函数可能会存在异常情况。
-
-``` rust
-use std::fs::File;
-
-fn main() {
-    let f = File::open("hello.txt");
-
-    let f = match f {
-        Ok(file) => file,
-        Err(error) => panic!("Problem opening the file: {:?}", error),
-    };
-}
-```
-
-一般通过`match`来匹配枚举的不同可能值，但这有些冗余，因此`Result`实现了一些方便的方法
-
-
-
-##### unwrap
-
-`unwrap`方法能够在`Result`为`Ok`的时候返回内部值，为`Err`的时候`panic`。
-
-``` rust
-fn main() {
-    let f = File::open("hello.txt").unwrap();
-}
-```
-
-
-
-##### expect
-
-与`unwrap`功能一致，区分在于我们可以指定报错时显示给用户的信息
-
-``` rust
-fn main() {
-    let f = File::open("hello.txt").expect("错误信息");
-}
-```
-
-
-
-##### propagating errors
-
-当一个函数的实现调用了可能报错的其他函数时，我们可以手动对错误进行处理，但也可以直接把错误抛出去，这被称为`propagating errors`，`Result`提供了`?`操作符来快速实现。
-
-对于以下代码，当`Result`为`Ok`时会返回内部值，为`Err`的时候会直接把`Err`作为`test`函数的返回值返回出去。
-
-``` rust
-fn test() {
-    let f = File::open("hello.txt")?;
-}
-```
-
-
-
-##### unwrap_or_else
-
-之前提到的`unwrap`和`expect`都会在`Err`的时候直接`panic`，这可能不是我们想要的结果，这时候我们需要使用`unwrap_or_else`并传递一个闭包作为参数
-
-
-
-``` rust
-fn main() {
-    let f = File::open("hello.txt").unwrap_or_else(|error| {
-      // do something
-  	})
-}
-```
-
-
-
-### 泛型
-
-#### 单态化
-
-Rust提供了强大的类型系统，但是使用泛型并不会给运行时带来任何额外的开销，即并不会降低运行时的效率，这依赖于Rust在编译时对所有泛型类型进行**单态化（*monomorphization*）**。
-
-``` rust
-fn main() {
-		let integer = Some(5);
-		let float = Some(5.0);
-}
-```
-
-即对于以上代码，会被编译成以下代码，这也被称为**静态分发（*static dispatch*）**
-
-``` rust
-enum Option_i32 {
-    Some(i32),
-    None,
-}
-
-enum Option_f64 {
-    Some(f64),
-    None,
-}
-
-fn main() {
-    let integer = Option_i32::Some(5);
-    let float = Option_f64::Some(5.0);
-}
-```
-
-单态化最大的好处是零运行时开销，但也存在着对应的缺点：
-
-1. 产物体积增大
-2. 编译时间变长
-
-
-
-
-
-### Trait
-
-Rust中的*trait*类似于通常的*interface*，有以下几个比较明显的区别
-
-- *trait*可以提供方法的默认实现
-- 在使用实现了某个*trait*的结构体时，我们需要通过*use*把该*trait*引入
-
-``` rust
-struct People {
-    name: String,
-}
-
-trait Test {
-    fn run(&self) { // 可以提供默认实现
-        println!("run") 
-    } 
-    fn get_name(&self) -> &str;
-}
-
-impl Test for People {
-    fn get_name(&self) -> &str {
-        &self.name
-    }
-}
-
-fn main() {
-    let p = People {
-        name: String::from("akara"),
-    };
-    p.run();
-    println!("{}", p.get_name());
-}
-```
-
-
-
-#### Trait Bound
-
-*trait bound*类似于泛型约束，如以下代码中要求类型参数T必须实现了*Summary*这个*trait*
-
-``` rust
-pub fn notify<T: Summary>(item: &T) {
-    println!("Breaking news! {}", item.summarize());
-}
-
-// 语法糖
-pub fn notify(item: &impl Summary) {
-    println!("Breaking news! {}", item.summarize());
-}
-```
-
-当类似参数需要满足多个特征时，使用`+`进行关联，类似*TS*中的`&`
-
-``` rust
-pub fn notify<T: Summary + Display>(item: &T);
-  
-pub fn notify(item: &(impl Summary + Display));
-```
-
-当trait bound太长时，我们可以使用Where子句来优化写法
-
-``` rust
-// before
-fn some_function<T: Display + Clone, U: Clone + Debug>(t: &T, u: &U) -> i32 {}
-  
-// after
-fn some_function<T, U>(t: &T, u: &U) -> i32
-    where T: Display + Clone,
-          U: Clone + Debug
-{}
-```
-
-
-
-#### Trait Object
-
-泛型的功能很强大，但却难以表达异构（*heterogeneous*）集合，如以下代码中虽然我们使用*Trait Bound*对类型参数*T*进行了约束，但最终Vec集合的每一项类型都是相同的。
-
-``` rust
-pub trait Draw {
-    fn draw(&self);
-}
-
-pub struct Screen<T: Draw> {
-    pub components: Vec<T>,
-}
-```
-
-通过使用*Trait Object*可以解决上述问题，这里的`Box<dyn Draw>`就是Trait Object，一个泛型类型参数只能被一个具体的类型替换，而Trait Object允许在运行时被多个具体的类型替换。
-
-``` rust
-pub trait Draw {
-    fn draw(&self);
-}
-
-pub struct Screen {
-    pub components: Vec<Box<dyn Draw>>,
-}
-```
-
-> Recall in the [“Performance of Code Using Generics”](https://doc.rust-lang.org/book/ch10-01-syntax.html#performance-of-code-using-generics) section in Chapter 10 our discussion on the monomorphization process performed by the compiler when we use trait bounds on generics: the compiler generates nongeneric implementations of functions and methods for each concrete type that we use in place of a generic type parameter. The code that results from monomorphization is doing *static dispatch*, which is when the compiler knows what method you’re calling at compile time. This is opposed to *dynamic dispatch*, which is when the compiler can’t tell at compile time which method you’re calling. In dynamic dispatch cases, the compiler emits code that at runtime will figure out which method to call.
-
-
-
-
-
-### 闭包
-
-在*JavaScript*中，声明函数的时候我们会在该函数的`[[scope]]`属性中记录该函数的作用域链（执行上下文的变量对象VO组成的数组），在调用该函数的时候创建新的函数执行上下文，该函数执行上下文中包括函数自身的变量对象以及作用域链，执行时如果在当前作用域找不到某个变量，则会沿着作用域链向上查找。
-
-对于这种，在声明函数时捕获函数作用域的行为通常也被称作闭包。
-
-与*JavaScript*不同，*Rust*中的函数不会捕获当前的作用域，也就意味着以下的代码是无效的
-
-``` rust
-fn main() {
-    let s = "hello";
-    fn test() {
-        println!("{}", s) // 错误
-    }
-
-    test();
-}
-```
-
-为了解决这样的问题，Rust也引入了闭包函数，闭包可以捕获当前作用域，通常是作为匿名函数保存在变量中、或者直接作为函数的参数使用。
-
-``` rust
-fn main() {
-    let s = "hello";
-    let f = |name: &str| {
-        println!("{}, {}", s, name)
-    };
-    f("world");
-}
-```
-
-``` rust
-let f = File::open("hello.txt").unwrap_or_else(|error| {
-		// do something
-})
-```
-
-
-
-
-
-
-
-### 迭代器（iteration）
-
-常见的集合类型，如*Vector*部署的`.iter()`、`.into_iter()`等方法将会返回迭代器对象，迭代器都实现了*Iterator*这个*trait*，即可以通过不断调用`next`方法访问集合中的元素。
-
-- `.iter()`
-
-- `.iter_mut()`
-- `.into_iter()`
-
-
-
-
-
-#### *consuming adaptors*
-
-在内部调用`next`方法的方法也被称为*consuming adaptor*，如`sum`方法
-
-``` rust
-fn main() {
-    let v = vec![1, 2, 3];
-    let sum: u32 = v.iter().sum();
-    println!("{}", sum);
-}
-```
-
-
-
-
-
-#### *Iterator adaptors*
-
-返回一个新的迭代器的方法也被称为*iterator adaptor*，如`map`方法
-
-``` rust
-fn main() {
-    let v = vec![1, 2, 3];
-    let sum: u32 = v.iter().map(|x| 2 * x).sum();
-    println!("{}", sum);
-}
-```
-
-https://stackoverflow.com/questions/65766866/why-the-closure-passed-to-map-does-not-take-a-reference-while-the-one-passed-t 
 
 
 
