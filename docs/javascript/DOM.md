@@ -1,7 +1,9 @@
+# DOM
 
-## `Element.scrollLeft | Element.scrollTop` 
+## Element
+### `Element.scrollLeft | Element.scrollTop` 
 
-## `Element.scrollIntoView()`
+### `Element.scrollIntoView()`
 
 通过滚动元素的父容器使得内部元素可见。
 
@@ -14,7 +16,7 @@ el.scrollIntoView({
 })
 ```
 
-## `Element.getBoundingClientRect()`
+### `Element.getBoundingClientRect()`
 
 获取DOM元素的大小和相对视口的位置
 
