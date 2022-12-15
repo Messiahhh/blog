@@ -3,140 +3,239 @@ sidebarDepth: 4
 ---
 # Git
 
-## 基础
+## 基础命令
 
-```bash
-git init # 初始化git仓库
-git remote add origin <仓库地址> # 添加仓库地址映射
-git remote remove origin # 删除地址映射
-git add . # 工作目录内容添加进索引区域
-git commit -m '' # 生成新的commit，commit对应某个时刻的内容
-git commit --amend # 可用来重写commit的message，也可以用来当作commit的压缩手段
-git commit --amend --reset-author # 可用来重写commit的作者
+``` shell
+# 初始化git仓库
+git init 
 
-git restore <name> # 当改动了工作区的内容时，可以使用该命令来丢弃工作区的改动
-git restore --staged <name> # 把已经通过git add添加的内容从缓存区去除
-git reset --hard HEAD^ # 回退到上一个commit
-git reset head^ # 回退到上一个commit，区别时之前commit修改的内容并不会消失，而是保存在工作目录中
-git revert HEAD # 回退当前commit
+# 查看提交记录
+git log 
 
-git branch # 显示所有分支
-git branch <name> # 创建分支
-git branch -m <nameA> <nameB> # 修改分支名
-git branch -D <name> # 删除本地分支
-git checkout <name> # 切换分支
-git checkout - # 切换到上一个分支
-git checkout -b <name> # 创建分支并切换过去
+# 查看历史命令
+git reflog 
 
-git merge <name> # 合并目标分支
-git rebase <name> # 合并目标分支
-git fetch # 获取所有分支
-git pull origin main # 获取所有分支并进行当前分支的合并（合并有三种策略，merge（默认），rebase，只允许fast-forward的merge）
-git push origin main # 推送分支  
-git push origin test --delete # 删除远程分支
-
-git log # 查看commit记录
-git reflog # 查看历史git命令
-git status # 看到当前状态
-git stash # 暂存工作区的修改
-git stash list # 查看已stash的内容
-git stash pop 0 # 释放最新stash的内容到工作区
-git stash clear # 清空暂存区的内容
-
-git cherry-pick <commit> # cherry-pick 某个提交的代码
-git rebase -i origin/main # 可以用来squash commit、删除commit以及其他的操作
-
-git tag # 查看所有tag
-git tag v1.0.1 # 给当前commit打tag
-git tag v1.0.1 <commit> # 给某个commit打tag
-git tag --delete v1.0.1 # 删除tag v1.0.1
+# 查看当前状态
+git status 
 ```
 
-> 当我们新建文件 `akara.txt`，并使用 `git add .`添加进缓存区。此时我们可以：
->
-> 1. `git commit -m ''`： 提交记录。
-> 2. `git reset HEAD <file>`: 释放缓存。类似的还有 `git rm --cached <file>`用来删除缓存区的内容
->
-> 当我们新建文件 `akara.txt`，并使用 `git add .`添加进缓存区，之后修改该文件的内容。此时我们可以：
->
-> 1. `git add .`：缓存修改后的内容。
-> 2. `git checkout -- <file> `：丢弃修改的内容。本质是用原本缓存区的内容替代工作目录中的文件内容。
+### git restore 
 
-### repo交互
+``` shell
+# 工作目录内容添加进索引区域
+git add <name>
+git add .
 
-```bash
-git remote # 查看远程仓库的信息
-git clone # 拉取远程仓库到本地
-git push # 推送给远程仓库
-git fetch # 拉取远程仓库的更新
-git pull # 拉取远程仓库的更新，并且和本地仓库的内容合并（相当于git fetch + git merge）
+# 当修改了工作区的文件但还未暂存更改（git add）时，可以通过该命令放弃更改
+git restore <name> 
+git restore .
+
+# 当修改了工作区的文件并且暂存更改时，可以通过该命令放弃暂存更改，变成尚未git add的状态
+git restore --staged <name>
+git restore --staged .
+```
+
+
+
+### git commit
+
+``` shell
+# 根据暂存区的内容生成新的commit
+git commit
+git commit -m 'feat: moyu' 
+
+# 可以用来重写当前的commit内容和消息，可以用来保证提交记录的简洁
+git commit --amend 
+git commit --amend --reset-author 
+```
+
+
+
+### git branch
+
+``` shell
+# 显示所有分支
+git branch 
+
+# 显示所有远程分支
+git branch -r
+
+# 创建分支
+git branch <name> 
+
+# 删除本地分支
+git branch -D <name> 
+
+# 修改分支名
+git branch -m <nameA> <nameB> 
+
+# 切换分支
+git checkout <name> 
+
+# 切换到上一个分支
+git checkout - 
+
+# 创建分支并切换过去
+git checkout -b <name> 
+
+
+# 查看分支的track信息
+git branch -vv
+
+# 设置当前分支的上游分支，等价于--set-upstream
+git branch -u origin/feature
+```
+
+### git tag
+
+``` shell
+# 查看所有tag
+git tag 
+
+# 给当前commit打tag
+git tag v1.0.1 
+
+# 给某个commit打tag
+git tag v1.0.1 <commit> 
+
+# 删除tag
+git tag --delete v1.0.1 
 ```
 
 ### git stash
 
-大部分情况我们都能够随意的进行分支的切换。现在假设这样的情况，存在 `main`分支拥有 `akara.txt`文件，而 `test`分支不存在该文件。此时当我们在 `main`分支修改该文件，由于 `test`分支不存在该文件，我们无法顺利切换过去。`
+``` shell
+# 暂存工作区的修改
+git stash 
 
-为此我们需要先提交我们的修改，或者使用 `git stash`来缓存内容的修改，并在未来合适的时候释放缓存的内容。
+# 查看已stash的内容
+git stash list 
 
-```bash
-git stash # 缓存内容的修改
-git stash list # 查看缓存的记录
-git stash pop # 释放内容的缓存
+# 释放最新stash的内容到工作区
+git stash pop 0 
+
+# 清空暂存区的内容
+git stash clear
 ```
 
 ## 分支合并
 
-> [参考](https://backlog.com/git-tutorial/cn/stepup/stepup1_4.html)
+`git`存在两种分支合并的策略，即`git merge`和`git rebase`。本人强烈建议使用`git rebase`来进行分支管理，首先这种策略十分简单，而且能保证提交历史非常简洁。
+
+
 
 ### git merge
 
-如图一，当我们处于 `master`分支使用 `git merge test`时，这种合并称之为 `fast-forward`（快进）
+``` shell
+# 合并目标分支
+git merge <name> 
+```
+
+使用`git merge`时，根据分支情况的不同会存在两种合并情况， `fast-forward`（快进）和`non-fast-forward`。多人协作的时候多数是`non-fast-forward`的情况，此时合并分支会创建一个新的提交。
+
+
+
+#### fast-forward
 
 ![fast-forward](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_1.png)
 
-它的结果如图二所示：
+
 
 ![fast-forward合并](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_2.png)
 
-不过图三这种才是大部分情况可能的场景，我们通常从某个分支中新建一个 `test`分支，而之后 `master`分支可能已经被其他人更新过了。
+#### non-fast-forward
 
 ![分支合并](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_3.png)
-
-此时当我们在 `master`分支使用 `git merge test`，会产生一个新的分支。
 
 ![分支合并结果](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_4.png)
 
 ### git rebase
 
-使用 `git merge`的好处是保持了原先的 `commit`记录，但是历史记录会很复杂；而 `git rebase`的好处是历史记录简单，但是会修改原先的 `commit`记录。
+``` shell
+# 合并目标分支
+git rebase <name> 
+```
+
+
 
 ![git-rebase](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_6.png)
 
-我们处于 `master`分支时使用 `git rebase test`来合并分支，结果如图二：
-
 ![git-rebase结果](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_7.png)
 
-## 版本回退和前进
+## 远程操作
+
+``` shell
+git remote # 查看远程仓库的信息
+git remote add origin <url> # 添加仓库地址映射
+git remote remove origin # 删除地址映射
+
+git clone <url> # 拉取远程仓库到本地
+```
+
+大多数情况下，我们的本地仓库只需要和一个远程仓库进行关联，通常会使用`origin`来标识这个远程仓库，`origin`是个很特殊的标识，很多命令当没有指定`remote`时，会把`origin`作为`remote`。
+
+少数情况下本地仓库会和多个远程仓库进行关联，比如当我们`fork`并`clone`了一个开源库时，通常会把原本的仓库作为`upstream`，`fork`生成的自己的远程仓库作为`origin`来进行区分。
+
+
+
+
+
+
+
+### git fetch 
+
+``` shell
+git fetch # 获取所有分支
+```
+
+
+
+### git pull
+
+``` shell
+git pull origin main # 获取所有分支并进行当前分支的合并（合并有三种策略，merge（默认），rebase，只允许fast-forward的merge）
+```
+
+
+
+### git push
+
+``` shell
+git push origin main # 推送分支  
+git push origin test --delete # 删除远程分支
+```
+
+
+
+
+
+## 版本回退
 
 通常我们使用 `git reset --hard <commitID>`来实现对版本的控制
 
-### 版本回退
+``` shell
+git reset --hard HEAD^ # 回退到上一个commit
+git reset head^ # 回退到上一个commit，区别时之前commit修改的内容并不会消失，而是保存在工作目录中
+git revert HEAD # 回退当前commit
 
-```bash
 git reset --hard Head^ # 回退到上个commit
 git reset --hard Head^^ # 回退到上上个commit
-git reset --hard <commitID> # 回退到某个具体commit
-```
-
-### 版本前进
-
-有的时候当我们回退了版本之后，又希望恢复到之前的版本，这时候我们就需要知道原先的 `commitID`，比如我们可以使用 `git reflog`来查看历史命令，以及当时所处在的 `commitID`
-
-```bash
 git reset --hard <commitID> # 前进到某个具体commit
 ```
 
-## 合并Commit
+
+
+
+
+## git rebase -i
+
+``` shell
+git rebase -i origin/main # 可以用来squash commit、删除commit以及其他的操作
+```
+
+
+
+
 
 很多时候我们会提交很多次 `commit`，显得十分的杂乱，这时候可以使用 `git rebase -i`来合并 `commit`记录，实现美化的效果。
 
@@ -156,7 +255,21 @@ pick <commit_E> 我是commitE的message
 
 我们可以把 `commit_D`和 `commit_E`的 `pick`改成 `squash`，再保存就会把这三个 `commit`合并成一个新的 `commit`，并在下一步可以手动更改新的 `commit`的 `message`。
 
-## git原理
+
+
+## git cherry-pick
+
+``` shell
+git cherry-pick <commit> # cherry-pick 某个提交的代码
+```
+
+
+
+
+
+
+
+## 底层原理
 
 > [参考](https://zhuanlan.zhihu.com/p/96631135)
 
@@ -187,3 +300,18 @@ git cat-file -p 58c9 # 58c9为想找的object的值
 ### .gitkeep
 
 `git`通常无法追踪空文件夹，如果我们追踪空文件夹，可以在该文件夹下新建一个空的 `.gitkeep`文件。
+
+
+
+
+
+> 当我们新建文件 `akara.txt`，并使用 `git add .`添加进缓存区。此时我们可以：
+>
+> 1. `git commit -m ''`： 提交记录。
+> 2. `git reset HEAD <file>`: 释放缓存。类似的还有 `git rm --cached <file>`用来删除缓存区的内容
+>
+> 当我们新建文件 `akara.txt`，并使用 `git add .`添加进缓存区，之后修改该文件的内容。此时我们可以：
+>
+> 1. `git add .`：缓存修改后的内容。
+> 2. `git checkout -- <file> `：丢弃修改的内容。本质是用原本缓存区的内容替代工作目录中的文件内容。
+
