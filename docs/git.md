@@ -162,6 +162,14 @@ git rebase <name>
 
 ![git-rebase结果](https://backlog.com/git-tutorial/cn/img/post/stepup/capture_stepup1_4_7.png)
 
+#### 冲突
+
+`git rebase`时如果碰到代码冲突，在解决完冲突后通过`git add .`和`git rebase --continue`可进入下一步；如果又不想要合并了，也可以通过`git rebase --abort`放弃合并。
+
+
+
+
+
 ## 远程操作
 
 ``` shell
@@ -172,37 +180,85 @@ git remote remove origin # 删除地址映射
 git clone <url> # 拉取远程仓库到本地
 ```
 
-大多数情况下，我们的本地仓库只需要和一个远程仓库进行关联，通常会使用`origin`来标识这个远程仓库，`origin`是个很特殊的标识，很多命令当没有指定`remote`时，会把`origin`作为`remote`。
+大多数情况下，我们的本地仓库只需要和一个远程仓库进行关联，此时通常会使用特殊的标识`origin`来代表这个远程仓库。
 
-少数情况下本地仓库会和多个远程仓库进行关联，比如当我们`fork`并`clone`了一个开源库时，通常会把原本的仓库作为`upstream`，`fork`生成的自己的远程仓库作为`origin`来进行区分。
-
-
+在少数情况下本地仓库需要和多个远程仓库进行关联，一种常见的场景是我们想要给*Github*的某个开源库贡献代码，这时候我们会先`fork`并把`fork`后生成的仓库`clone`到本地，此时`origin`代表着自己的远程仓库，通常我们还会手动通过`git remote add upstream <url>`来关联原本的开源库用于更新最新代码，此时`upstream`代表原本的开源库。
 
 
+
+### Remote-Tracking Branch 
+
+远程仓库的分支通常被称为**远程分支**（*Remote Branch*），通常可以在Github或Gitlab上进行查看。
+
+与之相关的一个重要概念叫做**远程跟踪分支**（*Remote-Tracking Branch*），通常以类似`origin/master`的形式表示，在执行如`git fetch`、`git push`、`git pull`这样的远程操作后git会自动移动对应的远程跟踪分支，以确保它总是指向远程仓库对应的分支。
+
+在使用`git clone`来生成本地仓库时，不仅默认会使用`origin`来表示远程仓库，还会自动给本地分支建立追踪关系，如`master`分支会自动追踪`origin/master`，此时也会把`master`分支称为***Tracking Branch***，把`origin/master`称为**上游分支**（Upstream branch）。事实上，当不指定分支信息直接执行`git push`或`git pull`时，会根据当前分支的追踪关系来决定目标分支。
+
+#### git branch -vv
+
+使用`git branch -vv`可以查看所有的追踪信息
+
+
+
+#### 设置上游分支
+
+``` shell
+# 希望feature分支跟踪origin/master分支的四种写法
+git branch -u origin/master <branchname>
+git branch -u origin/master # 不指定branchname时默认为当前分支
+
+git branch --set-upstream-to=origin/master <branchname>
+git branch --set-upstream-to=origin/master
+```
 
 
 
 ### git fetch 
 
 ``` shell
-git fetch # 获取所有分支
+# 获取所有remote的远程提交和分支
+git fetch 
+
+# 拉取origin remote的远程提交和分支
+git fetch origin 
+```
+
+`git fetch`会拉取目标`remote`的所有提交并更新本地的远程跟踪分支。因此可以直接`git rebase`最新的远程跟踪分支来获取最新的代码，比如：
+
+``` shell
+git fetch && git rebase origin/master
 ```
 
 
 
 ### git pull
 
+本质上，`git pull`命令会使用给定的参数运行`git fetch`命令，并默认使用`git merge`策略来合并目标分支，因此`git pull origin master`等价于`git fetch origin master && git merge origin/master`。
+
+我们也可以调整`git pull`时采用的分支合并策略：
+
 ``` shell
-git pull origin main # 获取所有分支并进行当前分支的合并（合并有三种策略，merge（默认），rebase，只允许fast-forward的merge）
+git config pull.rebase false # git merge（默认）
+git config pull.rebase true # git rebase（个人推荐）
+git config pull.ff only # git merge but fast-forward only
 ```
 
 
 
 ### git push
 
+`git push`用于推送指定分支到目标`remote`。
+
 ``` shell
-git push origin main # 推送分支  
+git push origin main # 将本仓库的main分支推送到origin的main分支
+
 git push origin test --delete # 删除远程分支
+```
+
+更进阶的用法，我们可以把本地的`A`分支推送到远程的`B`分支
+
+``` shell
+git push origin branchA:branchB
 ```
 
 
@@ -211,16 +267,23 @@ git push origin test --delete # 删除远程分支
 
 ## 版本回退
 
-通常我们使用 `git reset --hard <commitID>`来实现对版本的控制
+通过`git reset --hard`即可实现版本回退和前进，本质上是切换`HEAD`指针所指向的提交，`HEAD^`表示`HEAD`的上一个提交，`HEAD~2`表示`HEAD`的上两个提交。
 
 ``` shell
-git reset --hard HEAD^ # 回退到上一个commit
-git reset head^ # 回退到上一个commit，区别时之前commit修改的内容并不会消失，而是保存在工作目录中
-git revert HEAD # 回退当前commit
+# 回退到上一个commit
+git reset --hard HEAD^ 
+git reset --hard Head^^ 
+git reset --hard Head~3 
 
-git reset --hard Head^ # 回退到上个commit
-git reset --hard Head^^ # 回退到上上个commit
-git reset --hard <commitID> # 前进到某个具体commit
+ # 回退到上一个commit，但当前commit修改的内容并不会消失，而是保存在工作目录中
+git reset head^
+```
+
+除了`git reset`，我们还可以使用`git revert`来撤销某次的提交，`git revert`会产生一个新的提交。
+
+``` shell
+# 撤销当前commit
+git revert HEAD 
 ```
 
 
@@ -230,40 +293,18 @@ git reset --hard <commitID> # 前进到某个具体commit
 ## git rebase -i
 
 ``` shell
-git rebase -i origin/main # 可以用来squash commit、删除commit以及其他的操作
+git rebase -i origin/main 
 ```
 
-
-
-
-
-很多时候我们会提交很多次 `commit`，显得十分的杂乱，这时候可以使用 `git rebase -i`来合并 `commit`记录，实现美化的效果。
-
-比如，我们现在分别有 `A -> B -> C -> D -> E`这五个 `commit`记录，我们希望把 `C、D、E`合并成一个记录：
-
-```bash
-git rebase -i <commit_B>
-```
-
-然后会出现可编辑的页面
-
-```bash
-pick <commit_C> 我是commitC的message
-pick <commit_D> 我是commitD的message
-pick <commit_E> 我是commitE的message
-```
-
-我们可以把 `commit_D`和 `commit_E`的 `pick`改成 `squash`，再保存就会把这三个 `commit`合并成一个新的 `commit`，并在下一步可以手动更改新的 `commit`的 `message`。
+通过交互式的`git rebase`可以实现提交的压缩、删除、顺序切换、编辑某个历史提交等功能。
 
 
 
 ## git cherry-pick
 
 ``` shell
-git cherry-pick <commit> # cherry-pick 某个提交的代码
+git cherry-pick <commit>
 ```
-
-
 
 
 
