@@ -126,6 +126,11 @@ const sidebars = {
         },
         {
           type: 'doc',
+          id: 'node/pnpm',
+          label: 'PNPM'
+        },
+        {
+          type: 'doc',
           id: 'node/eventloop',
           label: '事件循环'
         },
