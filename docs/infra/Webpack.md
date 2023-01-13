@@ -78,6 +78,19 @@ module.exports = {
 
 
 
+### library
+
+``` js
+// webpack.config.js
+output: {
+    library: {
+        type: 'umd',
+    }
+},
+```
+
+
+
 
 
 ## Module
@@ -650,6 +663,98 @@ module.exports = {
 
 
 
+
+
+
+
+## Tree Shaking
+
+*Tree Shaking*是JavaScript上下文中经常出现的术语，用于表示DCE(*dead-code elimination*)，它依赖于ES模块所提供的静态导入和导出语法`import`和`export`。通过实现Tree Shaking，能够剔除代码中未使用或无法触达的代码，从而减小产物的体积实现性能的优化。
+
+Tree Shaking最先是由Rollup引入的概念，后面在Webpack中也得到了实现。Webpack中开发模式下默认不开启Tree Shaking，生产模式下默认开启Tree Shaking，而我们又知道两个模式的区别在于一些配置项的默认值不同，因此我们也可以自行配置来实现Tree Shaking。
+
+先说结论，在开发模式下也可以通过开启`optimization`的`usedExports`、`minimize`、`concatenateModules`这三个配置项来达到生产模式下默认提供的Tree Shaking效果，那么接下来我们只需了解这几个配置项分别做了什么事情即可。
+
+通过开启`usedExports`选项，Webpack构建时会在产物中通过形如`/* unused harmony export <name> */`的注释标识出未被使用到的导出，再通过开启`minimize`选项，默认会通过`terser`来优化代码并将这些标识出来的未用代码剔除，最后再通过`concatenateModules`实现模块的连接，暂且不提。
+
+但即使开启了Tree Shaking，构建产物中依然可能存在一些我们所不期望的代码，这是因为通常模块内不仅包含导入和导出，还可能存在一些副作用（如函数的直接调用等），而通常Tree Shaking会采取保守的策略在最终的产物中包含这些副作用的代码以避免潜在的问题。拿以下的简单例子来说，在`index.tsx`文件中我们引入了App组件但并没使用，因此相关代码会被Tree Shaking剔除，但在`test.tsx`中存在着`memo`这个高阶函数的调用，这种函数的直接调用会被视为副作用并且会被保留在最终的产物当中。
+
+``` tsx title="index.tsx"
+import App, { test } from './test'
+console.log(test())
+```
+
+``` tsx title="test.tsx"
+import React from 'react'
+
+function App() {
+    return <div>app</div>
+}
+
+export function test() {
+    return 'test'
+}
+
+export default React.memo(App)
+```
+
+如果我们能确信某些副作用是完全的**内部副作用**，即可以被安全的移除的内容，那么我们可以将相关的语句或者模块标识为Pure或`sideEffects: false`，从而在Tree Shaking的时候把这些无需引用的代码剔除，实现进一步的减小产物的体积。
+
+还是以上述的代码为例，只需要在合适的语句前添加`/*#__PURE__*/`注释即可有效的剔除无用的代码，我们能够观察到构建后代码的数量得到有效的减少。
+
+``` tsx title="test.tsx"
+export default /*#__PURE__*/React.memo(App)
+```
+
+除了这个方法，我们还可以在`package.json`中的`sideEffects`中表明哪些文件存在副作用。拿第三方库`ahooks`举例，它的配置是`"sideEffects": false`，表明模块不存在**外部副作用**（即可能没有副作用，或者是内部副作用，不会影响外部逻辑）。再拿`antd`举例，它的配置如下：
+
+``` json
+{
+  "sideEffects": [
+    "dist/*",
+    "es/**/style/*",
+    "lib/**/style/*",
+    "*.less"
+  ],
+}
+```
+
+一般来说`CSS`文件的引用方式都形如`import './style.css'`，这种是很明显有外部副作用，如果把这些样式相关的代码都剔除肯定会影响应用的展示效果。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## 代码分割
 
 常见的代码分割方式有以下几种
@@ -660,58 +765,9 @@ module.exports = {
 
 
 
-## 原理
-
-`webpack`可以打包`ES`模块和`CommonJS`模块。
-
-`webpack`把每个文件模块都当成一个对象`var module = { exports: {}}`。并通过对文件模块的解析来给该对象赋予属性，如`ES`模块对应的形式如
-
-``` js
-// ES模块 a.js
-export default function() {
-    console.log('111')
-}
-export function A() {
-    console.log('222')
-}
-
-// 打包后对应的对象
-var module = {
-    exports: {
-        default: function() { console.log('111') }, // 严格来讲这里是getter 
-        A: function() { console.log('222') }, // 同理，此处为了看起来简单
-    }
-}
-```
-
-而由于`CommonJS`模块**没有默认导出**，所以对应的打包后对象也不存在`default`属性。
-
-``` js
-// CommonJS模块 b.js
-module.exports.A = function() {
-    console.log('111');
-}
-
-module.exports.B = function() {
-    console.log('222');
-}
-
-// 打包后对应的对象
-var module = {
-    exports: {
-        A: function() { console.log('111') },
-        B: function() { console.log('222') },
-    }
-}
-```
-
-当我们在`webpack`导入模块时，`require`返回模块整体导出`module.exports`；`import * as xxx from`也可以整体导入模块，或者是导入模块的不同导出接口，包括`default`接口。
-
-至于如何分辨属于何种模块，则根据`module.__esModule`判断，这个属性是由`__webpack_require__.r`定义的。
 
 
-
-## 动态加载
+### 动态加载
 
 `webpack`中每个文件都是一个模块。
 
@@ -765,30 +821,52 @@ import(
 
 
 
-## 构建后端代码
+## 原理
 
-通常我们使用`webpack`打包前端项目，如果需要打包后端项目我们需要`target`和`externals`配置项，因为后端项目我们希望内置模块和第三方模块不要被打包进`bundle`中。
+`webpack`可以打包`ES`模块和`CommonJS`模块。
+
+`webpack`把每个文件模块都当成一个对象`var module = { exports: {}}`。并通过对文件模块的解析来给该对象赋予属性，如`ES`模块对应的形式如
 
 ``` js
-const nodeExternals = require('webpack-node-externals')
-module.exports = {
-    target: 'node', // 不打包path, fs等内置核心模块
-    externals: [nodeExternals()], // 不打包node_modules的第三方模块
+// ES模块 a.js
+export default function() {
+    console.log('111')
+}
+export function A() {
+    console.log('222')
+}
+
+// 打包后对应的对象
+var module = {
+    exports: {
+        default: function() { console.log('111') }, // 严格来讲这里是getter 
+        A: function() { console.log('222') }, // 同理，此处为了看起来简单
+    }
 }
 ```
 
-
-
-## 构建第三方库
-
-像上一小节打包得到的代码只能直接调用，没有导出的接口，如果我们想要打包Node模块可以使用`output.libraryTarget`配置项。
+而由于`CommonJS`模块**没有默认导出**，所以对应的打包后对象也不存在`default`属性。
 
 ``` js
-// webpack.config.js
-output: {
-    library: {
-        type: 'umd',
+// CommonJS模块 b.js
+module.exports.A = function() {
+    console.log('111');
+}
+
+module.exports.B = function() {
+    console.log('222');
+}
+
+// 打包后对应的对象
+var module = {
+    exports: {
+        A: function() { console.log('111') },
+        B: function() { console.log('222') },
     }
-},
+}
 ```
+
+当我们在`webpack`导入模块时，`require`返回模块整体导出`module.exports`；`import * as xxx from`也可以整体导入模块，或者是导入模块的不同导出接口，包括`default`接口。
+
+至于如何分辨属于何种模块，则根据`module.__esModule`判断，这个属性是由`__webpack_require__.r`定义的。
 
