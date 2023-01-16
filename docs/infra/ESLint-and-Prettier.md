@@ -1,4 +1,4 @@
-# 代码检查与格式化
+# ESLint And Prettier 
 ## ESLint
 
 ``` shell

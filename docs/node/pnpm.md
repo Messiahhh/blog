@@ -34,6 +34,13 @@
 
 
 
+## 命令
+
+``` shell
+pnpm link --global
+pnpm link --global <name>
+```
+
 
 
 

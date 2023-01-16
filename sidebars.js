@@ -151,9 +151,6 @@ const sidebars = {
         },
       ],
     },
-    // "node",
-    // "stream",
-    // 'koa',
     "vue",
     {
       type: 'category',
@@ -174,8 +171,6 @@ const sidebars = {
         }
       ],
     },
-    // "react-vs-vue",
-    // "typescript-in-react",
     {
       type: 'category',
       label: '前端工程化',
@@ -202,8 +197,18 @@ const sidebars = {
     "计算机网络",
     "前端安全",
     "编译原理",
+    {
+      type: 'category',
+      label: 'Rust',
+      items: [
+        'rust/setup',
+        'rust/index',
+        'rust/advanced',
+        'rust/wasm',
+        'rust/tauri'
+      ],
+    },
     '音视频学习',
-    'Rust',
     "异常处理",
     "网站优化",
     "数据结构",
@@ -213,11 +218,10 @@ const sidebars = {
     "mysql",
     "linux",
     "docker",
-    "设计模式",
+    // "设计模式",
     "websocket",
-    "webgl",
+    // "webgl",
     "php",
-    // "代码段记录",
   ],
 
   // But you can create a sidebar manually
