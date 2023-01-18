@@ -950,7 +950,7 @@ let s2: &str = &s1[..];
 
 在上一章节我们提到泛型难以表达异构集合，并给出了一个代码例子。通常这种情况下我们可以使用Trait Object来实现。
 
-一般使用`dyn Trait A`的语法来表示Trait Object的类型，又因为Trait Object是DST需要借助引用来使用，所以实际上大部分我们看到的是类似这样的语法`&dyn TraitA`、`Box<dyn myTrait>`（这里的区别在于后者拥有实例数据的所有权）
+一般使用`dyn TraitA`的语法来表示Trait Object的类型，又因为Trait Object是DST需要借助引用来使用，所以实际上大部分我们看到的是类似这样的语法`&dyn TraitA`、`Box<dyn myTrait>`（这里的区别在于后者拥有实例数据的所有权）
 
 ``` rust
 trait Run {}
