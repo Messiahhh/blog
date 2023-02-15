@@ -69,11 +69,7 @@ println!("{}", hp) // 100.12
 ## 函数
 
 ``` rust
-fn main() {
-    let value = test();
-}
-
-fn test() -> i32 {
+fn main() -> u32 {
     return 200
 }
 ```
@@ -450,12 +446,30 @@ fn test(o: Option<u32>) -> u32 {
 
 2. 实现第一点的前提是**不能存在多个变量的指针指向同一块内存的情况**，这会导致多次释放内存的情况，而Rust实际上是通过**Move**操作来保证这个前提，后续篇章将详细介绍**Move**以及**Copy**、**Clone**等重要概念。
 
-3. 引用和生命周期。引用的本质是一个指针，它并不基于结构体因此也没有实现Drop Trait，我们可以允许多个引用指向同一块内存空间，因为引用变量离开作用域的时候不会Drop其所指向的内存空间。编译器会校验引用的有效性来避免可能存在的问题，至少包括以下原则：
+3. 引用和生命周期。引用的本质是一个指针，它并不没有实现Drop Trait，我们可以允许多个引用指向同一块内存空间，因为引用变量离开作用域的时候不会Drop其所指向的内存空间。编译器会校验引用的有效性来避免可能存在的问题，至少包括以下原则：
 
    1. 对于一个`immutable`变量来说，我们不能修改该变量所拥有的内存，同理我们也只能创建`immutable`引用指向任意部分内存。
 
    2. 对于一个`mutable`变量来说，我们可以修改该变量所拥有的内存，可以创建`immutable/mutable`引用指向任意部分内存。
+
    3. 对于同一个变量来说，同时最多只能有一个`mutable`引用，并且不能存在`mutable`引用和`immutable`引用同时存在的情况。
+
+   4. 可以把变量赋值给另一个变量来转移所有权，也可以通过使用变量本身来转交部分内存的所有权，但不能通过该变量的引用来转交该变量的部分所用权。
+
+      ``` rust
+      // ok
+      let p = Box::new(String::from("hi"));
+      let p2 = p;
+      
+      // ok
+      let p = Box::new(String::from("hi"));
+      let p2 = *p;
+      
+      // error
+      let mut p = Box::new(String::from("hi"));
+      let p2 = &mut p;
+      let p3 = **p2; // cannot move out of `**p2` which is behind a mutable reference move occurs because `**p2` has type `String`, which does not implement the `Copy` trait
+      ```
 
    注：需要注意的是，哪怕只`borrow`一部分内存也视为`borrow`该变量本身。
 
@@ -469,8 +483,6 @@ fn test(o: Option<u32>) -> u32 {
    b;
    - immutable borrow later used here
    ```
-
-   
 
 
 
