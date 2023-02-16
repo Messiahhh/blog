@@ -759,7 +759,7 @@ let ptr = Rc::new(Box::new(100));
 
 ### `RefCell<T>`
 
-`RefCell<T>`遵循内部可变形（*Interior mutability*）的设计模式，它的内部使用使用了`unsafe`的代码来绕过Rust的限制。即使变量被声明为`immutable`，我们也可以通过`RefCell`来修改部分数据。
+`RefCell<T>`遵循内部可变性（*Interior mutability*）的设计模式，它的内部使用使用了`unsafe`的代码来绕过Rust的限制。即使变量被声明为`immutable`，我们也可以通过`RefCell`来修改部分数据。
 
 
 
@@ -946,44 +946,59 @@ https://stackoverflow.com/questions/65766866/why-the-closure-passed-to-map-does-
 
 
 
-## Trait
+## 泛型（Generic）
 
-遵从着组合大于继承的原则，在Rust中通过结构体而不是传统的类来组织数据，并引入Trait（特征）来实现逻辑的组合。Trait类似Java中的Interface，但是可以提供方法的默认实现。
+Rust提供了对结构体、枚举、函数、特征的泛型支持。
 
 ``` rust
-struct People {
-    name: String,
+struct People<K, V> {
+    k: K,
+    v: V,
 }
 
-trait Test {
-    fn run(&self) { // 可以提供默认实现
-        println!("run") 
-    } 
-    fn get_name(&self) -> &str;
+impl People<u32, u32> {
+    fn test1(&self) {} 
 }
 
-impl Test for People {
-    fn get_name(&self) -> &str {
-        &self.name
-    }
+impl<K> People<K, bool> {
+    fn test2(&self) {} 
 }
 
-fn main() {
-    let p = People {
-        name: String::from("akara"),
-    };
-    p.run();
-    println!("{}", p.get_name());
+impl<K, V> People<K, V> {
+    fn test3(&self) {} 
+}
+
+pub fn main() {
+		let p = People { k: 1, v: 1 };
+    p.test1();
+		p.test2(); // error
+    p.test3();
+
+    let p2 = People { k: true, v: false };
+    p2.test1(); // error
+    p2.test2();
+    p2.test3();
 }
 ```
 
 
 
-### 泛型与静态分发
 
-Rust也提供了泛型，可以被使用在函数、结构体、枚举等地方。值得一提的是，使用泛型并不会给运行时带来任何额外的开销，这依赖于Rust在编译时对所有泛型类型进行**单态化（*monomorphization*）**。
+
+
+
+
+
+### 静态分发
+
+Rust中使用泛型并不会给运行时带来任何额外的开销，这依赖于Rust在编译时对所有泛型类型进行**单态化（*monomorphization*）**。
 
 ``` rust
+enum Option<T> {
+  Some(T);
+  None;
+}
+
 fn main() {
 		let integer = Some(5);
 		let float = Some(5.0);
@@ -1018,6 +1033,37 @@ fn main() {
 
 
 
+## 特征（Trait）
+
+遵从着组合大于继承的原则，在Rust中通过结构体而不是传统的类来组织数据，并引入Trait（特征）来实现逻辑的组合。Trait类似Java中的Interface，但是可以提供方法的默认实现。
+
+``` rust
+struct People {
+    name: String,
+}
+
+trait Test {
+    fn run(&self) { // 可以提供默认实现
+        println!("run") 
+    } 
+    fn get_name(&self) -> &str;
+}
+
+impl Test for People {
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+}
+
+fn main() {
+    let p = People {
+        name: String::from("akara"),
+    };
+    p.run();
+    println!("{}", p.get_name());
+}
+```
+
 
 
 ### Trait Bound
@@ -1043,7 +1089,7 @@ pub fn notify<T: Summary + Display>(item: &T);
 pub fn notify(item: &(impl Summary + Display));
 ```
 
-当Trait Bound太长时，我们也可以使用Where子句来优化写法
+当Trait Bound太长时，我们也可以使用where子句来优化写法
 
 ``` rust
 fn some_function<T: Display + Clone, U: Clone + Debug>(t: &T, u: &U) -> i32 {}
@@ -1058,11 +1104,9 @@ fn some_function<T, U>(t: &T, u: &U) -> i32
 
 ### Trait Object
 
-Rust中虽然泛型的功能很强大，但却难以表达异构（*heterogeneous*）集合，比如对于以下代码编译器会抛出错误。
+由于Rust中会在编译阶段对泛型进行静态分发，但也是因为这个特性使得其难以表达异构（*heterogeneous*）集合，比如对于以下代码编译器会抛出错误：
 
 ``` rust
-trait Run {}
-
 struct Dog {
     age: u32,
 }
@@ -1071,8 +1115,8 @@ struct Cat {
     age: u32,
 }
 
+trait Run {}
 impl Run for Dog {}
-
 impl Run for Cat {}
 
 fn main() {
@@ -1082,7 +1126,83 @@ fn main() {
 fn test<T: Run>(a: Vec<T>) {}
 ```
 
-为了实现这样的效果，我们可以使用Trait Object，详情将在下章进行介绍。
+通常为了表达这种异构集合，我们会使用Trait Object来实现，实际上这是一种DST，因此我们将在Dynamically Sized Type这一章节详细介绍Trait Object的使用。
+
+
+
+### Trait Associated Type
+
+``` rust
+struct People<K, V> {
+    k: K,
+    v: V,
+}
+
+pub trait Skill {
+    type Item;
+
+    fn fire_ball(&self, hp: Self::Item, mp: Self::Item) {}
+    fn water_ball(&self, hp: Self::Item, mp: Self::Item) -> Self::Item;
+
+} 
+
+impl<K> Skill for People<K, u32> {
+    type Item = u32;
+    fn fire_ball(&self, hp: Self::Item, mp: Self::Item) {}
+    fn water_ball(&self, hp: Self::Item, mp: Self::Item) -> Self::Item {
+        self.v
+    }
+}
+```
+
+实际上功能和**Trait Generic**差不太多，以下是一个Trait Generic的例子：
+
+``` rust
+struct People<K, V> {
+    k: K,
+    v: V,
+}
+
+pub trait Skill<Item> {
+    fn fire_ball(&self, hp: Item, mp: Item) {}
+    fn water_ball(&self, hp:Item, mp: Item) -> Item;
+} 
+
+impl<K, V: Copy> Skill<V> for People<K, V> {
+    fn fire_ball(&self, hp: V, mp: V) {}
+    fn water_ball(&self, hp: V, mp: V) -> V {
+        self.v
+    }
+}
+
+pub fn main() {
+		let p = People { k: 1, v: 2 };
+  	let p2 = p.water_ball(100, 200);
+}
+```
+
+
+
+### SuperTrait
+
+当一个Trait的实现需要依赖于另一个Trait时，比如当我们需要在Trait的实现中使用另一个Trait所提供的方法，我们需要在Trait的声明定义中给出这两个Trait之间的关联关系，写法如下所示，这有点像对于Trait的Trait Bounding。
+
+``` rust
+trait Skill: Copy + Clone {}
+
+// 等价于
+trait Skill where Self: Copy + Clone {}
+```
+
+
+
+
+
+
+
+
+
+
 
 
 
