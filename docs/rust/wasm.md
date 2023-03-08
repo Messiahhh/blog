@@ -121,6 +121,16 @@ module.exports = {
 };
 ```
 
+此时我们本身的入口文件代码如下：
+
+``` js
+const rust = import('./pkg');
+
+rust
+  .then(m => m.greet('World!'))
+  .catch(console.error);
+```
+
 
 
 如果不想要使用构建工具，我们可以使用`wasm-pack build --target web`命令来进行构建，可以观察两个命令对应的产物的差异。通过后者命令编译时，我们需要请求到WASM数据后通过`WebAssembly.instantiate`进行加载。
