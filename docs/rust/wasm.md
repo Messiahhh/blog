@@ -1,20 +1,42 @@
 # WebAssembly
 
-WebAseembly是一门跨平台的类汇编语言，并且可以在浏览器或者Node环境中通过双向调用的形式执行（JS调用WASM提供的方法，WASM调用JS提供的方法）。一般会通过编译将C、C++、Rust等高级语言编译为WebAssembly进行使用。
+WebAssembly是一门偏向底层的类汇编语言，不仅能直接被浏览器解释执行，还能够和JavaScript代码进行相互调用，如今WASM通常会作为C++、Rust这类高级语言的编译产物来改进Web端的部分性能瓶颈。
 
 
 
-## cargo-generate
+## wasm-pack
 
-`cargo-generate`可以用来根据模板创建项目，我们可以使用官方提供的`wasm`模板：
+`wasm-pack`是Rust官方提供的一站式构建、测试和发布工具，可以用来将Rust编译成WASM，在[官网](https://rustwasm.github.io/wasm-pack/)中即可进行安装。除了打包工具外，通常我们还会搭配`wasm-bindgen`库来促进WASM模块和JS模块的交互性，完整的`Cargo.toml`配置信息如下：
 
-``` shell
-cargo generate --git https://github.com/rustwasm/wasm-pack-template
+``` toml title="Cargo.toml"
+[package]
+name = "hello_world"
+version = "0.1.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2.84"
+js-sys = "0.3.61"
+wasm-bindgen-futures = "0.4.34"
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = [
+  'Document',
+  'Element',
+  'HtmlElement',
+  'Node',
+  'Window',
+]
 ```
 
-生成的项目中核心代码如下，表示`WASM`暴露了`greet`函数供`JS`侧使用，并且`WASM`侧会使用`JS`侧所提供的`alert`函数。
+一个简单的例子源码如下，可以看出代码中存在着`Rust`（会被编译成WASM）和`JavaScript`的双向调用。
 
-``` rust
+通过`wasm-pack build`命令即可进行编译，产物默认被放置在`pkg`目录下，主要产物包括JS入口文件、WASM文件和胶水层JS代码。
+
+``` rust title="lib.rs"
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -30,38 +52,76 @@ pub fn greet() {
 
 
 
-## wasm-pack
 
-:::info
 
-对于C、C++项目，一般通过Emscripten编译为WebAssembly
+## wasm-bindgen
 
-:::
+在上面的简单例子中我们通过使用`#[wasm_bindgen]`宏实现了WASM和JS模块的相互调用能力，通过手动定义各种方法的声明，我们能够在Rust代码中直接调用像`alert`、`console`这样的内置对象。
 
-`wasm-pack`是官方提供的一站式构建、测试和发布工具，通过以下命令安装：
+而通过使用`js-sys`、`web-sys`和`wasm-bindgen-futures`，我们能够更加轻松的实现各种高级功能。
 
-``` shell
-curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+
+### js-sys
+
+该模块提供了JavaScript内置的标准对象的绑定，诸如`Object`、`Function`、`Reflect`、` WebAssembly`等等。
+
+``` rust title="lib.rs"
+use js_sys::{Function, Object, Reflect, WebAssembly};
 ```
 
-之后在项目根目录下可以通过以下命令进行编译，产物会被放置在`pkg`目录下，产物中包含`.wasm`、胶水层`.js`文件和入口文件`.js`等。
 
-``` shell
-wasm-pack build
+
+### web-sys
+
+提供了各种Web API的绑定，诸如`Window`、`Document`等等。
+
+``` rust title="lib.rs"
+use wasm_bindgen::prelude::*;
+
+// Called by our JS entry point to run the example
+#[wasm_bindgen(start)]
+pub fn run() -> Result<(), JsValue> {
+    // Use `web_sys`'s global `window` function to get a handle on the global
+    // window object.
+    let window = web_sys::window().expect("no global `window` exists");
+    let document = window.document().expect("should have a document on window");
+    let body = document.body().expect("document should have a body");
+
+    // Manufacture the element we're gonna append
+    let val = document.create_element("p")?;
+    val.set_text_content(Some("Hello from Rust!"));
+
+    body.append_child(&val)?;
+
+    Ok(())
+}
 ```
 
-在构建完成后，我们可以将`pkg`发布为`npm`包供前端工程中使用（也可以先通过`npm link`进行本地调试），在前端工程中引入并使用即可（以Webpack5举例，需要开启`experiments.asyncWebAssembly`）
 
 
 
 
+## @wasm-tool/wasm-pack-plugin
+
+在上文的例子中，我们直接通过`wasm-pack build`来生成WASM产物，为了在Webpack5的项目工程中引入该产物，我们不仅需要开启试验性标识`experiments.asyncWebAssembly`，还需要额外安装`@wasm-tool/wasm-pack-plugin`插件进行支持。
+
+``` js
+const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
+
+module.exports = {
+    plugins: [
+        new WasmPackPlugin({
+            crateDirectory: path.resolve(__dirname, ".")
+        }),
+    ],
+    experiments: {
+        asyncWebAssembly: true
+   }
+};
+```
 
 
 
-
-
-
-
-
-
+如果不想要使用构建工具，我们可以使用`wasm-pack build --target web`命令来进行构建，可以观察两个命令对应的产物的差异。通过后者命令编译时，我们需要请求到WASM数据后通过`WebAssembly.instantiate`进行加载。
 
