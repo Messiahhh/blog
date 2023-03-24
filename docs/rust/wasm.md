@@ -140,3 +140,12 @@ rust
 在上文我们介绍了如何将Rust源码编译成WASM，从而在任何包含了WASM虚拟机的环境中执行，主流的浏览器和Node都已经支持WASM执行。
 
 接下来将介绍在Node环境中，除了WASM外的方法来实现在Node项目中编写Rust。众所周知，Node的源码是由C++编写而成的，它所提供的诸多内置模块`fs`、`path`、`http`等都是由C++实现的，除此之外Node甚至允许编写C++插件addons。根据Node的官方文档，它提供了几种方式来实现C++ addons，一种主流的方式是使用Node官方提供的Node-API接口来进行实现。而Rust社区中，又有人基于Node-API实现在Node项目中编写Rust代码，主流的库包括`neon`和`napi-rs`。
+
+
+
+
+
+
+
+
+
