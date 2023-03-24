@@ -204,7 +204,6 @@ const sidebars = {
         'rust/setup',
         'rust/index',
         'rust/modules',
-        'rust/advanced',
         'rust/wasm',
         'rust/tauri'
       ],

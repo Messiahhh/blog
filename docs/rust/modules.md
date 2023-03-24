@@ -1,4 +1,4 @@
-# Cargo
+# 包管理与模块
 
 Rust中的Cargo提供了类似Node中NPM的能力，包括项目的初始化、模块的安装与管理、便捷的脚本命令等功能。
 
@@ -33,9 +33,17 @@ cargo run --bin <xxx> # build and running
 
 
 
-### cargo login
+### cargo publish
 
-为了发布Rust库到Crates.io上，我们首先需要访问该网站并生成Token，再通过`cargo login`进行本地登录，最终通过`cargo publish`进行发布。
+在我们发布我们的Rust包前，我们首先需要通过`cargo login`进行本机登录，再通过`cargo publish`进行发布。
+
+
+
+### cargo install
+
+通常我们通过`cargo install`来安装别人发布的二进制包，拉下代码后会自动通过`cargo build --release`构建可执行文件。
+
+
 
 
 
@@ -127,5 +135,4 @@ fn main() {
   B();
 }
 ```
-
 
