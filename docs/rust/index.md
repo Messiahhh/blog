@@ -573,7 +573,7 @@ let B: &String = &A;
 
 在这个例子中，我们通过`&A`来创建引用，实际上`&`的作用就是取地址，即取变量A的内存地址，我们会将其保存在变量B的位置中，从而可以通过变量B来间接的读或写A所指向的堆内存数据。这样的操作也被称为`borrow`。
 
-上述实际上创建的是`immutable`引用，我们还可以通过`&mut`来创建`mutable `引用。
+上述实际上创建的是`immutable`引用，我们还可以通过`&mut`来创建`mutable`引用。
 
 ``` rust
 let mut A: String = String::from("hello");
