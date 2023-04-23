@@ -1,30 +1,6 @@
 # BOM
 ## window
 
-### `window.btoa()`
-
-浏览器自带的`Base64`编码工具，对应的解码工具为`window.atob()`
-
-``` js
-window.btoa('hello akara') // aGVsbG8gYWthcmE=
-window.atob('aGVsbG8gYWthcmE=') // hello akara
-```
-
-不过该工具无法解析中文字符，这时候我们可以借助`encodeURIComponent()`来实现
-
-``` js
-function utoa(str) {
-    return window.btoa(encodeURIComponent(str))
-}
-
-function atou(str) {
-    return decodeURIComponent(window.atob(str))
-}
-
-utoa('你好') // JUU0JUJEJUEwJUU1JUE1JUJE
-atou('JUU0JUJEJUEwJUU1JUE1JUJE') // 你好
-```
-
 ### `window.scroll()`
 
 ### `window.scrollTo()`
