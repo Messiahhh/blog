@@ -243,7 +243,9 @@ img.src = url2
 
 ## File
 
-`File`是`Blob`的子类，通常进行文件上传时可以拿到`File`对象。
+`File`是`Blob`的子类，相较于`Blob`多了`name`、`lastModified`和`lastModifiedDate`属性。通常可以从`input`元素中获取到。
+
+
 
 ``` js
 const el = document.querySelector('input')

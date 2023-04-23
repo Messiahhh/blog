@@ -111,7 +111,7 @@ sidebarDepth: 4
 
 3. 对DOM元素进行修改时，可以先使用`display: none`使其脱离文档流，再进行DOM操作，执行完再放回文档流。
 
-4. 对于复杂的动画效果，可以用`display: position`使其脱离文档流
+4. 对于复杂的动画效果，可以用`position: absolute`使其脱离文档流
 
 5. 使用CSS3中的`transform, opacity, filters`属性，启动GPU加速，这些属性的改变不会引发回流或重绘。
 
