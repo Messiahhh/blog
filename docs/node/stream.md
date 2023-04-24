@@ -1,8 +1,80 @@
 ---
 sidebarDepth: 4
 ---
-
 # 二进制与编码
+
+## 进制转换
+
+``` js
+const num = 255;
+num.toString(2) // '11111111'
+num.toString(16) // 'ff'
+
+parseInt(0b1111) // 15
+parseInt(0xff) // 255
+```
+
+
+## 位运算 
+
+虽然日常编码中不一定会用到位运算，但在某些特定情况下位运算可能意外的好用。假设存在这样的场景，平台下不同用户可能具备不同功能的白名单，因此我们需要使用一个字段`features`来记录用户所具备的功能，在使用时根据这个字段来判断用户具备哪些功能。
+
+首先，我们通过一个`Feature`对象定义了一组功能，并使用二进制来表示每个功能的值。
+
+``` js
+const Feature = {
+  One: 0b01,
+  Two: 0b10,
+  Three: 0b100,
+  Four: 0b1000,
+}
+```
+
+那么假设用户具备了所有的功能，那么他的`features`字段的值应该是`0b1111`。
+
+
+
+### 左移
+
+上述的代码中`Feature`的定义有些繁琐，我们可以使用更简洁的写法：
+
+``` js
+let shift = 0
+const Feature = {
+  One: 1 << shift++,
+  Two: 1 << shift++,
+  Three: 1 << shift++,
+  Four: 1 << shift++,
+}
+```
+
+在这个例子中的`<<`被称作**左移运算符**，它表示把二进制的每一位都向左移动指定的位数。如对于`1 << 3`表达式，返回的是`0b1`左移3位后的结果即`0b1000`，也就是十进制的8。
+
+
+
+### 右移
+
+与左移运算符对应的，通过**右移运算符**`>>`可以返回二进制的每一位都右移指定位数的结果。如对于`8 >> 3`表达式，返回的是`0b1000`右移3位的结果即`0b1`，即十进制的1。
+
+
+
+### 按位或
+
+`0b0101`表示用户同时具备`Feature.One`和`Feature.Two`这两个功能，实际上这是这两个变量**按位或|**的结果。
+
+``` js
+const features = Feature.One | Feature.Three
+```
+
+
+
+### 按位与
+
+为了了解用户是否具备`Feature.One`的功能，我们的目的是确认`features`的最后一位的值是否为1，通常可以使用**按位与&**来进行区分
+
+``` js
+const hasFeature = (feature & Features.One) > 0
+```
 
 ## Buffer
 
@@ -65,26 +137,28 @@ new Uint8Array([100, 200, 300])
 
 ## String and Encoding
 
-无论是`Buffer`还是`ArrayBuffer`，本质上都表示着内存中的二进制数据（或者叫字节序列），通过某种编码方式我们就能获取其对应的字符串。
+### 字符集与编码
+无论是`Buffer`还是`ArrayBuffer`，本质上都表示着内存中的二进制数据（或者叫字节序列），通过某种编码方式我们就能获取其对应的字符串。常见的编码方式有`ascii`、`gbk`、`utf-8`、`utf-16`等。
 
-常见的编码方式有`ascii`、`latin1`、`utf-8`、`utf-16`、`gbk`等等，需要注意平常所说的Unicode指的是一种字符集（字符与码点的映射），`utf-8`、`utf-16`、`utf-32`才是具体的编码方式。
+需要注意的是我们平常所说的Unicode指的是一种字符集，表示字符和码点（CodePoint）的一对一映射关系，根据采用的编码方式的不同（`utf-8`、`utf-16`、`utf-32`），同一个码点可以对应不同的二进制表示。
+``` js
+'A'.charCodeAt(0) // 获取字符解码后的二进制数据
+'A'.codePointAt(0) // 获取字符对应码点，特别是可以获取到非基本平面的字符的码点（即大于0xFFFF）
+```
 
-:::tip 
-
-`ascii`编码的有效位数为7位，无法表示某些西欧字符，`latin-1`使用了`ascii`中没有直接用到的最高位来兼容`ascii`的同时表达更多的字符。
-
+:::info 注意
+在JavaScript中字符串是通过**`UTF-16`**进行编码的，对于无法正常编码成字符的二进制会使用`\u0003`、`\x03`这样的形式表示。
+``` js
+'\x03'.length // 1
+'\x03'.charCodeAt(0) // 3
+```
 :::
 
 
-
+### TextEncoder
 如我们在`Buffer`一节中所介绍的，在`Node.js`环境中可以通过`Buffer.from()`和`buffer.toString()`实现`Buffer`和字符串的转化（即二进制数据和字符串的编码和解码）。而在浏览器中并不存在`Buffer`变量，为了实现`ArrayBuffer`和字符串的转化，我们需要借助`TextEncoder`和`TextDecoder`来实现。
 
-`TextEncoder`和`TextDecoder`可以用来实现`TypedArray`和字符串的转化，而`TypedArray`可以通过`.buffer`属性访问对应的`ArrayBuffer`对象，所以间接地实现了我们的需求。
-
-
-
-### TextEncoder
-
+`TextEncoder`和`TextDecoder`可以用来实现`TypedArray`和字符串的转化（通过UTF-8编码），而`TypedArray`可以通过`.buffer`属性访问对应的`ArrayBuffer`对象，所以间接地实现了我们的需求。
 ``` js
 const arr = new TextEncoder().encode('akara') // Uint8Array(5) [97, 107, 97, 114, 97, buffer: ArrayBuffer(5)]
 const buffer = arr.buffer // ArrayBuffer(5)
@@ -101,38 +175,48 @@ new TextDecoder().decode(arr) // akara
 
 
 
-:::caution
-
-需要注意的是，为了遵循规范`TextEncoder`和`TextDecoder`只支持`utf-8`编码。
-
-:::
-
-
-
 ### encodeURI
 
-``` js
-encodeURI('你') // '%E4%BD%A0'
+HTTP请求报文头部的编码格式是ASCII，这意味着我们无法在请求路径或参数上传入汉字等字符，为了实现等价的功能，我们可以使用`encodeURI`来对汉字进行编码，它会将汉字编码为`UTF-8`编码后的字符表示。
 
-const buffer = Buffer.from('你')
-console.log(buffer) // <Buffer e4 bd a0>
+``` js
+encodeURI('你好') // '%E4%BD%A0%E5%A5%BD'
+
+[...new TextEncoder().encode("你好")].map(item => item.toString(16)) // ['e4', 'bd', 'a0', 'e5', 'a5', 'bd']
+
+// NodeJS
+const buffer = Buffer.from('你好') // <Buffer e4 bd a0 e5 a5 bd>
 ```
 
+:::caution 注意
+可以注意到以上编码方式的结果和下面的结果不同，这是由于在JS字符串中使用的是UTF-16编码
+``` js
+'你好'.charCodeAt(0).toString(16) // '4f60'
+```
+:::
 
 
 ### decodeURI
 
 ``` js
-decodeURI('%E4%BD%A0') // 你
+decodeURI('%E4%BD%A0%E5%A5%BD') // 你好
 ```
 
+:::info 知识点
+`encodeURIComponent`可以对更多的URL字符进行编码
+``` js
+encodeURI('http://baidu.com') // 'http://baidu.com'
+
+encodeURIComponent('http://baidu.com') // 'http%3A%2F%2Fbaidu.com'
+```
+:::
 
 
 ### Base64
 
 `Base64`是一种常见的编码方式，主要作用是实现二进制字节序列和字符的编码。
 
-::: info 编码原理
+:::info 编码原理
 
 给定任意的字节序列，我们将其每三个字节共24位比特作为一组，然后把这24位比特又划分为4个6比特的小组，在每个小组的最高位添加`00`的两个比特。此时，原本三个字节的数据变成了四个字节，每个新的字节有效位数为6位，我们可以把每个字节都根据`ASCII`的规则映射为64种（即`2^6`）不同的字符，因此这种编码方式被称为`Base64`。
 
@@ -140,9 +224,13 @@ decodeURI('%E4%BD%A0') // 你
 
 
 
-如上文所介绍，`Base64`是一种二进制的编码方式，但在实际生活中我们会经常见到使用`Base64`来编码字符串来进行混淆（伪加密），比如使用`window.btoa`可以将字符串转化为`Base64`形式的字符。这是因为内部会先通过`ASCII`（还是`latin-1`？反正差不多）将字符串编码成二进制，再应用`Base64`的规则将二进制进行转换，并映射位新的字符。
+如上文所介绍，`Base64`是一种二进制的编码方式，但在实际生活中我们会经常见到使用`Base64`来编码字符串来进行混淆（伪加密），比如使用`window.btoa`可以将字符串转化为`Base64`形式的字符。这是因为内部会先通过`latin1`（相较于`ASCII`把最高位利用上了）将字符串编码成二进制，再应用`Base64`的规则将二进制进行转换，并映射位新的字符。
 
-`Base64`的一个常用途径是对小型图片进行编码，如通过`<img src="data:img/gif;base64,base64,xxx" />`形式进行图片的加载来减少不必要的网络请求，但因为`Base64`会使得编码后的数据比原先大三分之一，因此通常不会对大图进行编码。
+`Base64`的一个常用途径是对小型图片进行编码，如通过`<img src="data:img/gif;base64,xxxxx" />`形式进行图片的加载来减少不必要的网络请求，但因为`Base64`会使得编码后的数据比原先大三分之一，因此通常不会对大图进行编码。
+
+``` js
+fetch('data:image/png;base64,xxxxx').then(res => res.arrayBuffer())
+```
 
 
 
@@ -197,7 +285,7 @@ new Blob([JSON.stringify({
 ```
 
 ``` js
-new Blob([new Uint8Array([10, 20]).buffer], {})
+new Blob([new Uint8Array([10, 20]).buffer]) // 需要注意第一个参数是数组包了一层
 ```
 
 
@@ -305,8 +393,18 @@ reader.readAsXXX(blob)
 
 
 ### `readAsBinaryString()`
+将二进制编码为JS字符串，因此是使用的UTF-16编码。
 
-感觉是通过类似`latin-1`来进行逐字节的字符串编码。
+``` js
+const blob = new Blob([new Uint8Array([0, 255, 0, 255, 100, 200])])
+
+const reader = new FileReader();
+reader.onload = function () {
+    console.log(Uint8Array.from(reader.result, char => char.charCodeAt(0))) // Uint8Array([0, 255, 0, 255, 100, 200])
+    // console.log(reader.result) 会显示乱码 ÿÿdÈ
+}
+reader.readAsBinaryString(blob)
+```
 
 
 
