@@ -208,6 +208,12 @@ const sidebars = {
         'rust/tauri'
       ],
     },
+     {
+          type: 'doc',
+          id:  'canvas',
+          label: 'Canvas'
+        },
+    // "canvas",
     '音视频学习',
     "异常处理",
     "网站优化",
