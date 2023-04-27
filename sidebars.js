@@ -211,7 +211,7 @@ const sidebars = {
      {
           type: 'doc',
           id:  'canvas',
-          label: 'Canvas'
+          label: 'WebGL'
         },
     // "canvas",
     '音视频学习',
