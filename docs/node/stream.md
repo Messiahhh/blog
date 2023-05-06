@@ -137,7 +137,7 @@ new Uint8Array([100, 200, 300])
 
 ## String and Encoding
 
-### 字符集与编码
+### 字符集与编码方式
 无论是`Buffer`还是`ArrayBuffer`，本质上都表示着内存中的二进制数据（或者叫字节序列），通过某种编码方式我们就能获取其对应的字符串。常见的编码方式有`ascii`、`gbk`、`utf-8`、`utf-16`等。
 
 需要注意的是我们平常所说的Unicode指的是一种字符集，表示字符和码点（CodePoint）的一对一映射关系，根据采用的编码方式的不同（`utf-8`、`utf-16`、`utf-32`），同一个码点可以对应不同的二进制表示。
@@ -343,7 +343,34 @@ el.files[0] // File
 
 
 
-## 闭环转换
+## FormData
+
+通常当我们需要给后端发送文件时，要么直接把单个文件内容作为请求体，要么通过`formData`来进行数据传输。
+
+``` javascript
+// 错误
+fetch(url, {
+  data: {
+    file: new File(), // 会被JSON.stringify序列化
+   	name: 'akara',
+  }
+})
+
+// 正确
+const formData = new FormData();
+formData.append('file', new File());
+formData.append('name', 'akara')
+
+fetch(url, {
+  data: formData
+})
+```
+
+
+
+
+
+## 总结
 
 通过上述几节我们了解到`ArrayBuffer`、`String`、`Blob`的基本情况，并且知道它们直接是可以进行闭环任意转化的：
 
