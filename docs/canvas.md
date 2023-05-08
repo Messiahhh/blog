@@ -171,13 +171,11 @@ void main() {
 
 ### 数据类型
 
-
-
 ### 内置函数
 
 
 
-### Texture 与 UV
+### 纹理（Texture）、UV坐标与采样
 
 把一张图片作为Texture纹理，图片左下角为(0, 0)，右上角为(1, 1)，可以通过UV坐标来进行采样。
 
@@ -185,7 +183,7 @@ void main() {
 
 
 
-## drawArrays
+### drawArrays
 
 `wegl`的实际绘制指令，我们实际上是绘制无数个顶点，绘制线段或三角形，本质上是在点与点之间进行线性插值。
 
@@ -203,6 +201,119 @@ gl.drawArrays(gl.TRIANGLES, 3, 3)
 ```
 
 
+
+## 随机数和噪声
+
+噪声在图形学中存在着许多的应用，比如可以实现故障艺术。通常我们会借助随机数来生成噪声图，GLSL内置了`rand`这一确定性随机（即伪随机），但通常我们会自己实现一个伪随机函数。
+
+``` glsl
+y = fract(sin(x)*10000.0);
+```
+
+为了从二维向量生成随机数，以上的式子又可以被扩展成如下，式子中的魔法数字是经过实践后被广泛使用的数字。
+
+``` glsl
+float random (vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+```
+
+
+
+## 混合模式
+
+### 溶解
+
+> TODO
+
+
+
+
+
+## 模糊效果
+
+> 高斯模糊
+
+
+
+
+
+## WebGL渲染管线
+
+1. CPU提供数据（顶点、颜色、UV、法线、纹理等）
+2. 顶点着色器（MVP矩阵变换等）
+3. 图元装配与裁剪
+4. 光栅化
+5. 片元着色器
+
+
+
+## 线性代数
+
+### 向量
+
+- 向量相加
+- 向量数乘
+- 向量内积（点积），得到标量
+- 向量外积（乘积），得到向量
+- 向量的线性组合（常见的组合如线性插值）
+
+### 矩阵
+
+- 矩阵加法
+- 矩阵乘法（向量的线性组合）
+
+
+
+## Trouble Shooting
+
+1. Shader代码记得加分号。
+
+2. Shader代码中数字记得小数点。
+
+3. 顶点顺序逆时针。
+
+4. 图像绘制反了。
+
+   ``` glsl
+   this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+   ```
+
+5. 图像绘制黑屏，纹理宽高需要是二的幂。
+
+   ``` glsl
+   this.gl.texParameteri(
+     this.gl.TEXTURE_2D,
+     this.gl.TEXTURE_MIN_FILTER,
+     this.gl.LINEAR
+   );
+   this.gl.texParameteri(
+     this.gl.TEXTURE_2D,
+     this.gl.TEXTURE_WRAP_S,
+     this.gl.CLAMP_TO_EDGE
+   );
+   this.gl.texParameteri(
+     this.gl.TEXTURE_2D,
+     this.gl.TEXTURE_WRAP_T,
+     this.gl.CLAMP_TO_EDGE
+   );
+   ```
+
+6. WebGL内置8个纹理单元，绑定多个纹理时需要提前激活。
+
+   ``` glsl
+   gl.activeTexture(gl.TEXTURE0);
+   ```
+
+   
+
+
+
+
+
+## MVP和裁剪空间
+
+> TODO
 
 
 
