@@ -21,6 +21,16 @@ const config = {
     defaultLocale: 'zh-Hans',
     locales: ['zh-Hans'],
   },
+  headTags: [
+    {
+      tagName: 'meta',
+      attributes: {
+        name: 'referrer',
+        content: 'no-referrer'
+      }
+    }
+  ],
+
   presets: [
     [
       'classic',
