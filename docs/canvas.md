@@ -1,125 +1,38 @@
 # WebGL
 
-``` html
-<canvas width="500" height="500"></canvas>
-<script>
-  const canvas = document.querySelector("canvas");
-  const gl = canvas.getContext("webgl");
+浏览器所提供的WebGL给予了我们图形绘制的能力，WebGL本质上基于OpenGL ES2.0，而后者实际上是OpenGL的一个精简子集，缺少了一部分的能力（如几何着色器等）。
 
-  // 颠倒图片
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+近年来WebGL2的实现也逐渐稳定，它基于OpenGL ES3.0。
 
-  const vsSource = `
-    precision mediump float;
-
-    attribute vec2 aPosition;
-    attribute vec2 aUV;
-
-    varying vec2 vUV;
-    varying vec2 vPos;
-
-    void main() {
-      gl_Position = vec4(aPosition, 0.0, 1.0);
-      vUV = aUV;
-      vPos = aPosition;
-    }
-
-  `;
-  const fsSource = `
-    precision mediump float;
-
-    uniform sampler2D uTexture;
-    uniform float uVar;
-
-    varying vec2 vUV;
-    varying vec2 vPos;
-
-    void main() {
-      vec4 sample_color = texture2D(uTexture, vUV);
-
-      if (vPos.x > uVar) {
-        gl_FragColor = vec4(sample_color.xyz, 0.8);
-      } else {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 0.0);
-      }
-    }
-  `;
-
-  const vs = gl.createShader(gl.VERTEX_SHADER);
-  gl.shaderSource(vs, vsSource);
-  gl.compileShader(vs);
-
-  const fs = gl.createShader(gl.FRAGMENT_SHADER);
-  gl.shaderSource(fs, fsSource);
-  gl.compileShader(fs);
-
-  const program = gl.createProgram();
-  gl.attachShader(program, vs);
-  gl.attachShader(program, fs);
-  gl.linkProgram(program);
-  gl.useProgram(program);
-
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      1.0, 1.0, 1, 1, -1.0, 1.0, 0, 1, -1.0, -1.0, 0, 0, -1.0, -1.0, 0, 0,
-      1.0, -1.0, 1, 0, 1.0, 1.0, 1, 1,
-    ]),
-    gl.STATIC_DRAW
-  );
-
-  const location1 = gl.getAttribLocation(program, "aPosition");
-  gl.vertexAttribPointer(location1, 2, gl.FLOAT, false, 16, 0);
-  gl.enableVertexAttribArray(location1);
-  const location2 = gl.getAttribLocation(program, "aUV");
-  gl.vertexAttribPointer(location2, 2, gl.FLOAT, false, 16, 8);
-  gl.enableVertexAttribArray(location2);
-
-  const image = new Image();
-  image.src = "./touxiang.JPG";
-  image.onload = function () {
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      image
-    );
-
-    // 宽高非2的幂时会返回纯黑图片
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-    const uniform1 = gl.getUniformLocation(program, "uTexture");
-    gl.uniform1i(uniform1, 0); // texture0
-
-    let value = 0.0;
-    function draw() {
-      const uniform2 = gl.getUniformLocation(program, "uVar");
-      if (value <= 1.0) {
-        gl.uniform1f(uniform2, (value += 0.01));
-      } else {
-        value = -1.0;
-        gl.uniform1f(uniform2, value);
-      }
-
-      gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-      requestAnimationFrame(draw);
-    }
-    draw();
-  };
-</script>
+``` js
+const canvas = document.querySelector('canvas');
+const webgl = canvas.getContext('webgl');
+const webgl2 = canvas.getContext('webgl2');
 ```
+
+
+
+## 渲染管线
+
+1. CPU准备工作。着色器的编译、链接；顶点数据、顶点颜色、顶点UV坐标、顶点法线等数据的写入；纹理数据的写入等。
+
+2. 顶点着色器。逐顶点执行，我们的顶点数据通常由3D建模软件导出，我们会先通过**模型矩阵Model**将模型空间转变为世界空间，再通过**视图矩阵View**将世界空间转变为观察空间，再通过**投影矩阵Projection（透视投影或正交投影）**转变为**齐次裁剪空间（Clip Space）**。以上的变换统称MVP变化。裁剪空间中坐标的XYZ三维都位于[-1,1]之间，W分量通常为1。后续（在第三步裁剪之后）GPU内部会通过**透视除法**将四维顶点转化成三维的**标准化设备坐标（NDC）**。
+
+   <img src="https://img-blog.csdn.net/20171229111837073?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmllemhpaHVh/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" />
+
+3. 图元装配、裁剪。根据指令将顶点组装成图元（线、三角形），并把齐次裁剪空间外的内容剔除。
+
+4. 光栅化。
+
+   ![img](https://img-blog.csdnimg.cn/b26e74a5ee5b4f8781cbe684ac25ebaa.png)
+
+5. 片元着色器。GPU会将通过**视口变化**将NDC坐标转化成**屏幕空间（Screen Space）**坐标，并传入给片元着色器的`gl_FragCoord`。片元着色器逐屏幕像素执行，通常在此时实现滤镜（如通过LUT）或后处理（各种特效、模糊、边缘检测），最终将数据写入帧缓冲（显存）中。
+
+6. 深度测试
+
+
+
+
 
 ## OpenGL Shading Language（GLSL）
 
@@ -134,6 +47,8 @@ void main() {
 }
 ```
 
+<img src="https://images2018.cnblogs.com/blog/669331/201803/669331-20180302113903143-870412752.png" alt="vs" />
+
 
 
 ### Fragment Shader
@@ -147,7 +62,7 @@ void main() {
 }
 ```
 
-
+<img src="https://img-blog.csdn.net/20140917135608231" alt="fs" />
 
 ### atrribute
 
@@ -172,6 +87,18 @@ void main() {
 ### 数据类型
 
 ### 内置函数
+
+- `abs(x)`，绝对值。
+- `floor(x)`，获取整数部分。
+- `fract(x)`，获取小数部分。
+- `ceil(x)`，向上取整。
+- `max(x, y)`，`min(x, y)`，`clamp(x, min, max)`
+- `mix(a, b, t)`，混合（线性组合），`mix(a, b, t)`表示`a * (1 - t) + b * (t)`。
+- `step(edge, x)`，当`x`小于`edge`时返回0，否则返回1。
+- `smoothstep(edge0, edge1, x)`，当`x`小于`edge0`时返回0，当`x`大于`edge0`时返回1，否则返回的值为`edge0`到`edge1`的插值。
+- `length(vec)`，返回向量的长度。
+
+
 
 
 
@@ -238,14 +165,6 @@ float random (vec2 st) {
 
 
 
-## WebGL渲染管线
-
-1. CPU提供数据（顶点、颜色、UV、法线、纹理等）
-2. 顶点着色器（MVP矩阵变换等）
-3. 图元装配与裁剪
-4. 光栅化
-5. 片元着色器
-
 
 
 ## 线性代数
@@ -311,9 +230,9 @@ float random (vec2 st) {
 
 
 
-## MVP和裁剪空间
 
-> TODO
+
+
 
 
 

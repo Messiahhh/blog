@@ -5,7 +5,7 @@ import Link from "@docusaurus/Link";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import styles from "./index.module.css";
 import HomepageFeatures from "@site/src/components/HomepageFeatures";
-import logo from "@site/static/img/头像.jpg";
+import logo from "@site/static/img/banana.jpg";
 import noise from "@site/static/img/noise.png";
 
 console.log(logo);
