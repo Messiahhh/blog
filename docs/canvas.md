@@ -18,7 +18,7 @@ const webgl2 = canvas.getContext('webgl2');
 
 2. 顶点着色器。逐顶点执行，我们的顶点数据通常由3D建模软件导出，我们会先通过**模型矩阵Model**将模型空间转变为世界空间，再通过**视图矩阵View**将世界空间转变为观察空间，再通过**投影矩阵Projection（透视投影或正交投影）**转变为**齐次裁剪空间（Clip Space）**。以上的变换统称MVP变化。裁剪空间中坐标的XYZ三维都位于[-1,1]之间，W分量通常为1。后续（在第三步裁剪之后）GPU内部会通过**透视除法**将四维顶点转化成三维的**标准化设备坐标（NDC）**。
 
-   <img src="https://img-blog.csdn.net/20171229111837073?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmllemhpaHVh/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" />
+   ![](https://img-blog.csdn.net/20171229111837073?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmllemhpaHVh/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
 
 3. 图元装配、裁剪。根据指令将顶点组装成图元（线、三角形），并把齐次裁剪空间外的内容剔除。
 
@@ -46,8 +46,7 @@ void main() {
   gl_Position = vec4(a_position, 0.0, 1.0);
 }
 ```
-
-<img src="https://images2018.cnblogs.com/blog/669331/201803/669331-20180302113903143-870412752.png" alt="vs" />
+![vs](https://images2018.cnblogs.com/blog/669331/201803/669331-20180302113903143-870412752.png)
 
 
 
@@ -61,8 +60,7 @@ void main() {
   gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); 
 }
 ```
-
-<img src="https://img-blog.csdn.net/20140917135608231" alt="fs" />
+![fs](https://img-blog.csdn.net/20140917135608231)
 
 ### atrribute
 
