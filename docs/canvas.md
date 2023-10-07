@@ -1,4 +1,103 @@
-# WebGL
+# Canvas and WebGL
+
+## Canvas
+``` js
+const canvas = document.querySelector('canvas');
+const context = canvas.getContext('2d');
+```
+
+### toBlob
+
+``` js
+canvas.toBlob(blob => {
+  const url = URL.createObjectURL(blob);
+}, "image/jpeg", 1) // quality
+```
+
+### toDataURL
+
+``` js
+const dataUrl = canvas.toDataURL("image/jpeg", 1); // quality
+```
+
+### drawImage
+
+Canvas提供了一些内置API用于图像绘制，我们还可以使用`drawImage`来把某个Image、Video甚至Canvas元素的内容绘制到目标Canvas上。
+
+``` js
+canvas.drawImage(image, 0, 0)
+canvas.drawImage(video, 0, 0)
+canvas.drawImage(canvas2, 0, 0)
+```
+
+### getImageData/putImageData
+通过`getImageData`可以拿到Canvas指定区域对应的像素数据，我们可以对它进行相应的数学转换，比如Konva的高斯模糊等滤镜就是通过纯CPU计算实现的
+
+### OffscreenCanvas
+
+
+
+### 渲染引擎
+
+#### 异步批量渲染
+
+类似React中的`setState`，修改数据后会在下一个tick再进行渲染。
+
+``` js
+// konva实现
+function batchDraw() {
+    if (!this._waitingForDraw) {
+      this._waitingForDraw = true;
+      window.requestAnimFrame(() => {
+        this.draw();
+        this._waitingForDraw = false;
+      });
+    }
+    return this;
+}
+```
+
+#### 离屏渲染
+
+当一个虚拟节点渲染的内容不变时，我们可以将它的内容渲染到一个额外的Canvas（不一定需要是OffscreenCanvas）上，后续借助这个离屏的Canvas进行绘制。
+
+
+
+#### 分层渲染
+
+可以使用多个Canvas进行渲染，比如把静态的内容和动态的内容进行分离。
+
+
+
+#### 局部渲染/脏区检测
+
+一般我们每次渲染时都会通过`clearRect`将画布的内容清空并进行全量绘制，一些渲染库中允许我们只重新渲染部分的内容实现性能优化。
+
+
+
+#### 包围盒与碰撞检测
+
+- AABB包围盒
+- OBB包围盒
+- 分离轴定律
+
+#### 事件机制
+
+- 取色值法
+  - 实现简单；适合不规则图形
+  - 需要额外绘制一份Canvas
+- 几何法（引射线法）
+  - 实现和计算复杂；适合规则图形
+
+
+
+#### 布局系统
+
+实现类似Flex的布局能力。
+
+
+
+## WebGL
 
 浏览器所提供的WebGL给予了我们图形绘制的能力，WebGL本质上基于OpenGL ES2.0，而后者实际上是OpenGL的一个精简子集，缺少了一部分的能力（如几何着色器等）。
 
@@ -12,7 +111,7 @@ const webgl2 = canvas.getContext('webgl2');
 
 
 
-## 渲染管线
+### 渲染管线
 
 1. CPU准备工作。着色器的编译、链接；顶点数据、顶点颜色、顶点UV坐标、顶点法线等数据的写入；纹理数据的写入等。
 
@@ -34,9 +133,9 @@ const webgl2 = canvas.getContext('webgl2');
 
 
 
-## OpenGL Shading Language（GLSL）
+### OpenGL Shading Language（GLSL）
 
-### Vertex Shader
+#### Vertex Shader
 
 ``` glsl
 // vertex shader 顶点着色器
@@ -50,7 +149,7 @@ void main() {
 
 
 
-### Fragment Shader
+#### Fragment Shader
 
 ``` glsl
 // fragment shader 片段着色器/像素着色器
@@ -62,19 +161,19 @@ void main() {
 ```
 ![fs](https://img-blog.csdn.net/20140917135608231)
 
-### atrribute
+#### atrribute
 
 通常我们通过CPU将顶点坐标、颜色/UV、法向量写入GPU的显存当中，CPU的每个线程/管道会逐个读取（因此对于不同的线程，该值通常是不同的）对应的数据交给**顶点着色器Vertex Shade**，这些值通常用`attribute`声明。
 
 
 
-### uniform
+#### uniform
 
 同样也是通过CPU写入，但`uniform`可以被顶点着色器以及片段着色器访问，另外对于不同GPU线程来说该值是相同的。
 
 
 
-### varying
+#### varying
 
 该值通常在顶点着色器中定义和赋值，后续对应的片段着色器中可以取到对应的值。插值。
 
@@ -82,9 +181,9 @@ void main() {
 
 
 
-### 数据类型
+#### 数据类型
 
-### 内置函数
+#### 内置函数
 
 - `abs(x)`，绝对值。
 - `floor(x)`，获取整数部分。
@@ -100,7 +199,7 @@ void main() {
 
 
 
-### 纹理（Texture）、UV坐标与采样
+#### 纹理（Texture）、UV坐标与采样
 
 把一张图片作为Texture纹理，图片左下角为(0, 0)，右上角为(1, 1)，可以通过UV坐标来进行采样。
 
@@ -108,7 +207,7 @@ void main() {
 
 
 
-### drawArrays
+#### drawArrays
 
 `wegl`的实际绘制指令，我们实际上是绘制无数个顶点，绘制线段或三角形，本质上是在点与点之间进行线性插值。
 
@@ -127,7 +226,7 @@ gl.drawArrays(gl.TRIANGLES, 3, 3)
 
 
 
-## 随机数和噪声
+### 随机数和噪声
 
 噪声在图形学中存在着许多的应用，比如可以实现故障艺术。通常我们会借助随机数来生成噪声图，GLSL内置了`rand`这一确定性随机（即伪随机），但通常我们会自己实现一个伪随机函数。
 
@@ -145,9 +244,9 @@ float random (vec2 st) {
 
 
 
-## 混合模式
+### 混合模式
 
-### 溶解
+#### 溶解
 
 > TODO
 
@@ -155,7 +254,7 @@ float random (vec2 st) {
 
 
 
-## 模糊效果
+### 模糊效果
 
 > 高斯模糊
 
@@ -165,9 +264,9 @@ float random (vec2 st) {
 
 
 
-## 线性代数
+### 线性代数
 
-### 向量
+#### 向量
 
 - 向量相加
 - 向量数乘
@@ -175,14 +274,14 @@ float random (vec2 st) {
 - 向量外积（乘积），得到向量
 - 向量的线性组合（常见的组合如线性插值）
 
-### 矩阵
+#### 矩阵
 
 - 矩阵加法
 - 矩阵乘法（向量的线性组合）
 
 
 
-## Trouble Shooting
+### Trouble Shooting
 
 1. Shader代码记得加分号。
 
@@ -234,7 +333,7 @@ float random (vec2 st) {
 
 
 
-## 参考链接
+### 参考链接
 
 1. https://juejin.cn/post/6891918137671811079
 
