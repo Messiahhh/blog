@@ -22,7 +22,7 @@ const dataUrl = canvas.toDataURL("image/jpeg", 1); // quality
 
 ### drawImage
 
-Canvas提供了一些内置API用于图像绘制，我们还可以使用`drawImage`来把某个Image、Video甚至Canvas元素的内容绘制到目标Canvas上。
+Canvas提供了`drawImage`方法将不同的图像源绘制到我们的目标Canvas上，包括Image、Video甚至另一个Canvas对象。
 
 ``` js
 canvas.drawImage(image, 0, 0)
@@ -30,8 +30,37 @@ canvas.drawImage(video, 0, 0)
 canvas.drawImage(canvas2, 0, 0)
 ```
 
+`drawImage`函数是个重载函数，有几种不同的用法。（注：下文中的`d`表示目标Canvas Destination，`s`表示图像源头Source）
+
+1. `drawImage(source, dx, dy)`。简单的用法，以`(dx, dy)`为原点绘制目标图像。
+
+2. `drawImage(source, dx, dy, dWidth, dHeight)`。和用法一类似，额外提供了`width`和`height`的参数允许我们调整所绘制的图像的大小，从而实现类似缩放的效果。
+
+3. `drawImage(source, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)`。这个用法调整了参数的顺序，可用来裁剪数据源的部分区域进行绘制。
+
+   ![](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage/canvas_drawimage.jpg)
+
+
+
 ### getImageData/putImageData
-通过`getImageData`可以拿到Canvas指定区域对应的像素数据，我们可以对它进行相应的数学转换，比如Konva的高斯模糊等滤镜就是通过纯CPU计算实现的
+
+通过`getImageData`我们能够拿到Canvas指定区域对应的像素数据。可以通过指定的数学转换实现不同的效果，比如Konva的高斯模糊等滤镜就是通过纯CPU计算实现的。
+
+``` js
+const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+
+for (let i = 0; i < imageData.data.length; i += 4) {
+  	imageData.data[i] = 255; // red channel
+    imageData.data[i + 1] = 0; // green channel
+    imageData.data[i + 2] = 255; // blue channel
+    imageData.data[i + 3] = 200; // alpha channel
+}
+ctx.putImageData(imageData, 0, 0)
+```
+
+
+
+
 
 ### OffscreenCanvas
 
@@ -94,6 +123,65 @@ function batchDraw() {
 #### 布局系统
 
 实现类似Flex的布局能力。
+
+
+
+### API
+
+#### 矩形绘制
+
+- `fillRect()`
+- `strokeRect()`
+- `clearRect()`
+
+
+
+#### 路径绘制
+
+路径即为多个点的连线。
+
+``` js
+ctx.beginPath()
+
+ctx.fill()
+ctx.stroke()
+
+ctx.closePath()
+```
+
+
+
+#### 坐标变换
+
+- `ctx.translate(x, y)`
+- `ctx.rotate(radians)`。将坐标系顺时针旋转，弧度制比如`ctx.rotate(Math.PI)`
+- `ctx.scale(x, y)`
+- `ctx.transform(a, b, c, d, e, f)`
+
+
+
+#### save/restore
+
+Canvas的2D上下文的本质是一个状态机，因此它还提供了保存和恢复当前状态的能力。
+
+``` js
+ctx.save()
+ctx.tranlate(10, 10)
+ctx.fillRect(0, 0, 100, 100)
+ctx.restore()
+```
+
+
+
+
+
+
+
+### 性能优化
+
+- 减少上下文切换
+
+
 
 
 
