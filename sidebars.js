@@ -15,7 +15,7 @@
 const sidebars = {
   // By default, Docusaurus generates a sidebar from the docs folder structure
   tutorialSidebar: [
-    
+
     // "browser",
     "HTML",
     "css",
@@ -35,7 +35,7 @@ const sidebars = {
         'javascript/Generator',
         {
           type: 'doc',
-          id:  'javascript/Set-Map',
+          id: 'javascript/Set-Map',
           label: 'Set And Map'
         },
         'javascript/AJAX',
@@ -51,7 +51,7 @@ const sidebars = {
         //   id:  'javascript/Set-Map',
         //   label: 'Set/Map'
         // },
-        'javascript/装饰器', 
+        'javascript/装饰器',
         // 'javascript/Graphql',
         // 'javascript/BOM',
         // 'javascript/DOM',
@@ -66,46 +66,46 @@ const sidebars = {
       items: [
         {
           type: 'doc',
-          id:  'typescript/config',
+          id: 'typescript/config',
           label: 'tsconfig.json'
         },
         {
           type: 'doc',
-          id:  'typescript/declaration',
+          id: 'typescript/declaration',
           label: 'd.ts'
         },
         {
           type: 'doc',
-          id:  'typescript/basic',
+          id: 'typescript/basic',
           label: '基础'
         },
         {
           type: 'doc',
-          id:  'typescript/类型操作.mdx',
+          id: 'typescript/类型操作.mdx',
         },
         {
           type: 'doc',
-          id:  'typescript/类型守卫',
+          id: 'typescript/类型守卫',
         },
         {
           type: 'doc',
-          id:  'typescript/类型断言',
+          id: 'typescript/类型断言',
         },
         {
           type: 'doc',
-          id:  'typescript/声明合并',
+          id: 'typescript/声明合并',
         },
         {
           type: 'doc',
-          id:  'typescript/逆变与协变',
+          id: 'typescript/逆变与协变',
         },
         {
           type: 'doc',
-          id:  'typescript/工具类型',
+          id: 'typescript/工具类型',
         },
         {
           type: 'doc',
-          id:  'typescript/版本更新日志.mdx',
+          id: 'typescript/版本更新日志.mdx',
         },
       ],
     },
@@ -133,11 +133,6 @@ const sidebars = {
           type: 'doc',
           id: 'node/eventloop',
           label: '事件循环'
-        },
-        {
-          type: 'doc',
-          id: 'node/binary',
-          label: '二进制与编码'
         },
         {
           type: 'doc',
@@ -190,12 +185,24 @@ const sidebars = {
     },
     {
       type: 'doc',
+      id: 'binary',
+      label: '二进制与编码'
+    },
+    {
+      type: 'doc',
       id: 'browser',
       label: '浏览器原理'
     },
+    {
+      type: 'doc',
+      id: 'canvas',
+      label: 'Canvas学习'
+    },
+    '音视频学习',
     "git",
     "计算机网络",
     "前端安全",
+    "异常处理",
     "编译原理",
     {
       type: 'category',
@@ -208,14 +215,6 @@ const sidebars = {
         'rust/tauri'
       ],
     },
-     {
-          type: 'doc',
-          id:  'canvas',
-          label: 'WebGL'
-        },
-    // "canvas",
-    '音视频学习',
-    "异常处理",
     "网站优化",
     "数据结构",
     "排序",

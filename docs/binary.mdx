@@ -193,7 +193,7 @@ view.setUint16(0, 255)
 typedArray1[0] === 0 // true;
 typedArray1[1] === 255 // true
 
-view.setUint16(0, 255, true) // 也可以使用小端字节序 
+view.setUint16(0, 255, true) // DataView也可以指定小端字节序 
 typedArray1[0] === 255 // true 
 typedArray1[1] === 0 // true
 ```
