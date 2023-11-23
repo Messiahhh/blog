@@ -136,7 +136,7 @@ const sidebars = {
         },
         {
           type: 'doc',
-          id: 'node/stream',
+          id: 'node/binary',
           label: '二进制与编码'
         },
         {

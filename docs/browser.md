@@ -143,105 +143,6 @@ ctx.body = `doSomething(${myJson})` // 传参
 
 
 
-### document.domain
-
-Cookie 是服务器写入浏览器的一小段信息，只有同源的网页才能共享。但是，两个网页一级域名相同，只是二级域名不同，浏览器允许通过设置`document.domain`共享 Cookie。
-
-如a.example.com和b.example.com。
-
-此时两个网站都设置 `document.domain =  "example.com"`， 那么两个网页就可以共享Cookie了。
-
-``` js
-// a.example.com
-document.cookie = 'aaa'
-
-// b.example.com 
-console.log(document.cookie) // 'aaa'
-```
-
-
-
-
-
-### window.name
-
-这个方法主要用于**父窗口和iframe窗口的通信**。
-
-如果父窗口和iframe窗口是不同源的，则通常无法进行通信。
-
-``` html
-<html>
-    <body>
-        <!-- 我是父窗口 -->
-        <iframe src='xxx.com'>
-            <!-- 我是子窗口 -->
-        </iframe>
-    </body>
-</html>
-```
-
-
-
-`window.name`特点：无论是否同源，只要在同一个窗口里，前一个网页设置了这个属性，后一个网页可以读取它。
-
-例如，我们在a.com页面下设置
-
-``` js
-window.name = '123'
-location.href = 'b.com'
-```
-
-然后在b.com也能获取到`window.name`的值。
-
-
-
-实现跨域：
-
-使用时，先设置`iframe`的`src`为我们想要通信的目标页面。当目标页面的`window.name`修改时，将我们的`iframe`的`src`修改为一个和父窗口同源的页面。
-
-
-
-本质：
-
-iframe内的目标页面 <=> iframe内的一个和父窗口同源的页面 <=> 父窗口
-
-
-
-### location.hash
-
-这个方法也是主要用于**父窗口和iframe窗口的通信**。
-
-
-
-特点：如果只是改变片段标识符(fragment/hash)，页面不会重新刷新。
-
-
-
-实现跨域：
-
-父窗口修改`iframe`窗口的`src`
-
-``` js
-// 父窗口
-let src = `${originUrl}#${data}`
-document.querySelector('iframe').src = src
-```
-
-`iframe`窗口的页面不会刷新，但是能知道`hash`的变化
-
-``` js
-// iframe窗口
-window.onhashchange = function () {}
-```
-
-同理，`iframe`窗口也可以改变父窗口的`hash`来实现通信。
-
-
-
-
-
-
-
 ###  postMessage 
 
 跨文档通信。比起`window.name`和`location.hash`，该方法更加方便。
@@ -483,7 +384,7 @@ const data = jwt.verify(token, 'key')
 
 浏览器内部的数据库，可用于存储大容量的结构化（或二进制数据）数据。目前有两个比较好用的库。
 
-### localforage
+#### localforage
 
 更像容量加强版的LocalStorage，感觉读写性能并不是很高，特点是在不支持IndexedDB的浏览器中会从IndexedDB实现降级成LocalStorage实现。
 
@@ -500,6 +401,30 @@ if (hasLocalCache) {
 }
 ```
 
-### Dexie
+#### Dexie
 
 更贴近IndexedDB底层操作，读写性能更高。
+
+
+
+
+
+## WebWorker
+
+> TODO
+
+
+
+
+
+## Chrome 插件
+
+- [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/)
+  - 相当于Chrome插件的描述文件，定位类似通常前端项目中的`package.json`，通过声明Permission可以来访问各种插件能力。
+- [Content-Script](https://developer.chrome.com/docs/extensions/mv3/content_scripts/)
+  - 被注入在所有页面中的插件代码，和页面本身的脚本上下文互相独立，且可以访问部分插件能力。
+- [Extension Service Worker](https://developer.chrome.com/docs/extensions/mv3/service_workers/)
+  - 主要用来响应各种用户事件，负责管理整个插件内外的数据通信，以及处理插件内部的数据存储和读写等逻辑。可以和Content-Script进行消息通信（JSON序列化的形式）
+
+
+

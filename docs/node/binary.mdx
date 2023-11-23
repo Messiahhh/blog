@@ -6,11 +6,18 @@ sidebarDepth: 4
 ## 进制转换
 
 ``` js
+// 十进制 -> 二进制
 const num = 255;
 num.toString(2) // '11111111'
+
+// 十进制 -> 十六进制
+const num = 255;
 num.toString(16) // 'ff'
 
+// 二进制 -> 十进制
 parseInt(0b1111) // 15
+
+// 十六进制 -> 十进制
 parseInt(0xff) // 255
 ```
 
@@ -116,22 +123,80 @@ const str = buffer.toString() // aka
 
 
 ## ArrayBuffer
+``` js
+const buffer = new ArrayBuffer(3) // 创建3个字节长的ArrayBuffer
+```
 
-浏览器中的`ArrayBuffer`对应`Node.js`环境中的`Buffer`，都表示内存中的一块字节序列，但在浏览器中我们不能直接操作这块内存，而是必须通过`Typed Array`来操作，常见的`Typed Array`有`Int8Array`、`Uint8Array`、`Int16Array`等等。
 
+和Node环境中的`Buffer`类似，浏览器环境提供了**`ArrayBuffer`**数据类型表示一块内存中的字节序列。但我们无法直接操作这块内存，而是需要为`ArrayBuffer`创建**`Typed Array`**或者**`DataView`**的**视图**，并借助视图的能力来读写对应的字节。我们可以为同一个ArrayBuffer创建多个不同的视图，他们本质上读写的都是同一块内存/同一个ArrayBuffer。
+
+
+这两种视图的主要差异包括这两点：
+1. **步长不同**。对于特定的`Typed Array`，比如`Uint32Array`实例，这个数组的每个索引对应的值都由32位即4个字节组成，我们每次读写都是同时操作**固定长度**的字节。而`DataView`更加灵活，同一个实例即可以调用`getUint8`获取一个字节的内容，也可以调用`getUint32`获取四个字节的内容。
+2. **字节序不同**。`Typed Array`采用小端字节序，并且无法修改；而`DataView`默认采用大端字节序，但也支持使用小端字节序。
+
+:::info
+在计算机领域中，一个多字节的数值在内存中的存储顺序会根据我们所采用的**字节序**策略的不同而产生差异。字节序又分为**小端字节序**和**大端字节序**，比如对于一个两字节的数值0x0102来说，如果我们以小端字节序写入到内存中，则内存中的表示为[02, 01]；反之若我们以大端字节序的形式，则内存中的表示为[01, 02]。
+
+一般来说，系统内字节的存储都是采用小端字节序，因此我们通常采用小端字节序读取内存数据即可。而网络中传输的字节则是大端字节序，如果需要访问网络流中的数据，需要采用大端字节序的方式才能正确读取内容。
+::: 
 
 
 ### 类型化数组（Typed Array）
 
-``` js
-new Uint8Array([100, 200, 300])
+`Typed Array`可以理解成一种抽象类，具体的实现包括`Uint8Array`、`Int8Array`、`Uint32Array`、`Int32Array`等。
+
+``` js title="构造实例"
+const buffer = new ArrayBuffer(3)
+const typedArray1 = new Uint8Array(buffer) // length: 3, byteLength: 3
+buffer === typedArray1.buffer // true
+
+const typedArray2 = new Uint32Array([65]) // length: 1, byteLength: 4
 ```
 
+``` js title="多个视图读写同一块内存"
+const typedArray3 = new Uint8Array([65, 66, 67, 68]) // length: 4, byteLength: 4
+const typedArray4 = new Uint16Array(typedArray3.buffer) // length: 2, byteLength: 4
 
+typedArray4[0] = 0;
+typedArray3[0] === 0 // true;
+typedArray3[1] === 0 // true 
+```
+
+``` js title="TypedArray是小端字节序"
+const buffer = new ArrayBuffer(4)
+
+const typedArray1 = new Uint8Array(buffer)
+const typedArray2 = new Uint16Array(buffer)
+typedArray2[0] = 255
+
+typedArray1[0] === 255 // true 
+typedArray1[1] === 0 // true
+```
 
 ### DataView
 
-> TODO
+``` js title="构造实例"
+const buffer = new ArrayBuffer(3)
+const view1 = new DataView(buffer)
+const view2 = new DataView(new Uint8Array([65, 66, 67, 68]).buffer)
+```
+
+
+``` js title="DataView默认是大端字节序"
+const buffer = new ArrayBuffer(4)
+
+const typedArray1 = new Uint8Array(buffer)
+const view = new DataView(buffer)
+
+view.setUint16(0, 255) 
+typedArray1[0] === 0 // true;
+typedArray1[1] === 255 // true
+
+view.setUint16(0, 255, true) // 也可以使用小端字节序 
+typedArray1[0] === 255 // true 
+typedArray1[1] === 0 // true
+```
 
 
 
@@ -189,7 +254,7 @@ const buffer = Buffer.from('你好') // <Buffer e4 bd a0 e5 a5 bd>
 ```
 
 :::caution 注意
-可以注意到以上编码方式的结果和下面的结果不同，这是由于在JS字符串中使用的是UTF-16编码
+可以注意到以上编码方式的结果和下面的结果不同，上面的TextEncoder和Buffer.from都采用的UTF-16进行编码，而JavaScript中字符串是通过UTF-16编码的，所以调用charCodeAt实际是进行了UTF-16编码。
 ``` js
 '你好'.charCodeAt(0).toString(16) // '4f60'
 ```
@@ -482,6 +547,79 @@ stdin.pipe(stdout)
 
 // 写法三
 pipeline(stdin, stdout)
+```
+
+
+
+## [结构化克隆算法](https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Structured_clone_algorithm)
+
+结构化克隆用来实现复杂JavaScript对象的**深拷贝**，拥有比JSON序列化更强大的能力。在`window.postMessage`、Web Worker、IndexedDB等场景下的消息默认都会被结构化克隆，我们也可以直接调用`structuredClone()`来手动克隆对象。
+
+``` js
+const original = {
+    array: new Uint8Array(10),
+    set: new Set([1, 2, 3]),
+    map: new Map([['name', 'akara']])
+}
+const target = structuredClone(original)
+target.array[0] = 1;
+console.log(original.array.length) // 10 
+console.log(original.array[0]) // 0
+```
+
+
+
+### [可转移对象](https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Transferable_objects)
+
+可以看到借助结构化克隆的能力我们可以实现多线程之间复杂对象的传递，但深拷贝对性能的影响是很大的，好消息是ArrayBuffer是**可转移对象**，这意味着我们可以把它从主线程的缓存区转移到Worker线程的缓冲区中，实现快速和高效的零拷贝，此时我们在主线程中将无法再访问该变量。
+
+在结构化克隆当中，默认是不会转移这些可转移对象的所有权的，我们需要手动指定需要转移哪些对象。下面代码介绍了`structuredClone`方法指定需要转移的对象，其他的场景如Web Worker也都是在消息传递的时候通过额外的参数进行指定。
+
+``` js
+const original = {
+    array: new Uint8Array(10),
+    set: new Set([1, 2, 3]),
+    map: new Map([['name', 'akara']])
+}
+const target = structuredClone(original, { transfer: [original.array.buffer] }) // 指定需要转移的对象
+target.array[0] = 1;
+console.log(original.array.length) // 0 
+console.log(original.array[0]) // undefined
+```
+
+
+
+常见的可转移对象包括：
+
+- [`ArrayBuffer`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer)
+- [`MessagePort`](https://developer.mozilla.org/zh-CN/docs/Web/API/MessagePort)
+- [`ReadableStream`](https://developer.mozilla.org/zh-CN/docs/Web/API/ReadableStream)
+- [`WritableStream`](https://developer.mozilla.org/zh-CN/docs/Web/API/WritableStream)
+- [`TransformStream`](https://developer.mozilla.org/zh-CN/docs/Web/API/TransformStream)
+- [`AudioData` (en-US)](https://developer.mozilla.org/en-US/docs/Web/API/AudioData)
+- [`ImageBitmap`](https://developer.mozilla.org/zh-CN/docs/Web/API/ImageBitmap)
+- [`VideoFrame` (en-US)](https://developer.mozilla.org/en-US/docs/Web/API/VideoFrame)
+- [`OffscreenCanvas`](https://developer.mozilla.org/zh-CN/docs/Web/API/OffscreenCanvas)
+- [`RTCDataChannel`](https://developer.mozilla.org/zh-CN/docs/Web/API/RTCDataChannel)
+
+
+
+## [SharedArrayBuffer](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer)
+
+在上文中，我们介绍了在Web Worker的多线程场景下，借助指定转移对象可以实现ArrayBuffer的零拷贝，这满足了我们部分的使用场景。但在一些情况下，我们期望主线程和Worker线程能够读写同一块内存，SharedArrayBuffer就是用来做这个的。
+
+``` js
+const sab = new SharedArrayBuffer(1024);
+worker.postMessage(sab);
+```
+
+
+
+但是想要开启SharedArrayBuffer的能力，我们需要设置两个 HTTP 消息头以跨域隔离你的站点：COOP和COEP
+
+``` js
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
 ```
 
 
