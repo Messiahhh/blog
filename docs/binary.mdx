@@ -144,7 +144,7 @@ const buffer = new ArrayBuffer(3) // 创建3个字节长的ArrayBuffer
 
 ### 类型化数组（Typed Array）
 
-`Typed Array`可以理解成一种抽象类，具体的实现包括`Uint8Array`、`Int8Array`、`Uint32Array`、`Int32Array`等。
+`Typed Array`可以理解成一种抽象类，具体的实现包括`Uint8Array`、`Int8Array`、`Uint32Array`、`Int32Array`，以及`Uint8ClampedArray`等特化。
 
 ``` js title="构造实例"
 const buffer = new ArrayBuffer(3)
@@ -174,6 +174,17 @@ typedArray1[0] === 255 // true
 typedArray1[1] === 0 // true
 ```
 
+``` js title="Uint8ClampedArray每个字节超出255后不会重新从0计数"
+const buffer = new ArrayBuffer(2)
+const typedArray1 = new Uint8Array(buffer)
+typedArray1[0] = 256
+typedArray1[0] === 0 // true
+
+const typedArray2 = new Uint8ClampedArray(buffer)
+typedArray2[0] = 256
+typedArray2[0] === 255 // true
+```
+
 ### DataView
 
 ``` js title="构造实例"
@@ -200,35 +211,48 @@ typedArray1[1] === 0 // true
 
 
 
-## String and Encoding
+## 字符编码
 
-### 字符集与编码方式
-无论是`Buffer`还是`ArrayBuffer`，本质上都表示着内存中的二进制数据（或者叫字节序列），通过某种编码方式我们就能获取其对应的字符串。常见的编码方式有`ascii`、`gbk`、`utf-8`、`utf-16`等。
+### 编码与解码
+无论是`Buffer`还是`ArrayBuffer`，本质上都表示着内存中的二进制数据（或者叫字节序列）。借助指定的解码方式，我们可以将其转换为对应的文本字符，常见的编码方式有`ascii`、`gbk`、`utf-8`、`utf-16`等。一般的解析函数编码格式都为`utf-8`，比如`Buffer.from`、`fs.writeFile`、`fs.readFile`，以及后文会介绍的`TextEncoder`、`TextDecoder`等。
 
-需要注意的是我们平常所说的Unicode指的是一种字符集，表示字符和码点（CodePoint）的一对一映射关系，根据采用的编码方式的不同（`utf-8`、`utf-16`、`utf-32`），同一个码点可以对应不同的二进制表示。
+需要特别注意的一点是在JavaScript中字符串的存储是**`utf-16`**的格式，通过`charCodeAt`方法我们可以查询某个JS字符在内存中对应的二进制内容。
+
 ``` js
 'A'.charCodeAt(0) // 获取字符解码后的二进制数据
-'A'.codePointAt(0) // 获取字符对应码点，特别是可以获取到非基本平面的字符的码点（即大于0xFFFF）
 ```
 
 :::info 注意
-在JavaScript中字符串是通过**`UTF-16`**进行编码的，对于无法正常编码成字符的二进制会使用`\u0003`、`\x03`这样的形式表示。
+
+对于无法通过`utf-16`解码成正常文本的字符串来说，会用类似`\u0003`、`\x03`的形式进行表示
+
 ``` js
 '\x03'.length // 1
 '\x03'.charCodeAt(0) // 3
 ```
 :::
 
+### 字符集
+上一节介绍了编码和解码，一个字符通过不同的编码方式可以转换为不同格式的二进制，而除了编码的概念外我们可能还听说过Unicode和字符集。简单来说，每个字符都和对应的码点（CodePoint）存在一对一映射关系，而根据我们采用的编码方式的不同（`utf-8`、`utf-16`、`utf-32`），同一个码点又会对应不同的二进制数据。
+
+``` js title="获取字符的码点"
+'你好'.codePointAt(0)
+```
+
 
 ### TextEncoder
-如我们在`Buffer`一节中所介绍的，在`Node.js`环境中可以通过`Buffer.from()`和`buffer.toString()`实现`Buffer`和字符串的转化（即二进制数据和字符串的编码和解码）。而在浏览器中并不存在`Buffer`变量，为了实现`ArrayBuffer`和字符串的转化，我们需要借助`TextEncoder`和`TextDecoder`来实现。
 
-`TextEncoder`和`TextDecoder`可以用来实现`TypedArray`和字符串的转化（通过UTF-8编码），而`TypedArray`可以通过`.buffer`属性访问对应的`ArrayBuffer`对象，所以间接地实现了我们的需求。
+浏览器环境下通过`TextEncoder`，可以将字符串通过`utf-8`的格式编码成二进制（返回的是Typed Array，我们可以拿到对应的buffer）
+
 ``` js
 const arr = new TextEncoder().encode('akara') // Uint8Array(5) [97, 107, 97, 114, 97, buffer: ArrayBuffer(5)]
 const buffer = arr.buffer // ArrayBuffer(5)
 ```
 
+``` js title="再次提醒，字符串变量是通过utf-16编码后存储的"
+[...new TextEncoder().encode('你')].map(i => i.toString(16)) // utf-8编码为 ['e4', 'bd', 'a0']
+'你'.charCodeAt().toString(16) // utf-16编码为 4f60
+```
 
 
 ### TextDecoder
@@ -241,24 +265,16 @@ new TextDecoder().decode(arr) // akara
 
 
 ### encodeURI
+HTTP请求报文头部的内容会经过ASCII编码后传输，这意味着我们无法在请求路径或参数上附带汉字等字符。而浏览器提供了`encodeURI`和`encodeURIComponent`方法来实现对这种复杂字符的编码，它会返回汉字以`utf-8`编码后的二进制数值的**字符表示**。
 
-HTTP请求报文头部的编码格式是ASCII，这意味着我们无法在请求路径或参数上传入汉字等字符，为了实现等价的功能，我们可以使用`encodeURI`来对汉字进行编码，它会将汉字编码为`UTF-8`编码后的字符表示。
 
 ``` js
 encodeURI('你好') // '%E4%BD%A0%E5%A5%BD'
 
 [...new TextEncoder().encode("你好")].map(item => item.toString(16)) // ['e4', 'bd', 'a0', 'e5', 'a5', 'bd']
 
-// NodeJS
-const buffer = Buffer.from('你好') // <Buffer e4 bd a0 e5 a5 bd>
+const buffer = Buffer.from('你好') // Nodejs <Buffer e4 bd a0 e5 a5 bd>
 ```
-
-:::caution 注意
-可以注意到以上编码方式的结果和下面的结果不同，上面的TextEncoder和Buffer.from都采用的UTF-16进行编码，而JavaScript中字符串是通过UTF-16编码的，所以调用charCodeAt实际是进行了UTF-16编码。
-``` js
-'你好'.charCodeAt(0).toString(16) // '4f60'
-```
-:::
 
 
 ### decodeURI
@@ -268,7 +284,7 @@ decodeURI('%E4%BD%A0%E5%A5%BD') // 你好
 ```
 
 :::info 知识点
-`encodeURIComponent`可以对更多的URL字符进行编码
+相较于`encodeURI`，`encodeURIComponent`可以对更多的URL字符进行编码
 ``` js
 encodeURI('http://baidu.com') // 'http://baidu.com'
 
@@ -278,8 +294,7 @@ encodeURIComponent('http://baidu.com') // 'http%3A%2F%2Fbaidu.com'
 
 
 ### Base64
-
-`Base64`是一种常见的编码方式，主要作用是实现二进制字节序列和字符的编码。
+上述的内容都是单个字符的编码格式，而`Base64`的作用是将任意二进制字节序转化为可见的字符。比如可以把图片的二进制数据编码成字符串进行存储等。
 
 :::info 编码原理
 
@@ -288,8 +303,7 @@ encodeURIComponent('http://baidu.com') // 'http%3A%2F%2Fbaidu.com'
 :::
 
 
-
-如上文所介绍，`Base64`是一种二进制的编码方式，但在实际生活中我们会经常见到使用`Base64`来编码字符串来进行混淆（伪加密），比如使用`window.btoa`可以将字符串转化为`Base64`形式的字符。这是因为内部会先通过`latin1`（相较于`ASCII`把最高位利用上了）将字符串编码成二进制，再应用`Base64`的规则将二进制进行转换，并映射位新的字符。
+如上文所介绍，`Base64`是一种二进制的编码方式，但在实际生活中我们会经常见到使用`Base64`来编码字符串来进行混淆（伪加密）。比如使用`window.btoa`可以将字符串转化为`Base64`形式的字符，首先我们的参数必须是binary string（即每个字符解码后都只占一个字节），`window.btoa`获取到字节序后再通过`Base64`编码成ASCII字符。
 
 `Base64`的一个常用途径是对小型图片进行编码，如通过`<img src="data:img/gif;base64,xxxxx" />`形式进行图片的加载来减少不必要的网络请求，但因为`Base64`会使得编码后的数据比原先大三分之一，因此通常不会对大图进行编码。
 
@@ -307,7 +321,7 @@ fetch('data:image/png;base64,xxxxx').then(res => res.arrayBuffer())
 window.btoa('hello akara') // aGVsbG8gYWthcmE=
 ```
 
-并且由于中文字符无法通过`ASCII`解码成二进制，所以不能直接对中文字符进行操作，但可以借助`encodeURIComponent()`来实现对应的效果
+并且由于中文字符编码后都大于一个字节，所以`window.btoa`无法直接解析中文参数，但可以借助`encodeURIComponent()`来实现对应的效果
 
 ``` js
 window.btoa(encodeURIComponent('你好')) // JUU0JUJEJUEwJUU1JUE1JUJE
