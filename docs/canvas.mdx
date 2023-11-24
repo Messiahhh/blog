@@ -20,14 +20,27 @@ canvas.toBlob(blob => {
 const dataUrl = canvas.toDataURL("image/jpeg", 1); // quality
 ```
 
+### captureStream
+获取Canvas的媒体流，从而实现Video预览或者媒体录制的能力。
+``` js
+const stream = canvas.captureStream();
+
+// 预览能力 
+video.srcObject = stream;
+
+// 录制能力
+const recorder = new MediaRecorder(stream);
+```
+
+
 ### drawImage
 
-Canvas提供了`drawImage`方法将不同的图像源绘制到我们的目标Canvas上，包括Image、Video甚至另一个Canvas对象。
+Canvas提供了`drawImage`方法将不同的图像源绘制到我们的目标Canvas上，包括Image、Video甚至另一个Canvas对象，以及后文会介绍的ImageBitMap。
 
 ``` js
-canvas.drawImage(image, 0, 0)
-canvas.drawImage(video, 0, 0)
-canvas.drawImage(canvas2, 0, 0)
+ctx.drawImage(image, 0, 0)
+ctx.drawImage(video, 0, 0)
+ctx.drawImage(canvas2, 0, 0)
 ```
 
 `drawImage`函数是个重载函数，有几种不同的用法。（注：下文中的`d`表示目标Canvas Destination，`s`表示图像源头Source）
@@ -41,6 +54,23 @@ canvas.drawImage(canvas2, 0, 0)
    ![](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage/canvas_drawimage.jpg)
 
 
+
+:::info
+`drawImage`使用不同的图像源时的行为不同，性能上也略有差异，笔者在M2 Macbook Pro下，将CPU降速6倍下用15000*15000的图片进行性能测试后得出以下结论（例子中图像源已经完全ready）。
+1. `drawImage(Image)`，主线程API调用很快，渲染线程绘制上屏较慢（将近3秒）。
+2. `drawImage(Canvas)`，主线程API调用很快，渲染线程绘制上屏也很快。**推荐**。
+3. `drawImage(OffscreenCanvas)`，主线程API调用很慢（将近3秒），渲染线程绘制上屏快。不知道为什么和用例2存在一定的差距，但总的来说需要在主线程缓存虚拟节点的内容的时候，推荐用Canvas而不是OffscreenCanvas。
+4. `drawImage(ImageBitmap)`。主线程API调用很快，渲染线程绘制上屏也很快，但本身ImageBitMap的创建也会花费时间（将近3秒）。
+
+在例子2和例子3中，我们需要先通过drawImage把图片绘制到用来缓存的Canvas/OffscreenCanvas上，但我没有立刻同步地把缓存的Canvas绘制到我们的目标Canvas上，而是使用了一个定时器来确保先执行渲染线程，从而保证我们的Canvas图像源本身已经绘制完毕ready了。
+此时整体执行顺序如下：`1. 主线程 drawImage(image) -> 2. 渲染线程 把图片绘制到Canvas上 -> 3. 主线程 drawImage(canvas) -> 4. 渲染线程 绘制Canvas到Canvas`。
+因此我实际上测量的是3和4的总时长，这也是离屏渲染的常见场景————我已经提前缓存好了Canvas，现在关心的是调用drawImage(canvas)时上屏所需要的时间。
+
+在其他的一些场景下，我们会在主线程调用了`drawImage(image)`后立刻调用`drawImage(canvas)`，相当于我们例子中把定时器去掉的效果。
+此时整体的执行顺序如下：`1. 主线程 drawImage(image) -> 2. 主线程 drawImage(canvas) -> 3. 渲染线程`。
+那么此时`drawImage(Canvas)`和`drawImage(OffscreenCanvas)`都耗时将近3秒，渲染线程上屏则迅速完成，应该是浏览器内部存在相应的优化。
+
+:::
 
 ### getImageData/putImageData
 
@@ -58,11 +88,74 @@ for (let i = 0; i < imageData.data.length; i += 4) {
 ctx.putImageData(imageData, 0, 0)
 ```
 
+:::caution
+需要特别注意的是，`getImageData`和`putImageData`都是非常耗CPU的操作，容易造成长任务，尽量使用`drawImage`等方法绘制。
+:::
 
+:::info GPU/CPU Canvas
+默认情况下Canvas的创建和绘制都是在GPU上的（硬件加速），当我们调用`getImageData`或者`putImageData`时本质都是GPU显存和CPU内存的读写数据，这是个比较耗费性能的操作。如果我们的Canvas存在很频繁的这类读写操作，可以考虑使用`willReadFrequently`标识，这样Canvas的绘制数据都会被存储在CPU内存中，减少读写操作的延时，但同时也会失去GPU硬件加速的能力。
 
+``` js
+const ctx = canvas.getContext('2d', {
+  willReadFrequently: true
+})
+```
+
+> **willReadFrequently**
+> 
+> A boolean value that indicates whether or not a lot of read-back operations are planned. This will force the use of a software (instead of hardware accelerated) 2D canvas and can save memory when calling getImageData() frequently.
+:::
 
 
 ### OffscreenCanvas
+为了缓解主线程的压力，我们可以将主线程中的部分计算和绘制放到Web Worker中。但Web Worker环境下无法访问DOM，因此浏览器提供了一个和DOM接耦的Canvas————OffscreenCanvas让我们在Web Worker中使用。它本身的绘制能力和Canvas完全一致，如果我们单纯在主线程中使用它其实和使用普通的Canvas没有任何性能的差别。
+
+
+#### transferControlToOffscreen
+在主线程调用Canvas的`transferControlToOffscreen`方法可以生成一个OffscreenCanvas实例，同时会把自身上下文的所有权转移给该实例。
+
+这意味着我们将无法直接访问Canvas的上下文，但通过OffscreenCanvas却可以拿到Canvas的上下文。而我们可以把OffscreenCanvas传递给Web Worker，即可通过在Web Woker中调用OffscreenCanvas的能力来间接绘制主线程的Canvas。
+
+``` js title="main.js"
+const canvas = document.createElement('canvas')
+canvas.width = 5000
+canvas.height = 5000
+document.body.appendChild(canvas)
+
+const offscreenCanvas = canvas.transferControlToOffscreen()
+const worker = new Worker('./worker.js')
+worker.postMessage({ canvas: offscreenCanvas }, [offscreenCanvas])
+``` 
+
+
+``` js title="worker.js"
+let canvas = null;
+self.onmessage = function(evt) {
+    if (evt.data.canvas) {
+        canvas = evt.data.canvas;
+        draw()
+    }
+}
+
+function draw() {
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'pink'
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(draw)
+    }
+}
+```
+
+#### transferToImageBitmap
+除了上述的方法外，我们也可以直接在Web Worker中初始化OffscreenCanvas实例并进行绘制操作。而为了将绘制内容同步到主线程的Canvas上，我们首先可能会想到`getImageData`但很明显这太耗性能了，又或者把OffscreenCanvas传递到主线程但我Worker线程后面还要用到所以也不行。因此浏览器给OffscreenCanvas提供了`transferToImageBitmap`的能力来解决这个问题。
+
+在前述章节中我们介绍过，`getImageData`的本质是把GPU显存中的数据写入到CPU内存中，存在不小的性能开销。而`transferToImageBitmap`可以简单理解成GPU显存到GPU显存的传递，即把OffscreenCanvas当前绘制的内容转移到另一块GPU显存空间中，性能是比较好的，并且此时如果再尝试通过`getImageData`读取OffscreenCanvas的数据会发现都已经被重置了。
+
+
+### ImageBitmap
+
+
 
 
 
@@ -88,7 +181,9 @@ function batchDraw() {
 
 #### 离屏渲染
 
-当一个虚拟节点渲染的内容不变时，我们可以将它的内容渲染到一个额外的Canvas（不一定需要是OffscreenCanvas）上，后续借助这个离屏的Canvas进行绘制。
+当我们谈论到离屏渲染的技术，总是容易和OffscreenCanvas搞混淆。事实上，OffscreenCanvas的作用就是为了让我们在Web Worker这类的环境下使用Canvas的能力，如果我们单纯在主线程使用OffscreenCanvas，这和直接使用Canvas基本没有区别。
+
+而所谓的离屏渲染，一般指的是我们除了在文档中用于绘制内容的Canvas外，额外创建新的Canvas来缓存绘制的内容。比如当某个虚拟节点要绘制的内容始终不变时，我们可以直接使用DrawImage来把离屏Canvas的内容进行绘制，从而省去了调用Canvas API来重复绘制相同内容的情况，实现性能的优化。
 
 
 
