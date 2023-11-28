@@ -35,7 +35,7 @@ const recorder = new MediaRecorder(stream);
 
 ### drawImage
 
-Canvas提供了`drawImage`方法将不同的图像源绘制到我们的目标Canvas上，包括Image、Video甚至另一个Canvas对象，以及后文会介绍的ImageBitMap。
+Canvas提供了`drawImage`方法将不同的图像源绘制到我们的目标Canvas上，图像源包括Image、Video甚至另一个Canvas对象，以及后文会介绍的ImageBitMap。
 
 ``` js
 ctx.drawImage(image, 0, 0)
@@ -57,10 +57,12 @@ ctx.drawImage(canvas2, 0, 0)
 
 :::info
 `drawImage`使用不同的图像源时的行为不同，性能上也略有差异，笔者在M2 Macbook Pro下，将CPU降速6倍下用15000*15000的图片进行性能测试后得出以下结论（例子中图像源已经完全ready）。
+> [Demo链接](https://github.com/Messiahhh/canvas-perf-demo)
+
 1. `drawImage(Image)`，主线程API调用很快，渲染线程绘制上屏较慢（将近3秒）。
 2. `drawImage(Canvas)`，主线程API调用很快，渲染线程绘制上屏也很快。**推荐**。
 3. `drawImage(OffscreenCanvas)`，主线程API调用很慢（将近3秒），渲染线程绘制上屏快。不知道为什么和用例2存在一定的差距，但总的来说需要在主线程缓存虚拟节点的内容的时候，推荐用Canvas而不是OffscreenCanvas。
-4. `drawImage(ImageBitmap)`。主线程API调用很快，渲染线程绘制上屏也很快，但本身ImageBitMap的创建也会花费时间（将近3秒）。
+4. `drawImage(ImageBitmap)`。主线程API调用很快，渲染线程绘制上屏也很快。和用例2差不多，但也需要考虑生成ImageBitMap花费的时间。
 
 在例子2和例子3中，我们需要先通过drawImage把图片绘制到用来缓存的Canvas/OffscreenCanvas上，但我没有立刻同步地把缓存的Canvas绘制到我们的目标Canvas上，而是使用了一个定时器来确保先执行渲染线程，从而保证我们的Canvas图像源本身已经绘制完毕ready了。
 此时整体执行顺序如下：`1. 主线程 drawImage(image) -> 2. 渲染线程 把图片绘制到Canvas上 -> 3. 主线程 drawImage(canvas) -> 4. 渲染线程 绘制Canvas到Canvas`。
@@ -74,7 +76,7 @@ ctx.drawImage(canvas2, 0, 0)
 
 ### getImageData/putImageData
 
-通过`getImageData`我们能够拿到Canvas指定区域对应的像素数据。可以通过指定的数学转换实现不同的效果，比如Konva的高斯模糊等滤镜就是通过纯CPU计算实现的。
+通过`getImageData`可以直接拿到Canvas指定区域对应的原始像素数据。可以通过指定的数学转换实现不同的效果，比如Konva的高斯模糊等滤镜就是通过纯CPU计算实现的。
 
 ``` js
 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
@@ -89,7 +91,7 @@ ctx.putImageData(imageData, 0, 0)
 ```
 
 :::caution
-需要特别注意的是，`getImageData`和`putImageData`都是非常耗CPU的操作，容易造成长任务，尽量使用`drawImage`等方法绘制。
+需要特别注意的是，`getImageData`和`putImageData`都是非常耗CPU的操作，容易造成长任务。除非我们确实需要对像素做一些操作，否则都应该使用`drawImage`等方法来进行绘制。
 :::
 
 :::info GPU/CPU Canvas
@@ -108,8 +110,19 @@ const ctx = canvas.getContext('2d', {
 
 
 ### OffscreenCanvas
-为了缓解主线程的压力，我们可以将主线程中的部分计算和绘制放到Web Worker中。但Web Worker环境下无法访问DOM，因此浏览器提供了一个和DOM接耦的Canvas————OffscreenCanvas让我们在Web Worker中使用。它本身的绘制能力和Canvas完全一致，如果我们单纯在主线程中使用它其实和使用普通的Canvas没有任何性能的差别。
+我们的主页面存在着互斥的JS线程（通常也被称为主线程）和渲染线程。每当主线程执行完一个JS任务，就会切到渲染线程执行渲染任务（即屏幕内容的绘制），绘制完后又回到主线程执行下一个JS任务。
+这也是为什么长任务会导致页面卡顿，一般为了保证画面稳定在60帧的刷新率，我们需要每16.6秒绘制一次，但考虑到渲染线程本身的执行也是需要时间的，所以最终留给我们的每个JS任务的执行时间是比这更短的。
 
+一般对于**前后依赖的长时间JS同步任务**，有种优化手段是利用如`setTimeout`或者`Promise.then`的能力把任务拆分成多个任务来异步执行（JS中的异步指的是单线程异步），从而避免任务过长导致页面卡顿。但任务整体的耗时是不会减少的（甚至更长了）。
+
+而对于**互相独立的同步任务（JS任务或者渲染任务）**，我们可以借助Web Worker的能力实现并行的计算和渲染。
+Web Worker都有着自己的JS线程和渲染线程，它们的执行不会影响到我们主页面的执行和渲染。而为了利用到Web Worker的渲染线程，我们需要使用到Canvas，然而不幸的是Web Worker环境下无法访问到DOM元素，为了解决这个问题浏览器在Web Worker下提供了和DOM完全接耦的Canvas————OffscreenCanvas。
+
+在上文中我们也简单提到过OffscreenCanvas，它本身的绘制能力和普通的Canvas基本一致，并没有神奇的魔法来提升我们的绘制性能。能够在Web Worker下执行，充分利用Web Worker的渲染线程能力，使它最大的亮点。比如我们可以使用下文将要介绍的`transferControlToOffscreen`，实现通过Web Worker的渲染线程绘制主页面的内容。
+
+:::info 并行处理
+Web Worker提供给我们并行计算和渲染的能力，当我们存在特别多互相独立的任务时，理论上我们可以创建无数个Web Worker来实现并行加速。但实际上Web Worker的创建开销是不小的（进程级别），所以并不现实。我们一般会借助GPU的能力，来处理各种并行计算的复杂场景。
+:::
 
 #### transferControlToOffscreen
 在主线程调用Canvas的`transferControlToOffscreen`方法可以生成一个OffscreenCanvas实例，同时会把自身上下文的所有权转移给该实例。
@@ -155,8 +168,16 @@ function draw() {
 
 ### ImageBitmap
 
-
-
+#### createImageBitMap
+``` js
+const image = new Image();
+image.src = '';
+image.onload = function() {
+  createImageBitmap(image).then(bitMap => {
+    ctx.drawImage(bitMap, 0, 0);
+  })
+}
+```
 
 
 ### 渲染引擎
