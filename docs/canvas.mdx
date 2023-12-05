@@ -56,22 +56,21 @@ ctx.drawImage(canvas2, 0, 0)
 
 
 :::info
-`drawImage`使用不同的图像源时的行为不同，性能上也略有差异，笔者在M2 Macbook Pro下，将CPU降速6倍下用15000*15000的图片进行性能测试后得出以下结论（例子中图像源已经完全ready）。
+`drawImage`使用不同的图像源时的行为不同，性能上也略有差异，笔者在M2 Macbook Pro下，将CPU降速6倍下用15000*15000的图片进行性能测试后得出以下结论。
 > [Demo链接](https://github.com/Messiahhh/canvas-perf-demo)
 
-1. `drawImage(Image)`，主线程API调用很快，渲染线程绘制上屏较慢（将近3秒）。
-2. `drawImage(Canvas)`，主线程API调用很快，渲染线程绘制上屏也很快。**推荐**。
-3. `drawImage(OffscreenCanvas)`，主线程API调用很慢（将近3秒），渲染线程绘制上屏快。不知道为什么和用例2存在一定的差距，但总的来说需要在主线程缓存虚拟节点的内容的时候，推荐用Canvas而不是OffscreenCanvas。
-4. `drawImage(ImageBitmap)`。主线程API调用很快，渲染线程绘制上屏也很快。和用例2差不多，但也需要考虑生成ImageBitMap花费的时间。
+1. `drawImage(Image)`，JS线程API调用很快，渲染线程绘制上屏较慢（将近3秒，耗时主要集中在图像解码上）。
+2. `drawImage(Canvas)`，JS线程API调用很快，渲染线程绘制上屏也很快。**推荐**。
+3. `drawImage(OffscreenCanvas)`，JS线程API调用很慢（将近3秒，耗时主要集中在图像解码上，可能是浏览器内部机制的原因图像解码完成后该函数才返回），渲染线程绘制上屏快。事实发现`drawImage(image)`到OffscreenCanvas上时不会触发图像解码，后续在把OffscreenCanvas绘制到Canvas上才会触发图像解码，因此在离屏渲染的时候应该选择使用Canvas而不是OffscreenCanvas。
+4. `drawImage(ImageBitmap)`。JS线程API调用很快，渲染线程绘制上屏也很快。和用例2差不多。**推荐**。
 
 在例子2和例子3中，我们需要先通过drawImage把图片绘制到用来缓存的Canvas/OffscreenCanvas上，但我没有立刻同步地把缓存的Canvas绘制到我们的目标Canvas上，而是使用了一个定时器来确保先执行渲染线程，从而保证我们的Canvas图像源本身已经绘制完毕ready了。
-此时整体执行顺序如下：`1. 主线程 drawImage(image) -> 2. 渲染线程 把图片绘制到Canvas上 -> 3. 主线程 drawImage(canvas) -> 4. 渲染线程 绘制Canvas到Canvas`。
-因此我实际上测量的是3和4的总时长，这也是离屏渲染的常见场景————我已经提前缓存好了Canvas，现在关心的是调用drawImage(canvas)时上屏所需要的时间。
+此时整体执行顺序如下：`1. JS线程 drawImage(image) -> 2. 渲染线程 把图片绘制到Canvas上 -> 3. JS线程 drawImage(canvas) -> 4. 渲染线程 绘制Canvas到Canvas`。
+因此我实际上测量的是3和4的总时长，这也是离屏渲染的常见场景————我已经提前缓存好了Canvas/图像源了，现在关心的是调用drawImage(canvas)时上屏所需要的时间。
 
-在其他的一些场景下，我们会在主线程调用了`drawImage(image)`后立刻调用`drawImage(canvas)`，相当于我们例子中把定时器去掉的效果。
-此时整体的执行顺序如下：`1. 主线程 drawImage(image) -> 2. 主线程 drawImage(canvas) -> 3. 渲染线程`。
-那么此时`drawImage(Canvas)`和`drawImage(OffscreenCanvas)`都耗时将近3秒，渲染线程上屏则迅速完成，应该是浏览器内部存在相应的优化。
-
+在其他的一些场景下，我们会在JS线程调用了`drawImage(image)`后立刻调用`drawImage(canvas)`，相当于我们例子中把定时器去掉的效果。
+此时整体的执行顺序如下：`1. JS线程 drawImage(image) -> 2. JS线程 drawImage(canvas) -> 3. 渲染线程`。其实这个行为和上面例子3 OffscreenCanvas是基本一致的，事实也证明此时会在步骤2的`drawImage(canvas)`
+中耗时将近3秒用来图像转码。
 :::
 
 ### getImageData/putImageData
@@ -110,7 +109,7 @@ const ctx = canvas.getContext('2d', {
 
 
 ### OffscreenCanvas
-我们的主页面存在着互斥的JS线程（通常也被称为主线程）和渲染线程。每当主线程执行完一个JS任务，就会切到渲染线程执行渲染任务（即屏幕内容的绘制），绘制完后又回到主线程执行下一个JS任务。
+我们的主页面存在着互斥的JS线程（通常也被称为JS线程）和渲染线程。每当JS线程执行完一个JS任务，就会切到渲染线程执行渲染任务（即屏幕内容的绘制），绘制完后又回到JS线程执行下一个JS任务。
 这也是为什么长任务会导致页面卡顿，一般为了保证画面稳定在60帧的刷新率，我们需要每16.6秒绘制一次，但考虑到渲染线程本身的执行也是需要时间的，所以最终留给我们的每个JS任务的执行时间是比这更短的。
 
 一般对于**前后依赖的长时间JS同步任务**，有种优化手段是利用如`setTimeout`或者`Promise.then`的能力把任务拆分成多个任务来异步执行（JS中的异步指的是单线程异步），从而避免任务过长导致页面卡顿。但任务整体的耗时是不会减少的（甚至更长了）。
@@ -125,9 +124,9 @@ Web Worker提供给我们并行计算和渲染的能力，当我们存在特别�
 :::
 
 #### transferControlToOffscreen
-在主线程调用Canvas的`transferControlToOffscreen`方法可以生成一个OffscreenCanvas实例，同时会把自身上下文的所有权转移给该实例。
+在JS线程调用Canvas的`transferControlToOffscreen`方法可以生成一个OffscreenCanvas实例，同时会把自身上下文的所有权转移给该实例。
 
-这意味着我们将无法直接访问Canvas的上下文，但通过OffscreenCanvas却可以拿到Canvas的上下文。而我们可以把OffscreenCanvas传递给Web Worker，即可通过在Web Woker中调用OffscreenCanvas的能力来间接绘制主线程的Canvas。
+这意味着我们将无法直接访问Canvas的上下文，但通过OffscreenCanvas却可以拿到Canvas的上下文。而我们可以把OffscreenCanvas传递给Web Worker，即可通过在Web Woker中调用OffscreenCanvas的能力来间接绘制JS线程的Canvas。
 
 ``` js title="main.js"
 const canvas = document.createElement('canvas')
@@ -161,7 +160,7 @@ function draw() {
 ```
 
 #### transferToImageBitmap
-除了上述的方法外，我们也可以直接在Web Worker中初始化OffscreenCanvas实例并进行绘制操作。而为了将绘制内容同步到主线程的Canvas上，我们首先可能会想到`getImageData`但很明显这太耗性能了，又或者把OffscreenCanvas传递到主线程但我Worker线程后面还要用到所以也不行。因此浏览器给OffscreenCanvas提供了`transferToImageBitmap`的能力来解决这个问题。
+除了上述的方法外，我们也可以直接在Web Worker中初始化OffscreenCanvas实例并进行绘制操作。而为了将绘制内容同步到JS线程的Canvas上，我们首先可能会想到`getImageData`但很明显这太耗性能了，又或者把OffscreenCanvas传递到JS线程但我Worker线程后面还要用到所以也不行。因此浏览器给OffscreenCanvas提供了`transferToImageBitmap`的能力来解决这个问题。
 
 在前述章节中我们介绍过，`getImageData`的本质是把GPU显存中的数据写入到CPU内存中，存在不小的性能开销。而`transferToImageBitmap`可以简单理解成GPU显存到GPU显存的传递，即把OffscreenCanvas当前绘制的内容转移到另一块GPU显存空间中，性能是比较好的，并且此时如果再尝试通过`getImageData`读取OffscreenCanvas的数据会发现都已经被重置了。
 
@@ -178,68 +177,6 @@ image.onload = function() {
   })
 }
 ```
-
-
-### 渲染引擎
-
-#### 异步批量渲染
-
-类似React中的`setState`，修改数据后会在下一个tick再进行渲染。
-
-``` js
-// konva实现
-function batchDraw() {
-    if (!this._waitingForDraw) {
-      this._waitingForDraw = true;
-      window.requestAnimFrame(() => {
-        this.draw();
-        this._waitingForDraw = false;
-      });
-    }
-    return this;
-}
-```
-
-#### 离屏渲染
-
-当我们谈论到离屏渲染的技术，总是容易和OffscreenCanvas搞混淆。事实上，OffscreenCanvas的作用就是为了让我们在Web Worker这类的环境下使用Canvas的能力，如果我们单纯在主线程使用OffscreenCanvas，这和直接使用Canvas基本没有区别。
-
-而所谓的离屏渲染，一般指的是我们除了在文档中用于绘制内容的Canvas外，额外创建新的Canvas来缓存绘制的内容。比如当某个虚拟节点要绘制的内容始终不变时，我们可以直接使用DrawImage来把离屏Canvas的内容进行绘制，从而省去了调用Canvas API来重复绘制相同内容的情况，实现性能的优化。
-
-
-
-#### 分层渲染
-
-可以使用多个Canvas进行渲染，比如把静态的内容和动态的内容进行分离。
-
-
-
-#### 局部渲染/脏区检测
-
-一般我们每次渲染时都会通过`clearRect`将画布的内容清空并进行全量绘制，一些渲染库中允许我们只重新渲染部分的内容实现性能优化。
-
-
-
-#### 包围盒与碰撞检测
-
-- AABB包围盒
-- OBB包围盒
-- 分离轴定律
-
-#### 事件机制
-
-- 取色值法
-  - 实现简单；适合不规则图形
-  - 需要额外绘制一份Canvas
-- 几何法（引射线法）
-  - 实现和计算复杂；适合规则图形
-
-
-
-#### 布局系统
-
-实现类似Flex的布局能力。
-
 
 
 ### API
@@ -292,11 +229,76 @@ ctx.restore()
 
 
 
+## 渲染引擎
+
+### 异步批量渲染
+
+类似React中的`setState`，修改数据后会在下一个tick再进行渲染。
+
+``` js
+// konva实现
+function batchDraw() {
+    if (!this._waitingForDraw) {
+      this._waitingForDraw = true;
+      window.requestAnimFrame(() => {
+        this.draw();
+        this._waitingForDraw = false;
+      });
+    }
+    return this;
+}
+```
+
+### 离屏渲染
+
+当我们谈论到离屏渲染的技术，总是容易和OffscreenCanvas搞混淆。事实上，OffscreenCanvas的作用就是为了让我们在Web Worker这类的环境下使用Canvas的能力，如果我们单纯在JS线程使用OffscreenCanvas，这和直接使用Canvas基本没有区别。
+
+而所谓的离屏渲染，一般指的是我们除了在文档中用于绘制内容的Canvas外，额外创建新的Canvas来缓存绘制的内容。比如当某个虚拟节点要绘制的内容始终不变时，我们可以直接使用DrawImage来把离屏Canvas的内容进行绘制，从而省去了调用Canvas API来重复绘制相同内容的情况，实现性能的优化。
+
+
+
+### 分层渲染
+
+可以使用多个Canvas进行渲染，比如把静态的内容和动态的内容进行分离。
+
+
+
+### 局部渲染/脏区检测
+
+一般我们每次渲染时都会通过`clearRect`将画布的内容清空并进行全量绘制，一些渲染库中允许我们只重新渲染部分的内容实现性能优化。
+
+
+
+### 包围盒与碰撞检测
+
+- AABB包围盒
+- OBB包围盒
+- 分离轴定律
+
+### 事件机制
+
+- 取色值法
+  - 实现简单；适合不规则图形
+  - 需要额外绘制一份Canvas
+- 几何法（引射线法）
+  - 实现和计算复杂；适合规则图形
+
+
+
+### 布局系统
+
+实现类似Flex的布局能力。
+
+
+
 
 ### 性能优化
 
 - 减少上下文切换
 
+### Konva源码解析
+
+Konva提供了一棵由虚拟节点组成的树，每当我们修改到数据源（添加节点、删除节点、修改属性等），都会执行`Layer`
 
 
 
