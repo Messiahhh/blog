@@ -109,15 +109,15 @@ const ctx = canvas.getContext('2d', {
 
 
 ### OffscreenCanvas
-我们的主页面存在着互斥的JS线程（通常也被称为JS线程）和渲染线程。每当JS线程执行完一个JS任务，就会切到渲染线程执行渲染任务（即屏幕内容的绘制），绘制完后又回到JS线程执行下一个JS任务。
+我们的主页面存在着互斥的JS线程（通常也被称为主线程）和渲染线程。每当JS线程执行完一个JS任务，就会切到渲染线程执行渲染任务（即屏幕内容的绘制），绘制完后又回到JS线程执行下一个JS任务。
 这也是为什么长任务会导致页面卡顿，一般为了保证画面稳定在60帧的刷新率，我们需要每16.6秒绘制一次，但考虑到渲染线程本身的执行也是需要时间的，所以最终留给我们的每个JS任务的执行时间是比这更短的。
 
 一般对于**前后依赖的长时间JS同步任务**，有种优化手段是利用如`setTimeout`或者`Promise.then`的能力把任务拆分成多个任务来异步执行（JS中的异步指的是单线程异步），从而避免任务过长导致页面卡顿。但任务整体的耗时是不会减少的（甚至更长了）。
 
 而对于**互相独立的同步任务（JS任务或者渲染任务）**，我们可以借助Web Worker的能力实现并行的计算和渲染。
-Web Worker都有着自己的JS线程和渲染线程，它们的执行不会影响到我们主页面的执行和渲染。而为了利用到Web Worker的渲染线程，我们需要使用到Canvas，然而不幸的是Web Worker环境下无法访问到DOM元素，为了解决这个问题浏览器在Web Worker下提供了和DOM完全接耦的Canvas————OffscreenCanvas。
+Web Worker都有着自己的JS线程和渲染线程，它们的执行不会影响到我们主页面的执行和渲染。而为了利用到Web Worker的渲染线程，我们需要使用到Canvas，然而不幸的是Web Worker环境下无法访问到DOM元素，为了解决这个问题浏览器在Web Worker下提供了和DOM完全解耦的Canvas————OffscreenCanvas。
 
-在上文中我们也简单提到过OffscreenCanvas，它本身的绘制能力和普通的Canvas基本一致，并没有神奇的魔法来提升我们的绘制性能。能够在Web Worker下执行，充分利用Web Worker的渲染线程能力，使它最大的亮点。比如我们可以使用下文将要介绍的`transferControlToOffscreen`，实现通过Web Worker的渲染线程绘制主页面的内容。
+在上文中我们也简单提到过OffscreenCanvas，它本身的绘制能力和普通的Canvas基本一致，并没有神奇的魔法来提升我们的绘制性能。能够在Web Worker下执行，充分利用Web Worker的渲染线程能力，是它最大的亮点。比如我们可以使用下文将要介绍的`transferControlToOffscreen`，实现通过Web Worker的渲染线程绘制主页面的内容。
 
 :::info 并行处理
 Web Worker提供给我们并行计算和渲染的能力，当我们存在特别多互相独立的任务时，理论上我们可以创建无数个Web Worker来实现并行加速。但实际上Web Worker的创建开销是不小的（进程级别），所以并不现实。我们一般会借助GPU的能力，来处理各种并行计算的复杂场景。
@@ -179,7 +179,7 @@ image.onload = function() {
 ```
 
 
-### API
+### 绘制 API
 
 #### 矩形绘制
 
@@ -296,12 +296,6 @@ function batchDraw() {
 
 - 减少上下文切换
 
-### Konva源码解析
-
-Konva提供了一棵由虚拟节点组成的树，每当我们修改到数据源（添加节点、删除节点、修改属性等），都会执行`Layer`
-
-
-
 
 ## WebGL
 
@@ -315,27 +309,90 @@ const webgl = canvas.getContext('webgl');
 const webgl2 = canvas.getContext('webgl2');
 ```
 
+### 关键术语
+> WebGL上下文有大量的方法，弄清楚这些方法背后做了什么可以帮助我们更好地理解WebGL。[可视化网站](https://webglfundamentals.org/webgl/lessons/resources/webgl-state-diagram.html?exampleId=triangle#no-help)
+
+#### ARRAY_BUFFER_BINDING（gl.ARRAY_BUFFER）
+ARRAY_BUFFER_BINDING表示WebGL上下文当前所绑定的GPU Buffer，默认为空。通过`gl.createBuffer()`可以创建多个GPU Buffer，并通过`gl.bindBuffer(gl.ARRAY_BUFFER)`来切换当前所绑定的Buffer，再通过`gl.bufferData(gl.ARRAY_BUFFER, xxx)`来写入数据到绑定的Buffer中。
+
+``` js
+const buffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1.0, 1.0]), this.gl.STATIC_DRAW);
+```
+
+#### FRAMEBUFFER_BINDING（gl.FRAMEBUFFER）
+FRAMEBUFFER_BINDING表示WebGL上下文当前所绑定的帧缓冲对象，默认为当前Canvas对象（有的地方会叫做默认帧缓冲）。通过`gl.createFrameBuffer()`可以创建多个帧缓冲对象，并通过`gl.bindFrameBuffer(gl.FRAMEBUFFER, xxx)`来切换当前所绑定的帧缓冲对象，我们会在当前所绑定的帧缓冲上绘制画面。因此可以用来实现离屏渲染，比如可以把第一次绘制写入的帧缓冲作为第二次绘制的纹理，来实现多个后处理效果的串联。
+
+``` js
+const fbo = gl.createFrameBuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+```
+
+#### ACTIVE_TEXTURE（gl.TEXTURE_2D）
+纹理的绑定类似上面两个，但稍微复杂一点。简单来说，WebGL上下文存在8个纹理单元（BINDING），默认选中第0个纹理单元。
+
+通过`gl.activeTexture(gl['TEXTURE' + 单元号])`来设置当前选中的纹理单元，并通过`gl.bindTexture(gl.TEXTURE_2D, xxx)`来切换当前纹理单元所绑定的纹理数据，再通过`gl.texImage2D(gl.TEXTURE_2D, xxx)`来写入数据到目标纹理，一般我们还需要再通过`gl.texParameteri(gl.TEXTURE_2D)`来设置纹理的参数。
+
+``` js
+gl.activeTexture(gl.TEXTURE0) // 选中0号纹理单元
+gl.activeTexture(gl.TEXTURE7) // 选中7号纹理单元 
+
+const texture = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, texture);
+gl.texImage2D( // 写入数据到纹理
+  gl.TEXTURE_2D,
+  0,
+  gl.RGBA,
+  gl.RGBA,
+  gl.UNSIGNED_BYTE,
+  new Uint8Array([
+   255, 0, 0, 255,
+   0, 255, 0, 255,
+  ])
+);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); // 设置纹理参数
+```
+
+#### VERTEX_ARRAY_BINDING
+
+- 顶点缓冲对象（VBO）：一般用来保存顶点坐标、顶点颜色、UV信息、法线信息的Buffer也被称为顶点缓冲对象VBO。
+
+- 顶点数组对象（VAO）：我们绘制的每一个顶点，都对应一次顶点着色器的执行，而顶点着色器中的Attribute的取值需要由我们在外部指定。简单来说WebGL上下文中会维护一个类似于Map的顶点数组对象（VAO），记录了每个Attribute应该从哪个Buffer（VBO）中以多大的步长（size）和偏移值（offset）取值。
+
+``` js
+const location = gl.getAttribLocation(program, 'akara');
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+gl.enableVertexAttribArray(location);
+gl.vertexAttribPointer( // 这里有个隐式依赖，会把参数信息和当前绑定的gl.ARRAY_BUFFER一起注册到VAO中
+    location,     // location
+    3,            // size (components per iteration)
+    gl.FLOAT,     // type of to get from buffer
+    false,        // normalize
+    0,            // stride (bytes to advance each iteration)
+    0,            // offset (bytes from start of buffer)
+);
+```
+
+#### CURRENT_PROGRAM
+一个WebGL上下文可以存在多个程序，并通过`gl.useProgram()`来切换程序。这也是为什么类似`gl.getAttribLocation()`和`gl.getUniformLocation()`的方法的第一个参数是目标程序。
+
+#### VIEWPORT
+顶点着色器的作用是把顶点坐标重新映射到横纵-1到+1的裁剪空间上，我们需要通过设置Viewport来告诉WebGl我们的屏幕空间大小，从而WebGl内部会实现裁剪空间到屏幕空间的转换。
+``` js
+gl.viewport(0, 0, 100, 100)
+```
 
 
 ### 渲染管线
 
-1. CPU准备工作。着色器的编译、链接；顶点数据、顶点颜色、顶点UV坐标、顶点法线等数据的写入；纹理数据的写入等。
-
-2. 顶点着色器。逐顶点执行，我们的顶点数据通常由3D建模软件导出，我们会先通过**模型矩阵Model**将模型空间转变为世界空间，再通过**视图矩阵View**将世界空间转变为观察空间，再通过**投影矩阵Projection（透视投影或正交投影）**转变为**齐次裁剪空间（Clip Space）**。以上的变换统称MVP变化。裁剪空间中坐标的XYZ三维都位于[-1,1]之间，W分量通常为1。后续（在第三步裁剪之后）GPU内部会通过**透视除法**将四维顶点转化成三维的**标准化设备坐标（NDC）**。
-
-   ![](https://img-blog.csdn.net/20171229111837073?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmllemhpaHVh/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
-
-3. 图元装配、裁剪。根据指令将顶点组装成图元（线、三角形），并把齐次裁剪空间外的内容剔除。
-
-4. 光栅化。
-
-   ![img](https://img-blog.csdnimg.cn/b26e74a5ee5b4f8781cbe684ac25ebaa.png)
-
-5. 片元着色器。GPU会将通过**视口变化**将NDC坐标转化成**屏幕空间（Screen Space）**坐标，并传入给片元着色器的`gl_FragCoord`。片元着色器逐屏幕像素执行，通常在此时实现滤镜（如通过LUT）或后处理（各种特效、模糊、边缘检测），最终将数据写入帧缓冲（显存）中。
-
-6. 深度测试
-
-
+1. 准备工作。着色器的编译、程序的链接、顶点数据写入VBO、设置VAO信息、设置纹理数据、设置Uniform等。
+2. 调用`gl.drawArrays()`发出绘制指令
+3. 我们绘制多少个顶点，就会执行多少次顶点着色器。顶点着色器的目的是把顶点坐标转换成齐次裁剪空间下的坐标。一般我们的顶点数据是通过3D建模软件导出，我们会先通过**模型矩阵Model**将模型空间转变为世界空间，再通过**视图矩阵View**将世界空间转变为观察空间，再通过**投影矩阵Projection（透视投影或正交投影）**转变为**齐次裁剪空间（Clip Space）**。以上的变换统称MVP变化。裁剪空间中坐标的XYZ三维都位于[-1,1]之间，W分量通常为1。
+![](https://img-blog.csdn.net/20171229111837073?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmllemhpaHVh/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+4. GPU内部通过透视除法将裁剪空间转换为**标准化设备坐标（NDC）**、再通过屏幕映射把-1到+1映射成我们的视口Viewport大小。再通过图元装配形成图形（如三角形），然后计算出图元所包含的像素区域，再会通过插值算出每个像素应该对应的Varying值用于后续像素着色器的计算。![img](https://img-blog.csdnimg.cn/b26e74a5ee5b4f8781cbe684ac25ebaa.png)
+5. 逐像素执行像素着色器（片段着色器），输出的内容会写入到帧缓冲，显示器会定期读取来显示内容。
+6. 深度测试等
 
 
 
@@ -367,23 +424,56 @@ void main() {
 ```
 ![fs](https://img-blog.csdn.net/20140917135608231)
 
-#### atrribute
-
-通常我们通过CPU将顶点坐标、颜色/UV、法向量写入GPU的显存当中，CPU的每个线程/管道会逐个读取（因此对于不同的线程，该值通常是不同的）对应的数据交给**顶点着色器Vertex Shade**，这些值通常用`attribute`声明。
-
-
-
-#### uniform
-
-同样也是通过CPU写入，但`uniform`可以被顶点着色器以及片段着色器访问，另外对于不同GPU线程来说该值是相同的。
-
-
+#### attribute
+`attribute`是顶点着色器的参数，运行时GPU会根据我们提前在VAO中的设置来从Buffer中读取。一般来说我们会使用`attribute`来记录顶点坐标、颜色、UV、法向量等信息。
 
 #### varying
+在顶点着色器中，我们除了会把数据写入到`gl_Position`外，可能还会把数据写入到`varying`类型的变量中。后续图元装配后，会通过插值计算出各个像素中对应的`varying`变量的值，然后这些值就会作为像素着色器的参数。
 
-该值通常在顶点着色器中定义和赋值，后续对应的片段着色器中可以取到对应的值。插值。
+#### uniform
+`uniform`可以被顶点着色器以及片段着色器访问，可以理解成纯粹的全局变量。它的值需要我们在JS代码中手动设置。
+``` js
+const location1 = gl.getUniformLocation(program, "u_1");
+const location2 = gl.getUniformLocation(program, "u_2");
 
+gl.uniform1f(location1, 1.);
+gl.uniform1i(location2, 2);
+```
+#### texture
+纹理也是一种特殊的全局变量`uniform`，在Shader程序中它的数据类型为`sampler2D`，它的设置方式也类似普通的`uniform`。
+``` js
+const texture = gl.createTexture();
+const unit = 3 // 我们的例子中随便选了个3号单元
+gl.activeTexture(gl['TEXTURE' + unit]) // 选中3号单元
+gl.bindTexture(gl.TEXTURE_2D, texture) // 绑定纹理到3号单元
+gl.texImage2D( // 写入数据到纹理
+  gl.TEXTURE_2D,
+  0,
+  gl.RGBA,
+  gl.RGBA,
+  gl.UNSIGNED_BYTE,
+  new Uint8Array([
+   255, 0, 0, 255,
+   0, 255, 0, 255,
+  ])
+);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); // 设置纹理参数
 
+const location = gl.getUniformLocation(program, 'u_texture');
+gl.uniform1i(location, unit); // 设置纹理uniform时我们只需要告诉GPU纹理绑定在哪个纹理单元即可。
+```
+
+``` glsl
+precision mediump float;
+ 
+uniform sampler2D u_texture;
+ 
+void main() {
+   vec2 texcoord = vec2(0.5, 0.5); // 纹理的左下角为(0, 0)，右上角为(1, 1)，因此这里的(0.5, 0.5)为纹理中心点。一般这个uv值是通过varying传到像素着色器的。
+   gl_FragColor = texture2D(u_texture, texcoord); // 纹理采样
+}
+
+```
 
 
 
