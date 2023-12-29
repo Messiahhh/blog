@@ -196,7 +196,7 @@ const sidebars = {
     {
       type: 'doc',
       id: 'canvas',
-      label: 'Canvas学习'
+      label: 'Canvas And WebGL'
     },
     '音视频学习',
     "git",
