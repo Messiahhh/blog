@@ -597,7 +597,7 @@ vec2 output = a * x + b * y;
 特别是对于`vec2 output = a * x + b * y`，我们可以把它看作把`vec2(x, y)`映射成了新的向量`vec2 output`，即向量的线性映射。我们一般也用以下写法进行表示，没错，矩阵右乘向量的实际意义就是线性映射。你可以把矩阵理解成一个函数，它会把作为参数的向量映射为新的向量！
 
 ``` glsl
-vec2 result3 = mat2(a, b) * vec(x, y);
+vec2 result3 = mat2(a, b) * vec2(x, y);
 ```
 
 
@@ -628,7 +628,7 @@ mat2 result = mat2(vec2(1., 1.), vec2(2., 2.)) * mat2(vec2(1., 1.), vec2(2., 2.)
 #### 实际运用
 通过矩阵右乘向量，我们可以把一个向量映射成新的向量；或者通过矩阵乘法，我们可以把一组向量映射成一组新的向量。比如说，我们可以实现坐标（向量）的缩放、旋转和裁剪、旋转等。
 
-比如对于二维坐标`vec2 point = vec3(x, y)`，通过简单的向量数乘即可把它拉伸为原来的数倍：`vec2 output = point * 2.`。如果想要进行不等比例的拉伸，则可以使用矩阵右乘向量：`vec3 output = mat2(vec2(2., 0.), vec2(0., 3.)) * point`。
+比如对于二维坐标`vec2 point = vec2(x, y)`，通过简单的向量数乘即可把它拉伸为原来的数倍：`vec2 output = point * 2.`。如果想要进行不等比例的拉伸，则可以使用矩阵右乘向量：`vec3 output = mat2(vec2(2., 0.), vec2(0., 3.)) * point`。
 
 我们可以在拉伸后再进行旋转操作，那么只需要再额外左乘一个旋转矩阵即可。从函数的角度上来看是这样的：`新坐标=旋转矩阵(拉伸矩阵(原坐标))`，需要注意矩阵的执行顺序是会影响最终结果的，有的时候我们也会把旋转矩阵和拉伸矩阵合并成一个矩阵来使用（即对这两个矩阵进行乘法运算，即可得到旋转拉伸矩阵）。
 
@@ -729,3 +729,60 @@ float random (vec2 st) {
 2. https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial
 3. https://shaderific.com/glsl/common_functions.html
 4. https://en.wikipedia.org/wiki/Blend_modes
+
+
+## Three.JS
+WebGL本质是一个光栅化API，基于它可以实现更加上层的三维库（Three.JS、Babylon等），这些库通常会抽象出场景、相机、光照、模型等概念，学习这些三维库的使用的同时也能够帮助我们更好的理解WebGL。
+
+
+### 几何体（Geometry）
+Three.JS的几何体Geometry相当于一组顶点数据、面索引（face indices）、顶点颜色、顶点UV、法向量的集合。这里有个新的概念face indices，我们为了绘制一个矩形也需要六个顶点坐标，而且其中还有两个坐标是完全重复的，因此我们可以去除重复的顶点坐标，并通过顶点的索引来表示一个三角面由哪些顶点构成。
+
+``` js
+const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+```
+### 材质（Material）
+Three.JS的材质Material可以理解成一个GLSL的Program，包含一组内置的顶点着色器和片段着色器，并且它会把着色器中用到的Uniform暴露出来给我们修改。
+
+在我们前面的章节中一个WebGL上下文只持有一个Program程序，这比较方便我们的日常使用，我们可以通过一次`gl.drawArrays()`来绘制场景中的若干个几何体，这只会对应同一个顶点/片段着色器的执行。而在Three.JS中，每个Material都可以理解成一个Program，这样带来的好处是对于不同的几何体我们可以使用不同的着色器进行渲染来实现不同的视觉效果；
+这也意味着我们需要多次`gl.drawArrays()`来给GPU发送绘制指令，我们也可以通过合批处理实现性能优化，把相同材质/Program的绘制调用都合并成一个。
+
+``` js
+const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+
+```
+
+### 网格模型（Mesh）
+我们通过Mesh来把几何体和材质绑定在一起，这样绘制这个几何体的时候就会应用对应的材质了。
+``` js
+const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+const cube = new THREE.Mesh( geometry, material );
+const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+
+scene.add( cube );
+```
+
+
+### 相机Camera
+Three.JS提供了几种不同类型的相机，这对应了不同的投影方式（正交投影、透视投影），也意味着对应着不同的视锥体。
+
+#### 正交投影相机 OrthographicCamera
+``` js
+const camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 ); // left、right、top、bottom、near、far
+scene.add( camera );
+```
+
+#### 透视投影相机 PerspectiveCamera
+``` js
+const camera = new THREE.PerspectiveCamera( 45, width / height, 1, 1000 ); // fov、apsect、zNear、zFar
+scene.add( camera );
+```
+
+### 光源（Light）
+#### 方向光（Direction Light）
+
+#### 点光源（Point Light）
+
+#### 聚光灯（Spot Light）
+
+
