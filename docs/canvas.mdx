@@ -378,7 +378,8 @@ gl.vertexAttribPointer( // 这里有个隐式依赖，会把参数信息和当�
 一个WebGL上下文可以存在多个程序，并通过`gl.useProgram()`来切换程序。这也是为什么类似`gl.getAttribLocation()`和`gl.getUniformLocation()`的方法的第一个参数是目标程序。
 
 #### VIEWPORT
-顶点着色器的作用是把顶点坐标重新映射到横纵-1到+1的裁剪空间上，我们需要通过设置Viewport来告诉WebGl我们的屏幕空间大小，从而WebGl内部会实现裁剪空间到屏幕空间的转换。
+裁剪空间坐标会被GPU自动通过透视触发转换为标准化设备坐标NDC，我们还需要设置Viewport来告诉WebGl屏幕空间的大小，为后续像素着色器的执行做准备。
+
 ``` js
 gl.viewport(0, 0, 100, 100)
 ```
