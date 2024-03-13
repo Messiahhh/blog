@@ -1,0 +1,223 @@
+# Canvas
+``` js
+const canvas = document.querySelector('canvas');
+const context = canvas.getContext('2d');
+```
+
+## toBlob
+
+``` js
+canvas.toBlob(blob => {
+  const url = URL.createObjectURL(blob);
+}, "image/jpeg", 1) // quality
+```
+
+## toDataURL
+
+``` js
+const dataUrl = canvas.toDataURL("image/jpeg", 1); // quality
+```
+
+## captureStream
+获取Canvas的媒体流，从而实现Video预览或者媒体录制的能力。
+``` js
+const stream = canvas.captureStream();
+
+// 预览能力 
+video.srcObject = stream;
+
+// 录制能力
+const recorder = new MediaRecorder(stream);
+```
+
+
+## drawImage
+
+Canvas提供了`drawImage`方法将不同的图像源绘制到我们的目标Canvas上，图像源包括Image、Video甚至另一个Canvas对象，以及后文会介绍的ImageBitMap。
+
+``` js
+ctx.drawImage(image, 0, 0)
+ctx.drawImage(video, 0, 0)
+ctx.drawImage(canvas2, 0, 0)
+```
+
+`drawImage`函数是个重载函数，有几种不同的用法。（注：下文中的`d`表示目标Canvas Destination，`s`表示图像源头Source）
+
+1. `drawImage(source, dx, dy)`。简单的用法，以`(dx, dy)`为原点绘制目标图像。
+
+2. `drawImage(source, dx, dy, dWidth, dHeight)`。和用法一类似，额外提供了`width`和`height`的参数允许我们调整所绘制的图像的大小，从而实现类似缩放的效果。
+
+3. `drawImage(source, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)`。这个用法调整了参数的顺序，可用来裁剪数据源的部分区域进行绘制。
+
+   ![](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage/canvas_drawimage.jpg)
+
+
+
+:::info
+`drawImage`使用不同的图像源时的行为不同，性能上也略有差异，笔者在M2 Macbook Pro下，将CPU降速6倍下用15000*15000的图片进行性能测试后得出以下结论。
+> [Demo链接](https://github.com/Messiahhh/canvas-perf-demo)
+
+1. `drawImage(Image)`，JS线程API调用很快，渲染线程绘制上屏较慢（将近3秒，耗时主要集中在图像解码上）。
+2. `drawImage(Canvas)`，JS线程API调用很快，渲染线程绘制上屏也很快。**推荐**。
+3. `drawImage(OffscreenCanvas)`，JS线程API调用很慢（将近3秒，耗时主要集中在图像解码上，可能是浏览器内部机制的原因图像解码完成后该函数才返回），渲染线程绘制上屏快。事实发现`drawImage(image)`到OffscreenCanvas上时不会触发图像解码，后续在把OffscreenCanvas绘制到Canvas上才会触发图像解码，因此在离屏渲染的时候应该选择使用Canvas而不是OffscreenCanvas。
+4. `drawImage(ImageBitmap)`。JS线程API调用很快，渲染线程绘制上屏也很快。和用例2差不多。**推荐**。
+
+在例子2和例子3中，我们需要先通过drawImage把图片绘制到用来缓存的Canvas/OffscreenCanvas上，但我没有立刻同步地把缓存的Canvas绘制到我们的目标Canvas上，而是使用了一个定时器来确保先执行渲染线程，从而保证我们的Canvas图像源本身已经绘制完毕ready了。
+此时整体执行顺序如下：`1. JS线程 drawImage(image) -> 2. 渲染线程 把图片绘制到Canvas上 -> 3. JS线程 drawImage(canvas) -> 4. 渲染线程 绘制Canvas到Canvas`。
+因此我实际上测量的是3和4的总时长，这也是离屏渲染的常见场景————我已经提前缓存好了Canvas/图像源了，现在关心的是调用drawImage(canvas)时上屏所需要的时间。
+
+在其他的一些场景下，我们会在JS线程调用了`drawImage(image)`后立刻调用`drawImage(canvas)`，相当于我们例子中把定时器去掉的效果。
+此时整体的执行顺序如下：`1. JS线程 drawImage(image) -> 2. JS线程 drawImage(canvas) -> 3. 渲染线程`。其实这个行为和上面例子3 OffscreenCanvas是基本一致的，事实也证明此时会在步骤2的`drawImage(canvas)`
+中耗时将近3秒用来图像转码。
+:::
+
+## getImageData/putImageData
+
+通过`getImageData`可以直接拿到Canvas指定区域对应的原始像素数据。可以通过指定的数学转换实现不同的效果，比如Konva的高斯模糊等滤镜就是通过纯CPU计算实现的。
+
+``` js
+const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+
+for (let i = 0; i < imageData.data.length; i += 4) {
+  	imageData.data[i] = 255; // red channel
+    imageData.data[i + 1] = 0; // green channel
+    imageData.data[i + 2] = 255; // blue channel
+    imageData.data[i + 3] = 200; // alpha channel
+}
+ctx.putImageData(imageData, 0, 0)
+```
+
+:::caution
+需要特别注意的是，`getImageData`和`putImageData`都是非常耗CPU的操作，容易造成长任务。除非我们确实需要对像素做一些操作，否则都应该使用`drawImage`等方法来进行绘制。
+:::
+
+:::info GPU/CPU Canvas
+默认情况下Canvas的创建和绘制都是在GPU上的（硬件加速），当我们调用`getImageData`或者`putImageData`时本质都是GPU显存和CPU内存的读写数据，这是个比较耗费性能的操作。如果我们的Canvas存在很频繁的这类读写操作，可以考虑使用`willReadFrequently`标识，这样Canvas的绘制数据都会被存储在CPU内存中，减少读写操作的延时，但同时也会失去GPU硬件加速的能力。
+
+``` js
+const ctx = canvas.getContext('2d', {
+  willReadFrequently: true
+})
+```
+
+> **willReadFrequently**
+> 
+> A boolean value that indicates whether or not a lot of read-back operations are planned. This will force the use of a software (instead of hardware accelerated) 2D canvas and can save memory when calling getImageData() frequently.
+:::
+
+
+## OffscreenCanvas
+我们的主页面存在着互斥的JS线程（通常也被称为主线程）和渲染线程。每当JS线程执行完一个JS任务，就会切到渲染线程执行渲染任务（即屏幕内容的绘制），绘制完后又回到JS线程执行下一个JS任务。
+这也是为什么长任务会导致页面卡顿，一般为了保证画面稳定在60帧的刷新率，我们需要每16.6秒绘制一次，但考虑到渲染线程本身的执行也是需要时间的，所以最终留给我们的每个JS任务的执行时间是比这更短的。
+
+一般对于**前后依赖的长时间JS同步任务**，有种优化手段是利用如`setTimeout`或者`Promise.then`的能力把任务拆分成多个任务来异步执行（JS中的异步指的是单线程异步），从而避免任务过长导致页面卡顿。但任务整体的耗时是不会减少的（甚至更长了）。
+
+而对于**互相独立的同步任务（JS任务或者渲染任务）**，我们可以借助Web Worker的能力实现并行的计算和渲染。
+Web Worker都有着自己的JS线程和渲染线程，它们的执行不会影响到我们主页面的执行和渲染。而为了利用到Web Worker的渲染线程，我们需要使用到Canvas，然而不幸的是Web Worker环境下无法访问到DOM元素，为了解决这个问题浏览器在Web Worker下提供了和DOM完全解耦的Canvas————OffscreenCanvas。
+
+在上文中我们也简单提到过OffscreenCanvas，它本身的绘制能力和普通的Canvas基本一致，并没有神奇的魔法来提升我们的绘制性能。能够在Web Worker下执行，充分利用Web Worker的渲染线程能力，是它最大的亮点。比如我们可以使用下文将要介绍的`transferControlToOffscreen`，实现通过Web Worker的渲染线程绘制主页面的内容。
+
+:::info 并行处理
+Web Worker提供给我们并行计算和渲染的能力，当我们存在特别多互相独立的任务时，理论上我们可以创建无数个Web Worker来实现并行加速。但实际上Web Worker的创建开销是不小的（进程级别），所以并不现实。我们一般会借助GPU的能力，来处理各种并行计算的复杂场景。
+:::
+
+## transferControlToOffscreen
+在JS线程调用Canvas的`transferControlToOffscreen`方法可以生成一个OffscreenCanvas实例，同时会把自身上下文的所有权转移给该实例。
+
+这意味着我们将无法直接访问Canvas的上下文，但通过OffscreenCanvas却可以拿到Canvas的上下文。而我们可以把OffscreenCanvas传递给Web Worker，即可通过在Web Woker中调用OffscreenCanvas的能力来间接绘制JS线程的Canvas。
+
+``` js title="main.js"
+const canvas = document.createElement('canvas')
+canvas.width = 5000
+canvas.height = 5000
+document.body.appendChild(canvas)
+
+const offscreenCanvas = canvas.transferControlToOffscreen()
+const worker = new Worker('./worker.js')
+worker.postMessage({ canvas: offscreenCanvas }, [offscreenCanvas])
+``` 
+
+
+``` js title="worker.js"
+let canvas = null;
+self.onmessage = function(evt) {
+    if (evt.data.canvas) {
+        canvas = evt.data.canvas;
+        draw()
+    }
+}
+
+function draw() {
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'pink'
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(draw)
+    }
+}
+```
+
+## transferToImageBitmap
+除了上述的方法外，我们也可以直接在Web Worker中初始化OffscreenCanvas实例并进行绘制操作。而为了将绘制内容同步到JS线程的Canvas上，我们首先可能会想到`getImageData`但很明显这太耗性能了，又或者把OffscreenCanvas传递到JS线程但我Worker线程后面还要用到所以也不行。因此浏览器给OffscreenCanvas提供了`transferToImageBitmap`的能力来解决这个问题。
+
+在前述章节中我们介绍过，`getImageData`的本质是把GPU显存中的数据写入到CPU内存中，存在不小的性能开销。而`transferToImageBitmap`可以简单理解成GPU显存到GPU显存的传递，即把OffscreenCanvas当前绘制的内容转移到另一块GPU显存空间中，性能是比较好的，并且此时如果再尝试通过`getImageData`读取OffscreenCanvas的数据会发现都已经被重置了。
+
+
+## ImageBitmap
+
+## createImageBitMap
+``` js
+const image = new Image();
+image.src = '';
+image.onload = function() {
+  createImageBitmap(image).then(bitMap => {
+    ctx.drawImage(bitMap, 0, 0);
+  })
+}
+```
+
+
+## 绘制 API
+
+## 矩形绘制
+
+- `fillRect()`
+- `strokeRect()`
+- `clearRect()`
+
+
+
+## 路径绘制
+
+路径即为多个点的连线。
+
+``` js
+ctx.beginPath()
+
+ctx.fill()
+ctx.stroke()
+
+ctx.closePath()
+```
+
+
+
+## 坐标变换
+
+- `ctx.translate(x, y)`
+- `ctx.rotate(radians)`。将坐标系顺时针旋转，弧度制比如`ctx.rotate(Math.PI)`
+- `ctx.scale(x, y)`
+- `ctx.transform(a, b, c, d, e, f)`
+
+
+
+## save/restore
+
+Canvas的2D上下文的本质是一个状态机，因此它还提供了保存和恢复当前状态的能力。
+
+``` js
+ctx.save()
+ctx.tranlate(10, 10)
+ctx.fillRect(0, 0, 100, 100)
+ctx.restore()
+```

@@ -1,0 +1,79 @@
+# Three.JS
+WebGL本质是一个光栅化API，基于它可以实现更加上层的三维库（Three.JS、Babylon等），这些库通常会抽象出场景、相机、光照、模型等概念，学习这些三维库的使用的同时也能够帮助我们更好的理解WebGL。
+
+## 几何体（Geometry）
+Three.JS的几何体（Geometry）相当于一组顶点坐标、面索引（face indices）、顶点颜色、顶点UV信息、法向量的集合。
+
+``` js
+const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+```
+
+:::info face indices
+这里有个新的概念face indices，我们为了绘制一个矩形也需要六个顶点坐标，而且其中还有两个坐标是完全重复的，因此我们可以去除重复的顶点坐标，并通过顶点的索引来表示一个三角面由哪些顶点构成。
+:::
+
+## 材质（Material）
+Three.JS的材质（Material）可以理解成一个WebGL的Program，包含一组内置的顶点着色器和片段着色器，并且它会把着色器中用到的Uniform暴露出来给我们修改。
+
+在我们前面的章节中一个WebGL上下文只持有一个Program程序，这比较方便我们的日常使用，我们可以通过一次`gl.drawArrays()`来绘制场景中的若干个几何体，这只会对应同一个顶点/片段着色器的执行。而在Three.JS中，每个Material都可以理解成一个Program，这样带来的好处是对于不同的几何体我们可以使用不同的着色器进行渲染来实现不同的视觉效果；
+这也意味着我们需要多次`gl.drawArrays()`来给GPU发送绘制指令，我们也可以通过合批处理实现性能优化，把相同材质/Program的绘制调用都合并成一个。
+
+``` js
+const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+
+```
+
+## 网格模型（Mesh）
+我们通过Mesh来把几何体和材质绑定在一起，这样绘制这个几何体的时候就会应用对应的材质了。模型除了Mesh外还有Line和Point，分别用来绘制线段和点。
+
+
+``` js
+const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+const cube = new THREE.Mesh( geometry, material );
+
+scene.add( cube );
+```
+
+
+## 相机Camera
+Three.JS提供了几种不同类型的相机，这对应了不同的投影方式（正交投影、透视投影），也意味着对应着不同的视锥体。
+
+## 正交投影相机 OrthographicCamera
+``` js
+const camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 ); // left、right、top、bottom、near、far
+scene.add( camera );
+```
+
+## 透视投影相机 PerspectiveCamera
+``` js
+const camera = new THREE.PerspectiveCamera( 45, width / height, 1, 1000 ); // fov、apsect、zNear、zFar
+scene.add( camera );
+```
+
+## 光源（Light）
+在我们之前的例子中，我们通常在片段着色器中直接把物体本身的颜色写入帧缓冲。但为了模拟真实世界的视觉效果，我们还需要考虑到光照的因素。
+
+简单来说，我们最终看到的颜色和这些因素相关联：
+- 物体本身的颜色color
+- 环境光照ambient Lighting。因为真实世界中存在无数个物体反射光，计算量太大不如使用一个恒定的环境光照进行模拟。
+- 漫反射光照diffuse Lighting（涉及光照方向、法向量）
+- 镜面反射光照specular Lighting（涉及光照方向、法向量、以及观察者相机的角度）
+
+至于这些因素占据多大的比重，或者说整个公式是如何进行计算的，都是完全由我们自行制定的。
+我们在材质一节介绍过不同的材质对应着不同的GLSL程序/着色器，也就是说**不同的材质会对应不同的颜色计算公式（光照计算模型）**，比如`MeshPhongMaterial`材质使用的就是冯氏光照模型，我们可以调节该材质的`shininess`参数来调整镜面反射的强度，我们可以用它来模拟光滑镜面的物体；与之对应的还有`MeshLambertMaterial`表示漫反射材质，也就是说在它的计算公式中不会考虑镜面反射因素，我们可以用来模拟一个表面粗糙的物体；除此还有`MeshBasicMaterial`，它的颜色计算完全不受光照影响。
+
+
+
+## 方向光（Direction Light）
+
+## 点光源（Point Light）
+
+## 聚光灯（Spot Light）
+
+
+## 3D模型（Model）和loader
+
+## GLTF
+
+

@@ -194,9 +194,19 @@ const sidebars = {
       label: '浏览器原理'
     },
     {
-      type: 'doc',
-      id: 'canvas',
-      label: 'Canvas And WebGL'
+      type: 'category',
+      label: 'Canvas And WebGL',
+      items: [
+        'canvas/canvas',
+        'canvas/2d',
+        'canvas/webgl',
+        {
+          type: 'doc',
+          id: 'canvas/3d',
+          label: '3D渲染'
+        },
+        'canvas/unity',
+      ],
     },
     '音视频学习',
     "git",

@@ -1,0 +1,73 @@
+# 2D渲染
+## 渲染引擎
+
+### 异步批量渲染
+
+类似React中的`setState`，修改数据后会在下一个tick再进行渲染。
+
+``` js
+// konva实现
+function batchDraw() {
+    if (!this._waitingForDraw) {
+      this._waitingForDraw = true;
+      window.requestAnimFrame(() => {
+        this.draw();
+        this._waitingForDraw = false;
+      });
+    }
+    return this;
+}
+```
+
+### 离屏渲染
+
+当我们谈论到离屏渲染的技术，总是容易和OffscreenCanvas搞混淆。事实上，OffscreenCanvas的作用就是为了让我们在Web Worker这类的环境下使用Canvas的能力，如果我们单纯在JS线程使用OffscreenCanvas，这和直接使用Canvas基本没有区别。
+
+而所谓的离屏渲染，一般指的是我们除了在文档中用于绘制内容的Canvas外，额外创建新的Canvas来缓存绘制的内容。比如当某个虚拟节点要绘制的内容始终不变时，我们可以直接使用DrawImage来把离屏Canvas的内容进行绘制，从而省去了调用Canvas API来重复绘制相同内容的情况，实现性能的优化。
+
+
+
+### 分层渲染
+
+可以使用多个Canvas进行渲染，比如把静态的内容和动态的内容进行分离。
+
+
+
+### 局部渲染/脏区检测
+
+一般我们每次渲染时都会通过`clearRect`将画布的内容清空并进行全量绘制，一些渲染库中允许我们只重新渲染部分的内容实现性能优化。
+
+
+
+### 包围盒与碰撞检测
+
+- AABB包围盒
+- OBB包围盒
+- 分离轴定律
+
+### 事件机制
+
+- 取色值法
+  - 实现简单；适合不规则图形
+  - 需要额外绘制一份Canvas
+- 几何法（引射线法）
+  - 实现和计算复杂；适合规则图形
+
+
+
+### 布局系统
+
+实现类似Flex的布局能力。
+
+
+
+
+### 性能优化
+
+- 减少上下文切换
+
+
+## Konva.js
+
+
+## Pixi.js
