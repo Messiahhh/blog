@@ -33,12 +33,13 @@ const recorder = new MediaRecorder(stream);
 
 ## drawImage
 
-Canvas提供了`drawImage`方法将不同的图像源绘制到我们的目标Canvas上，图像源包括Image、Video甚至另一个Canvas对象，以及后文会介绍的ImageBitMap。
+Canvas提供了`drawImage`方法将不同的图像源绘制到我们的目标Canvas上，图像源包括Image、Video甚至另一个Canvas对象，以及后文会介绍的ImageBitMap，或者是WebCodecs产出的视频帧videoFrame。
 
 ``` js
 ctx.drawImage(image, 0, 0)
 ctx.drawImage(video, 0, 0)
 ctx.drawImage(canvas2, 0, 0)
+ctx.drawImage(videoFrame, 0, 0)
 ```
 
 `drawImage`函数是个重载函数，有几种不同的用法。（注：下文中的`d`表示目标Canvas Destination，`s`表示图像源头Source）
@@ -135,7 +136,7 @@ document.body.appendChild(canvas)
 const offscreenCanvas = canvas.transferControlToOffscreen()
 const worker = new Worker('./worker.js')
 worker.postMessage({ canvas: offscreenCanvas }, [offscreenCanvas])
-``` 
+```
 
 
 ``` js title="worker.js"
