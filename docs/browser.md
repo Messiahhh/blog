@@ -1,161 +1,120 @@
 ---
 sidebarDepth: 4
 ---
-# 浏览器相关
+# 浏览器底层原理
 
-## 跨域
+## 浏览器架构
 
-当**协议**、**域名**、**端口**三者都相同，我们将其称为同源。
+现代浏览器都采用多进程的架构设计，主要包括以下进程：
 
-**浏览器**受到同源策略的限制，所谓**同源策略**，即指在**没有授权的情况下**，不同的源无法读写对方的资源。比如，当我们处于`A.com`时向`B.com`发送`ajax`或`fetch`请求是会失败的。当然，如同`<script src="">`或`form`表单之类的操作不受同源策略的限制，因此可以请求到对方的资源。
+- 浏览器进程（主进程）
+- 渲染进程（多个）
+  - 主线程（main thread）：Blink渲染引擎，负责页面的渲染（HTML解析、CSS解析、Layout、Paint）；Blink内置了V8引擎，负责JavaScript的解释执行。
+  - 合成器线程（impl thread ）：在早期的Chrome设计中并不存在，后续引入合成器线程主要目的是将布局树拆分为多个图层Layer进行独立的光栅化和渲染，最终再重新合成为一张位图。
+- GPU进程
+  - 内部通过2D图形库Skia间接调用OpenGL接口来实现画面的绘制。
+- 网络进程
+  - 负责网络通信等功能。
+- 插件进程（多个）
 
 
 
-很多时候我们希望即使处在`A.com`也能向`B.com`发送请求，也就是脱离同源策略，我们有许多手段可以实现该目的，而这些手段我们统一称为**跨域**。
+> HTML和Canvas的渲染，本质都是在主线程产出绘制指令交给GPU进程的Skia来间接OpenGL绘制，这也是为什么他们都能享受到GPU提供的硬件加速能力（如借助GPU执行Shader来快速地实现类似高斯模糊的效果，如果在CPU主线程实现则是巨大的开销）
+>
+> 而WebGL则是允许我们直接和GPU进行交互，少去了中间层层封装引入的开销，也允许我们更好的定制化功能。
 
-跨域的手段有很多，最常用的是`CORS`、代理服务器等，下面也会顺便介绍一些平时用不上的手段，权当开拓视野。
 
 
+## 浏览器渲染流程
 
-在讲解跨域的手段之前，先普及Cookie的一个知识点。Cookie拥有`domain`属性，比如当我们访问`A.com`拿到的Cookie，那么这个Cookie它是只能发送给`A.com`，不能发送给其他域名。
+- 构建DOM树（HTML Parser）
+  - 通过HTML解析器实现字符流 -> token流 -> 抽象语法树（即DOM树）
+- 样式计算（Style Calc）
+  - 通过CSS解析器生成styleSheets，也被称为CSSOM，可以通过`window.styleSheets`访问。
+  - 属性值标准化，把类似`color: red`等非标准值转化为`color: rgb(255, 0, 0)`。
+  - 计算出每个DOM节点的最终样式并存在内部的一个被称作ComputedStyle的巨大Map中，可以通过`window.getComputedStyle`访问特定DOM节点的值。
+- 布局（Layout）
+  - 我们已经构建了DOM树和所有节点的样式信息，那么就可以生成一个布局树（有的地方也称作渲染树），这一步还会去掉原本DOM树上不可见的节点（比如`<head />`标签或应用了如`{ display: none }`样式的节点）
+  - 使用复杂的算法计算出每个节点的绝对**坐标信息**（x、y、width、height）
+- 分层（Layerise）
+  - 分层是一个**性能优化**手段，在早期的Chrome架构实现其实是不存在分层这一步骤的。
+  - 简单来说的话，分层可以把一颗完整的布局树拆分成多棵子树（Layers），后续再独立光栅化来绘制，最终重新合成为一张完整的位图。这么做的一个好处是避免局部状态更新触发全局的渲染。
+  - 怎样的节点会被提升到一个独立的渲染层当中：（TODO）
+- 预先绘制（Pre Paint）
+  - 涉及到属性树的生成，暂且不提。
+- 绘制（Paint）
+  - 这一步的绘制并不是真的把内容绘制到屏幕上。这里说的绘制的本质是对布局树的解释执行，对于每一个待绘制的节点都能得到一组**绘制指令**，这个绘制指令会在后续的流程中用来实现真正的画面绘制。
+- 提交（Commit）
+  - 主线程Paint生成的绘制指定提交给合成器线程。这一步之前的操作都发生在主线程，这一步之后的操作主要发生在合成器线程，光栅化则是发生在GPU进程当中。
+- 分块（tiling）
+  - 这也是一个**性能优化**手段。光栅化整个Layer是比较昂贵的开销，特别是我们不需要光栅化可视区域外的内容，因此我们可以把Layer切分成多个图块进行光栅化。
+- 光栅化（raster）
+  - 光栅化即通过绘制指令生成位图的过程，也就是真正的绘制操作。在Chrome内部这是通过运行在GPU进程中的图形库Skia实现的，而Skia的底层其实是基于OpenGL的。通常光栅器的实现有基于CPU实现的软光栅器，比如使用线性扫描算法实现逐像素的填充；除此之外还有基于GPU实现的光栅器（即硬件加速），通过片段着色器VS实现并行的计算逻辑。
+  - 光栅化还包括图像的解码过程，如`<img src="./cat.png" />`
+- 合成
+  - 分块（tile）经过光栅化的产物得到了位图quads，然后通过合成器线程执行`draw quads`则会把这些位图合并成一张完整的位图写入帧缓冲当中，显卡读取后显示在显示器上被我们看到。
 
 
 
-### 跨域资源共享（CORS）
 
-可以说是最简单的一种实现跨域的手段。
 
-只需要添加一个响应头部`Access-Control-Allow-Origin`
+> 参考：
+>
+> 1. https://docs.google.com/presentation/d/1boPxbgNrTU0ddsc144rcXayGA_WF53k96imRH8Mp34Y/edit#slide=id.ga884fe665f_64_6
+>
+> 补充：
+>
+> 1. 大体结构是这样的，部分细节会有略微有出入，Chromium预期在未来把分层Layerise这一步骤放在绘制Paint这一步以后（可能已经这么实现了）
 
-``` js
-ctx.set('Access-Control-Allow-Origin', '*') // *代表任意源
-// 或者
-ctx.set('Access-Control-Allow-Origin', 'http://localhost:3000') // 指定源
-```
 
-另外使用`CORS`的时候默认不会发送Cookie，如果想要发送对应的Cookie，需要两个条件：
 
-1. 再添加一个响应头部`Access-Control-Allow-Credentials`
+## 输入URL后发生了什么
 
-   ``` js
-   ctx.set('Access-Control-Allow-Credentials', true)
-   ```
-   
-2. 此时第一个响应头不能使用`*`，必须指定一个源。
+经常遇到的问题，我们可以在浏览器渲染流程的基础上展开去聊，简单来说包括以下关键知识点（部分细节有省略）：
 
-   如果任意源都可以向我们的接口发送带Cookie的请求，那这瞬间就满足了`CSRF`攻击的条件了，所以通过指定源可以很好的规避这个风险。
+1. 网络通信过程
 
+   1. URL解析得到协议、域名、端口、路径
 
+   2. DNS域名解析
 
-那么按理来说，加上了这两个响应头后我们就可以跨域发带Cookie的请求了，比如我们可以从`localhost:3000`向`localhost:8000`发送带Cookie的请求。
+      1. 递归查找缓存。先依次尝试从浏览器缓存、操作系统缓存、Hosts文件、路由器缓存、本地DNS服务器（即本地网络中设置的DNS服务器地址）缓存，解析到域名对应的IP地址。
 
-但是可能当你从`A.com:3000`向`B.com:8000`发送请求时，你发现你的Cookie仍然没有被发过去。
+      2. 迭代DNS服务器。
 
+         1. 向根DNS服务器查询顶级域DNS服务器的地址
+         2. 向顶级域DNS服务器查询权威域名DNS服务器的地址
+         3. 向权威域名DNS服务器查询目标域名对应的IP地址
 
+         ![](https://p1-jj.byteimg.com/tos-cn-i-t2oaga2asx/gold-user-assets/2020/1/30/16ff45e132f02931~tplv-t2oaga2asx-jj-mark:3024:0:0:0:q75.png)
 
-事实上，在Chrome的80版本后，Cookie新增了一个叫做`sameSite`的属性。
+   3. 三次握手建立TCP连接
 
-`sameSite`有三个模式，`strict`，`lax`,  `none`。它的默认值是`lax`。
+      1. 客户端发送一个SYN=1，Seq=X的TCP包
+      2. 服务端返回一个SYN=1，ACK=X+1，Seq=Y的TCP包
+      3. 客户端发送一个ACK=Y+1，Seq=Y + 1的TCP包
 
-- `strict`是极其严格的，它表示着任何非同站（`a.qq.com`和`b.qq.com`也是同站）的请求都不能带上对应的Cookie
-- `lax`是默认值，但其实它也挺严格的，它表示着只有部分请求可以带上Cookie，诸如`AJAX`发送的请求是无法带上Cookie的
-- `none`没有任何限制，`A`发给`B`的请求能够代码Cookie。然而把`sameSite`设置成`none`时，Cookie必须带上`secure`属性，也就是必须使用HTTPS才行。
+   4. （可选）如果是HTTPS（具体实现可见计算机网络章节）
 
+      1. TLS握手，交换版本信息、加密算法、压缩算法、随机数（浏览器一个，客户端一个）。
+      2. 服务端发送证书（包括公钥和CA私钥对该公钥的签名）给客户端，客户端使用CA公钥对签名进行验证。
+      3. 使用服务器公钥生成对称密钥，用户后续的加密解密（实际的实现要复杂亿点点）
 
+   5. 发送HTTP请求并接收响应。
 
-很明显`sameSite`是作为一种`CSRF`防御手段出现的，但它的出现同样给我们的正常开发带来了一点麻烦，非同站的情况下即使加上CORS的两个响应头，我们的Cookie也不能发过去了。
+      1. 查看浏览器内是否有资源的缓存
+         1. 存在缓存，检查缓存是否过期
+            1. 没过期，使用缓存的内容进入后续的渲染流程
+            2. 缓存已过期，查询服务端的对应资源是否修改过，如果资源未修改过则使用本地缓存；如果资源修改过则使用更新过的缓存资源
+         2. 不存在缓存，进入下一步
+      2. HTTP报文封装成TLS报文、再打上端口号封装成TCP报文、再打上源IP地址和目标IP地址封装成IP报文。借助路由表查询目标IP地址的下一跳路由，使用ARP查询到路由器的MAC地址，再把IP报文附上MAC地址，最后通过链路层进行传输。
 
-而且似乎没有很完美的解决方案，除了要求两个站是同站，把`lax`改成`none`也要求我们使用`https`，不管怎么看都十分的严格。
+   6. 四次挥手关闭TCP连接
 
+2. 浏览器渲染流程。（完整的浏览器渲染流程在上一章节已经介绍了，下面主要介绍一些扩展内容）
 
-
-### 预检请求
-
-回归正题。再介绍一下，在CORS中浏览器把请求分为**简单请求**和**非简单请求**。
-
-简单请求需要同时满足几个条件，比如：
-
-1. 请求方法为 `HEAD`或`GET`或`POST`
-
-2. HTTP头部也有许多限制，比如：
-
-   `Content-Type`只限：`application/x-www-form-urlencoded`、`multipart/form-data`、`text/plain`
-
-   只能有像`Accept`、`Accept-Language`、`Content-Language`、`Last-Event-ID`这类的请求头部。
-
-   比如一旦使用自定义头部，那么这么请求就会被视为**非简单请求**。
-
-
-
-把请求根据类型进行划分之后，在CORS中针对**非简单请求**的通信，会在实际通信之前增加一次HTTP通信，也就是所谓的**预检请求**，这个请求的请求方法为`OPTIONS`。
-
-假设我们发送了一个请求方法是`PUT`，有一个自定义请求头部`x-my-header`，很明显这是一个非简单请求。
-
-那么此时会在实际请求前自动发出一个预检请求，请求方法为`OPTIONS`，含有以下两个请求头：
-
-``` http
-Access-Origin-Request-Method: PUT 
-Access-Origin-Request-Headers: x-my-header 
-```
-
-当后端收到该预检请求时，返回的响应里要**手动添加**两个响应头部：
-
-``` http
-Access-Control-Allow-Method: PUT
-Access-Control-Allow-Headers: x-my-header
-```
-
-这样子，当前端受到响应后，就视为通过了预检，之后再发送实际的通信请求。
-
-
-
-
-
-### JSONP
-
-简单来讲，JSONP是利用了`<script>`加载资源时不受同源策略限制。以往我们在`src`里写的是资源的地址，但这里我们是在给接口发请求，同时接口返回的文本会被我们当成JS解析。
-
-当然，正是因为如此JSONP只支持GET请求。
-
-```html
-<script>
-	function doSomething(json) {
-    	//do something
-	}
-</script>
-
-<script src="http://api.example.com/data?callback=doSomething&parma=a"></script>
-```
-
-``` js
-ctx.body = `doSomething(${myJson})` // 传参
-```
-
-
-
-### 代理服务器
-
-由于同源策略是浏览器的策略。
-
-`A.com:80`不能向`B.com:3000`发送请求。那我们可以在`A.com:8080`设置一个代理服务器来代理请求，之后发请求就是`A.com:80 -> A.com:8080 -> B.com:3000`，此时请求可以成功发过去。
-
-通常我们本地开发项目是使用`webpack-dev-server`，而它自带了代理服务器的功能（只需要我们在配置文件中加上`proxy`），所以可以轻松解决跨域问题。除此之外我们也可以使用`nginx`来进行反向代理。
-
-
-
-###  postMessage 
-
-跨文档通信。比起`window.name`和`location.hash`，该方法更加方便。
-
-``` js
-window.postMessage('message', url) 
-
-window.on('message', function (e) {
-    console.log(e.data)
-})
-```
-
-
+   1. HTML解码。根据响应头指定的编码方式进行解码，若不存在则根据HTML的`meta`中指定的编码方式进行解码。
+   2. 资源预解析。会将HTML中涉及到的网络资源提前加入到请求队列当中。
 
 
 
@@ -404,6 +363,162 @@ if (hasLocalCache) {
 #### Dexie
 
 更贴近IndexedDB底层操作，读写性能更高。
+
+
+
+
+
+## 跨域
+
+当**协议**、**域名**、**端口**三者都相同，我们将其称为同源。
+
+**浏览器**受到同源策略的限制，所谓**同源策略**，即指在**没有授权的情况下**，不同的源无法读写对方的资源。比如，当我们处于`A.com`时向`B.com`发送`ajax`或`fetch`请求是会失败的。当然，如同`<script src="">`或`form`表单之类的操作不受同源策略的限制，因此可以请求到对方的资源。
+
+
+
+很多时候我们希望即使处在`A.com`也能向`B.com`发送请求，也就是脱离同源策略，我们有许多手段可以实现该目的，而这些手段我们统一称为**跨域**。
+
+跨域的手段有很多，最常用的是`CORS`、代理服务器等，下面也会顺便介绍一些平时用不上的手段，权当开拓视野。
+
+
+
+在讲解跨域的手段之前，先普及Cookie的一个知识点。Cookie拥有`domain`属性，比如当我们访问`A.com`拿到的Cookie，那么这个Cookie它是只能发送给`A.com`，不能发送给其他域名。
+
+
+
+### 跨域资源共享（CORS）
+
+可以说是最简单的一种实现跨域的手段。
+
+只需要添加一个响应头部`Access-Control-Allow-Origin`
+
+``` js
+ctx.set('Access-Control-Allow-Origin', '*') // *代表任意源
+// 或者
+ctx.set('Access-Control-Allow-Origin', 'http://localhost:3000') // 指定源
+```
+
+另外使用`CORS`的时候默认不会发送Cookie，如果想要发送对应的Cookie，需要两个条件：
+
+1. 再添加一个响应头部`Access-Control-Allow-Credentials`
+
+   ``` js
+   ctx.set('Access-Control-Allow-Credentials', true)
+   ```
+
+2. 此时第一个响应头不能使用`*`，必须指定一个源。
+
+   如果任意源都可以向我们的接口发送带Cookie的请求，那这瞬间就满足了`CSRF`攻击的条件了，所以通过指定源可以很好的规避这个风险。
+
+
+
+那么按理来说，加上了这两个响应头后我们就可以跨域发带Cookie的请求了，比如我们可以从`localhost:3000`向`localhost:8000`发送带Cookie的请求。
+
+但是可能当你从`A.com:3000`向`B.com:8000`发送请求时，你发现你的Cookie仍然没有被发过去。
+
+
+
+事实上，在Chrome的80版本后，Cookie新增了一个叫做`sameSite`的属性。
+
+`sameSite`有三个模式，`strict`，`lax`,  `none`。它的默认值是`lax`。
+
+- `strict`是极其严格的，它表示着任何非同站（`a.qq.com`和`b.qq.com`也是同站）的请求都不能带上对应的Cookie
+- `lax`是默认值，但其实它也挺严格的，它表示着只有部分请求可以带上Cookie，诸如`AJAX`发送的请求是无法带上Cookie的
+- `none`没有任何限制，`A`发给`B`的请求能够代码Cookie。然而把`sameSite`设置成`none`时，Cookie必须带上`secure`属性，也就是必须使用HTTPS才行。
+
+
+
+很明显`sameSite`是作为一种`CSRF`防御手段出现的，但它的出现同样给我们的正常开发带来了一点麻烦，非同站的情况下即使加上CORS的两个响应头，我们的Cookie也不能发过去了。
+
+而且似乎没有很完美的解决方案，除了要求两个站是同站，把`lax`改成`none`也要求我们使用`https`，不管怎么看都十分的严格。
+
+
+
+### 预检请求
+
+回归正题。再介绍一下，在CORS中浏览器把请求分为**简单请求**和**非简单请求**。
+
+简单请求需要同时满足几个条件，比如：
+
+1. 请求方法为 `HEAD`或`GET`或`POST`
+
+2. HTTP头部也有许多限制，比如：
+
+   `Content-Type`只限：`application/x-www-form-urlencoded`、`multipart/form-data`、`text/plain`
+
+   只能有像`Accept`、`Accept-Language`、`Content-Language`、`Last-Event-ID`这类的请求头部。
+
+   比如一旦使用自定义头部，那么这么请求就会被视为**非简单请求**。
+
+
+
+把请求根据类型进行划分之后，在CORS中针对**非简单请求**的通信，会在实际通信之前增加一次HTTP通信，也就是所谓的**预检请求**，这个请求的请求方法为`OPTIONS`。
+
+假设我们发送了一个请求方法是`PUT`，有一个自定义请求头部`x-my-header`，很明显这是一个非简单请求。
+
+那么此时会在实际请求前自动发出一个预检请求，请求方法为`OPTIONS`，含有以下两个请求头：
+
+``` http
+Access-Origin-Request-Method: PUT 
+Access-Origin-Request-Headers: x-my-header 
+```
+
+当后端收到该预检请求时，返回的响应里要**手动添加**两个响应头部：
+
+``` http
+Access-Control-Allow-Method: PUT
+Access-Control-Allow-Headers: x-my-header
+```
+
+这样子，当前端受到响应后，就视为通过了预检，之后再发送实际的通信请求。
+
+
+
+
+
+### JSONP
+
+简单来讲，JSONP是利用了`<script>`加载资源时不受同源策略限制。以往我们在`src`里写的是资源的地址，但这里我们是在给接口发请求，同时接口返回的文本会被我们当成JS解析。
+
+当然，正是因为如此JSONP只支持GET请求。
+
+```html
+<script>
+	function doSomething(json) {
+    	//do something
+	}
+</script>
+
+<script src="http://api.example.com/data?callback=doSomething&parma=a"></script>
+```
+
+``` js
+ctx.body = `doSomething(${myJson})` // 传参
+```
+
+
+
+### 代理服务器
+
+由于同源策略是浏览器的策略。
+
+`A.com:80`不能向`B.com:3000`发送请求。那我们可以在`A.com:8080`设置一个代理服务器来代理请求，之后发请求就是`A.com:80 -> A.com:8080 -> B.com:3000`，此时请求可以成功发过去。
+
+通常我们本地开发项目是使用`webpack-dev-server`，而它自带了代理服务器的功能（只需要我们在配置文件中加上`proxy`），所以可以轻松解决跨域问题。除此之外我们也可以使用`nginx`来进行反向代理。
+
+
+
+###  postMessage 
+
+跨文档通信。比起`window.name`和`location.hash`，该方法更加方便。
+
+``` js
+window.postMessage('message', url) 
+
+window.on('message', function (e) {
+    console.log(e.data)
+})
+```
 
 
 
