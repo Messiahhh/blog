@@ -98,6 +98,44 @@ sidebarDepth: 4
 
 
 
+### 强制同步布局（forced synchronous layouts）
+
+![](https://web.dev/static/articles/avoid-large-complex-layouts-and-layout-thrashing/image/using-flexbox-layout-0c9955c54a296_1920.jpg)
+
+
+
+渲染一帧的顺序可以简化为上图。当我们通过JavaScript尝试访问某个DOM节点的几何信息时，实际上是通过上次渲染时的布局树拿到的几何信息。当我们先修改了DOM节点的样式后，浏览器会认为节点的几何信息也可能发生变更，因此当我们再去尝试读取节点的几何坐标信息时，浏览器会强制性重新计算样式并重新布局来获取到最新的几何信息。这样会带来高昂的性能成本。
+
+``` js
+// 先写后读。触发了强制同步布局，性能劣化
+function logBoxHeight () {
+  box.classList.add('super-big');
+
+  console.log(box.offsetHeight);
+}
+```
+
+一般来说我们先读后写就好，其实读取到的是上一帧渲染时布局树的几何信息也问题不大。下面的代码也是类似的，整个JS任务执行的过程中出现了多次先写后读，疯狂的重排导致性能劣化更加严重。
+
+``` js
+function resizeAllParagraphsToMatchBlockWidth () {
+  // 第一个循环中写入样式；第二个循环中读取样式
+  for (let i = 0; i < paragraphs.length; i++) {
+    paragraphs[i].style.width = `${box.offsetWidth}px`;
+  }
+}
+```
+
+
+
+> TODO：
+>
+> 1. 重排的范围
+> 2. 性能优化
+> 3. 渲染层提升
+
+
+
 ## 输入URL后发生了什么
 
 经常遇到的问题，我们可以在浏览器渲染流程的基础上展开去聊，简单来说包括以下关键知识点（部分细节有省略）：
