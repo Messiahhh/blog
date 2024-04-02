@@ -27,9 +27,9 @@ sidebarDepth: 4
 
 ## 浏览器渲染流程
 
-- 构建DOM树（HTML Parser）
+- 构建DOM树（Parse HTML）
   - 通过HTML解析器实现字符流 -> token流 -> 抽象语法树（即DOM树）
-- 样式计算（Style Calc）
+- 样式计算（Recalculate style）
   - 通过CSS解析器生成styleSheets，也被称为CSSOM，可以通过`window.styleSheets`访问。
   - 属性值标准化，把类似`color: red`等非标准值转化为`color: rgb(255, 0, 0)`。
   - 计算出每个DOM节点的最终样式并存在内部的一个被称作ComputedStyle的巨大Map中，可以通过`window.getComputedStyle`访问特定DOM节点的值。
@@ -58,13 +58,14 @@ sidebarDepth: 4
 
 
 
+> 补充：
+>
+> 上述流程是早先的Chrome渲染架构，和最新版本的实现会有部分细节出入，但整个思想是一致的。最新版本Chromium已经把分层Layerise这一步骤放在绘制Paint这一步之后了，以及光栅化可能也会用一个新的worker线程来跑这些细节差异。
+>
 > 参考：
 >
 > 1. https://docs.google.com/presentation/d/1boPxbgNrTU0ddsc144rcXayGA_WF53k96imRH8Mp34Y/edit#slide=id.ga884fe665f_64_6
 >
-> 补充：
->
-> 1. 大体结构是这样的，部分细节会有略微有出入，Chromium预期在未来把分层Layerise这一步骤放在绘制Paint这一步以后（可能已经这么实现了）
 
 ### 重排（Reflow）
 
@@ -104,7 +105,7 @@ sidebarDepth: 4
 
 
 
-渲染一帧的顺序可以简化为上图。当我们通过JavaScript尝试访问某个DOM节点的几何信息时，实际上是通过上次渲染时的布局树拿到的几何信息。当我们先修改了DOM节点的样式后，浏览器会认为节点的几何信息也可能发生变更，因此当我们再去尝试读取节点的几何坐标信息时，浏览器会强制性重新计算样式并重新布局来获取到最新的几何信息。这样会带来高昂的性能成本。
+渲染一帧的顺序可以简化为上图。当我们通过JavaScript尝试访问某个DOM节点的几何信息时，实际上是通过上次渲染时的布局树拿到的几何信息。当我们先修改了DOM节点的样式后，浏览器会认为节点的几何信息也可能发生变更，因此当我们再去尝试读取节点的几何坐标信息时，浏览器会强制性**重新计算样式并重新布局**来获取到最新的几何信息。这样会带来高昂的性能成本。
 
 ``` js
 // 先写后读。触发了强制同步布局，性能劣化
@@ -125,6 +126,12 @@ function resizeAllParagraphsToMatchBlockWidth () {
   }
 }
 ```
+
+
+
+当触发强制同步布局时，我们可以在Chrome开发者工具性能面板中对应的样式计算中看到Recalculation forced的标识，以及对应的
+
+
 
 
 
@@ -287,7 +294,34 @@ localStorage.clear()
 
 
 
+### IndexedDB
 
+浏览器内部的数据库，可用于存储大容量的结构化（或二进制数据）数据。目前有两个比较好用的库。
+
+#### localforage
+
+更像容量加强版的LocalStorage，感觉读写性能并不是很高，特点是在不支持IndexedDB的浏览器中会从IndexedDB实现降级成LocalStorage实现。
+
+``` js
+const keys = await localforage.keys()
+const hasLocalCache = keys.includes('my_key') // 自定义键名
+if (hasLocalCache) {
+    console.log('读取本地缓存');
+    data = await localforage.getItem('my_key')
+} else {
+    console.log('读取后端数据');
+    data = await fetch('./getData').then(res => res.json())
+    localforage.setItem('my_key', data)
+}
+```
+
+#### Dexie
+
+更贴近IndexedDB底层操作，读写性能更高。
+
+
+
+## 用户登录鉴权
 
 ### Cookie
 
@@ -300,46 +334,7 @@ localStorage.clear()
 3. `path`：表明只有访问该路径时才会带上Cookie
 4. `httpOnly`：为`true`时，浏览器不能通过代码读取Cookie
 5. `secure`: 为`true`时，只有发送HTTPS请求时才会带上Cookie
-6. `SameSite`：默认为`lax`，详细解释见本章第一节
-
-**简易封装Cookie**
-
-``` js
-const cookieUtil = {
-    setItem(name, value, days) {
-        let date = new Date()
-        date.setDate(date.getDate() + days)
-        document.cookie = `${name}=${value};expires=${date}`
-    },
-
-    getItem(name) {
-        let arr = document.cookie.split(';')
-        let ret 
-        arr.forEach(item => {
-            let tempArr = item.split('=')
-            if (tempArr[0] === name) {
-                ret = tempArr[1]
-            }
-        })
-        return ret
-    },
-
-    removeItem(name) {
-        this.setItem(name, null, -1)
-    }
-}
-
-```
-
-
-
-**Cookie和Storage的对比**
-
-`Cookie`最大可存储4KB；而`Storage`最大可存储5MB。
-
-`Cookie`可以设置过期时间，`SessionStorage`会在会话关闭时清除，`LocalStorage`必须要手动清除。
-
-`Cookie`参与和服务器之间的通信，而`Storage`通常并不参与。
+6. `SameSite`：默认为`lax`，详细解释见后文
 
 
 
@@ -353,15 +348,13 @@ const cookieUtil = {
 
 
 
-### JWT 
+### 令牌Token
 
-JSON Web Token（缩写JWT）并不是客户端存储方案，放在这一节是因为它和Cookie、Session都是一种用户身份认证的手段。
+通常在登录成功后服务端会返回一个令牌Token（Access Token），浏览器可以自行进行存储（通常都存在LocalStorage中），后续的接口请求中把该Token放在特定请求头（如`Authorization: Bearer ${token}`）中进行传输。
 
-基于Cookie的认证最大的缺陷就是对于跨域场景的无力，特别是现在浏览器对Cookie加上的`sameSite`属性，这个属性加强了对于`CSRF`攻击的防范，但让我们携带Cookie进行跨域变得困难无比。
+我们可以自己指定Token的生成算法，比较主流的方式是下文将要介绍的JSON Web Token。
 
-另外Session的一个缺点是由于会话数据都保存在服务端，当使用服务器集群的时候我们必须让会话共享，比如将Session写入数据库等等。而JWT由于会话数据都保存在客户端，自然不会有这样的问题。
-
-
+#### JWT
 
 使用JWT来进行用户身份认证时，当我们输入用户名和密码进行登录时，服务器会将用户数据使用`Base64`转化成一个`token`字符串返回给前端，通常前端将这个`token`字符串保存在`localStorage`或`Cookie`中以供以后使用，在这之后发请求时会将`token`提取出来，或是放在`Authorization: Bearer ${token}`请求头部中，又或是直接作为请求的参数字段发送给后端，以供后端解析鉴权。
 
@@ -407,106 +400,117 @@ const data = jwt.verify(token, 'key')
 
 
 
-### IndexedDB
+### 鉴权方式对比
 
-浏览器内部的数据库，可用于存储大容量的结构化（或二进制数据）数据。目前有两个比较好用的库。
+#### Cookie
 
-#### localforage
+**优点**
 
-更像容量加强版的LocalStorage，感觉读写性能并不是很高，特点是在不支持IndexedDB的浏览器中会从IndexedDB实现降级成LocalStorage实现。
+- （相比Session方案）Cookie完全存储在客户端，无服务器资源压力
 
-``` js
-const keys = await localforage.keys()
-const hasLocalCache = keys.includes('my_key') // 自定义键名
-if (hasLocalCache) {
-    console.log('读取本地缓存');
-    data = await localforage.getItem('my_key')
-} else {
-    console.log('读取后端数据');
-    data = await fetch('./getData').then(res => res.json())
-    localforage.setItem('my_key', data)
-}
-```
+**缺点**
 
-#### Dexie
+- 存在跨域问题
 
-更贴近IndexedDB底层操作，读写性能更高。
+- 存在CSRF问题
+
+- 客户端存储能力有限，无法实现把用户踢下线等能力
+
+  
 
 
 
+#### Cookie+Session
+
+**优点**
+
+- 服务端管理Session，不容易出现盗用的情况，也可以实现把用户踢下线等能力
+
+**缺点**
+
+- 存在跨域问题
+- 存在CSRF问题
+- 增加了服务端的资源占用
 
 
-## 跨域
 
-当**协议**、**域名**、**端口**三者都相同，我们将其称为同源。
+
+
+#### Token
+
+**优点**
+
+- （相比Session方案）Token完全存储在客户端，无服务器资源压力
+
+- （相比Cookie/Session方案）没有跨域问题
+
+- （相比Cookie/Session方案）没有CRSF问题
+
+  
+
+**缺点**
+
+- 客户端存储能力有限，无法实现把用户踢下线等能力
+
+
+
+## 浏览器同源策略
+
+当**协议**、**域名**、**端口**三者都完全相同，我们将其称为同源或同域。
 
 **浏览器**受到同源策略的限制，所谓**同源策略**，即指在**没有授权的情况下**，不同的源无法读写对方的资源。比如，当我们处于`A.com`时向`B.com`发送`ajax`或`fetch`请求是会失败的。当然，如同`<script src="">`或`form`表单之类的操作不受同源策略的限制，因此可以请求到对方的资源。
 
+### 跨域和跨站
 
+#### 跨域（Cross Origin）
 
-很多时候我们希望即使处在`A.com`也能向`B.com`发送请求，也就是脱离同源策略，我们有许多手段可以实现该目的，而这些手段我们统一称为**跨域**。
+同源/同域要求两个源的协议、完整域名、端口号都完全相同。
 
-跨域的手段有很多，最常用的是`CORS`、代理服务器等，下面也会顺便介绍一些平时用不上的手段，权当开拓视野。
+![](../static/img/sameorigin.png)
 
+#### 跨站（Cross Site）
 
+同站要求两个源的顶级域和一级域都相同。
 
-在讲解跨域的手段之前，先普及Cookie的一个知识点。Cookie拥有`domain`属性，比如当我们访问`A.com`拿到的Cookie，那么这个Cookie它是只能发送给`A.com`，不能发送给其他域名。
-
-
+![](../static/img/samesite.png)
 
 ### 跨域资源共享（CORS）
 
-可以说是最简单的一种实现跨域的手段。
+浏览器同源策略的限制，使得我们无法在`qq.com`页面调用`weixin.com`或者`mobile.qq.com`域下的接口，这在很多时候不符合我们需求的预期，我们期望存在一种方式能绕过这个同源策略的限制，用的最多的就是这里将要介绍的CORS，后文还会介绍JSONP等方式。
 
-只需要添加一个响应头部`Access-Control-Allow-Origin`
+想要实现CORS很简单，只需要给服务器的对应接口返回加上响应头部`Access-Control-Allow-Origin`即可，具体代码如下：
 
 ``` js
-ctx.set('Access-Control-Allow-Origin', '*') // *代表任意源
+ctx.set('Access-Control-Allow-Origin', '*') // *代表任意源都可以请求我们的接口
 // 或者
-ctx.set('Access-Control-Allow-Origin', 'http://localhost:3000') // 指定源
+ctx.set('Access-Control-Allow-Origin', 'http://qq.com:3000') // 只有特定源可以请求我们的接口
 ```
 
-另外使用`CORS`的时候默认不会发送Cookie，如果想要发送对应的Cookie，需要两个条件：
+默认情况下CORS发送的请求不会带上目标域对应的Cookie，想要请求带上Cookie还需要进行额外的配置
 
-1. 再添加一个响应头部`Access-Control-Allow-Credentials`
+1. 首先服务器接口需要再添加一个响应头部`Access-Control-Allow-Credentials`
 
    ``` js
    ctx.set('Access-Control-Allow-Credentials', true)
    ```
 
-2. 此时第一个响应头不能使用`*`，必须指定一个源。
+2. `Access-Control-Allow-Origin`的值不能使用`*`，而是必须指定一个特定的源，否则这样就满足了CSRF的攻击条件了。
 
-   如果任意源都可以向我们的接口发送带Cookie的请求，那这瞬间就满足了`CSRF`攻击的条件了，所以通过指定源可以很好的规避这个风险。
+遗憾的是，即使我们这么配置了，还是可能发现请求中没有携带Cookie，这是因为从Chrome80版本后Cookie新增了一个`sameSite`的属性，它有三个模式：
 
+- `strict`是极其严格的，它标志只有**同站**请求才能带上Cookie
+- `lax`（默认值）。写作宽松，但感觉还是比较严格的，只有像点击导航链接等才做才允许带上Cookie，正常的Fetch请求是不让带的
+- `none`没有任何限制，即允许`qq.com`发向`weixin.com`的请求带上Cookie。设置为`none`要求Cookie具备`secure`属性，也就是必须是HTTPS下才可以。
 
-
-那么按理来说，加上了这两个响应头后我们就可以跨域发带Cookie的请求了，比如我们可以从`localhost:3000`向`localhost:8000`发送带Cookie的请求。
-
-但是可能当你从`A.com:3000`向`B.com:8000`发送请求时，你发现你的Cookie仍然没有被发过去。
-
-
-
-事实上，在Chrome的80版本后，Cookie新增了一个叫做`sameSite`的属性。
-
-`sameSite`有三个模式，`strict`，`lax`,  `none`。它的默认值是`lax`。
-
-- `strict`是极其严格的，它表示着任何非同站（`a.qq.com`和`b.qq.com`也是同站）的请求都不能带上对应的Cookie
-- `lax`是默认值，但其实它也挺严格的，它表示着只有部分请求可以带上Cookie，诸如`AJAX`发送的请求是无法带上Cookie的
-- `none`没有任何限制，`A`发给`B`的请求能够代码Cookie。然而把`sameSite`设置成`none`时，Cookie必须带上`secure`属性，也就是必须使用HTTPS才行。
+在最新的Chrome版本中，已经开始灰度并预期在未来彻底**禁用第三方Cookie**，相当于这里的`sameSite=strict`，也就是说只有同站的请求才能带上Cookie。
 
 
 
-很明显`sameSite`是作为一种`CSRF`防御手段出现的，但它的出现同样给我们的正常开发带来了一点麻烦，非同站的情况下即使加上CORS的两个响应头，我们的Cookie也不能发过去了。
+#### 预检请求
 
-而且似乎没有很完美的解决方案，除了要求两个站是同站，把`lax`改成`none`也要求我们使用`https`，不管怎么看都十分的严格。
+浏览器把CORS中的跨域请求分成了**简单请求**和**非简单请求**，对于非简单请求浏览器在发送前会增加一次请求方法为Options的HTTP通信，也就是俗称的**预检请求**。
 
-
-
-### 预检请求
-
-回归正题。再介绍一下，在CORS中浏览器把请求分为**简单请求**和**非简单请求**。
-
-简单请求需要同时满足几个条件，比如：
+简单请求需要同时满足几个条件：
 
 1. 请求方法为 `HEAD`或`GET`或`POST`
 
@@ -519,8 +523,6 @@ ctx.set('Access-Control-Allow-Origin', 'http://localhost:3000') // 指定源
    比如一旦使用自定义头部，那么这么请求就会被视为**非简单请求**。
 
 
-
-把请求根据类型进行划分之后，在CORS中针对**非简单请求**的通信，会在实际通信之前增加一次HTTP通信，也就是所谓的**预检请求**，这个请求的请求方法为`OPTIONS`。
 
 假设我们发送了一个请求方法是`PUT`，有一个自定义请求头部`x-my-header`，很明显这是一个非简单请求。
 
