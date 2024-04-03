@@ -298,7 +298,7 @@ localStorage.clear()
 
 浏览器内部的数据库，可用于存储大容量的结构化（或二进制数据）数据。目前有两个比较好用的库。
 
-#### localforage
+#### localforage库
 
 更像容量加强版的LocalStorage，感觉读写性能并不是很高，特点是在不支持IndexedDB的浏览器中会从IndexedDB实现降级成LocalStorage实现。
 
@@ -315,7 +315,7 @@ if (hasLocalCache) {
 }
 ```
 
-#### Dexie
+#### Dexie库
 
 更贴近IndexedDB底层操作，读写性能更高。
 
@@ -470,7 +470,9 @@ const data = jwt.verify(token, 'key')
 
 #### 跨站（Cross Site）
 
-同站要求两个源的顶级域和一级域都相同。
+![](../static/img/tld.png)
+
+同站要求两个源的顶级域和一级域都相同，即这里的`TLD+1`完全相同。
 
 ![](../static/img/samesite.png)
 
@@ -546,6 +548,34 @@ Access-Control-Allow-Headers: x-my-header
 
 
 
+### 跨域隔离（cross-origin isolation）
+
+为了在我们的项目中使用`SharedArrayBuffer`来实现多个线程的共享内存，我们需要开启跨域隔离，这要求我们的网站同时开启了跨源开放者政策Cross Origin Opener Policy（COOP）和跨源嵌入程序策略Cross Origin Embedder Policy（COEP），即我们返回顶级文档的响应需要带上这样的响应头：
+
+``` http
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp # or credentialless
+```
+
+我们可以通过`window.crossOriginIsolated`来检测当前站点是否开启了跨域隔离。
+
+#### Cross Origin Opener Policy（COOP）
+
+通常我们在某个页面通过`window.open`来打开一个新的页面时，这两个页面是共享一个渲染进程的，被打开页面可以通过`window.opener`访问父页面的上下文。通过设置COEP能够禁止跨域页面的该行为
+
+
+
+#### Cross Origin Embedder Policy（COEP）
+
+我们都知道`img`、`video`、`script`等标签加载资源是不受浏览器同源策略限制的，而通过设置COEP能够禁止这些静态资源的跨域访问。
+
+这个策略几乎使得我们的页面不可用，浏览器提供了两种方式让某个资源可以跨域访问：
+
+- CORS。服务端给对应资源返回CORS头，同时要求加载资源的标签需要带上`crossorigin=anonymous`或者`crossorigin=use-credentials`。
+- **Cross Origin Resource Policy**（CORP）。服务端给对应资源返回CORP头`Cross-Origin-Resource-Policy: cross-origin`
+
+
+
 ### JSONP
 
 简单来讲，JSONP是利用了`<script>`加载资源时不受同源策略限制。以往我们在`src`里写的是资源的地址，但这里我们是在给接口发请求，同时接口返回的文本会被我们当成JS解析。
@@ -598,7 +628,23 @@ window.on('message', function (e) {
 
 > TODO
 
+### [SharedArrayBuffer](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer)
 
+在上文中，我们介绍了在Web Worker的多线程场景下，借助指定转移对象可以实现ArrayBuffer的零拷贝，这满足了我们部分的使用场景。但在一些情况下，我们期望主线程和Worker线程能够读写同一块内存，SharedArrayBuffer就是用来做这个的。
+
+```js
+const sab = new SharedArrayBuffer(1024);
+worker.postMessage(sab);
+```
+
+
+
+但是想要开启SharedArrayBuffer的能力，我们需要设置两个 HTTP 消息头以跨域隔离你的站点：COOP和COEP
+
+```js
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
 
 
 
