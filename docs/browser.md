@@ -571,7 +571,7 @@ Cross-Origin-Embedder-Policy: require-corp # or credentialless
 
 这个策略几乎使得我们的页面不可用，浏览器提供了两种方式让某个资源可以跨域访问：
 
-- CORS。服务端给对应资源返回CORS头，同时要求加载资源的标签需要带上`crossorigin=anonymous`或者`crossorigin=use-credentials`。
+- CORS。服务端给对应资源返回CORS头，同时要求加载资源的标签需要带上`crossorigin="anonymous"`或者`crossorigin="use-credentials"`，比如`<img src="./akara.png" crossorigin="anonymous"/>`
 - **Cross Origin Resource Policy**（CORP）。服务端给对应资源返回CORP头`Cross-Origin-Resource-Policy: cross-origin`
 
 

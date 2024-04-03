@@ -191,14 +191,20 @@ const sidebars = {
     {
       type: 'doc',
       id: 'browser',
-      label: '浏览器原理'
+      label: '浏览器底层原理'
     },
     {
       type: 'category',
-      label: 'Canvas And WebGL',
+      label: 'Canvas',
       items: [
         'canvas/canvas',
         'canvas/2d',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'WebGL',
+      items: [
         'canvas/webgl',
         {
           type: 'doc',
@@ -208,8 +214,8 @@ const sidebars = {
         'canvas/unity',
       ],
     },
-    '音视频学习',
     "git",
+    '音视频学习',
     "计算机网络",
     "前端安全",
     "异常处理",
@@ -236,7 +242,7 @@ const sidebars = {
     // "设计模式",
     "websocket",
     // "webgl",
-    "php",
+    // "php",
   ],
 
   // But you can create a sidebar manually
