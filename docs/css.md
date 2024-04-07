@@ -495,23 +495,24 @@ display: box;
 
 
 
-### BFC
+### Block Formatting Contexts（BFC）
 
-BFC，也就是Block Formatting Contexts （块级格式化上下文)
+在浏览器渲染流程章节中我们介绍了布局节点，提到了这涉及了许多复杂的算法，其中有一个影响布局计算的因素就是一个叫做块级格式化上下文（Block Formatting Contexts）的概念。
 
-明确地，它是一个独立的盒子，并且这个独立的盒子内部布局不受外界影响。
-
-**何时会触发BFC**：
+下面列举部分会创建出BFC的场景：
 
 - 根元素`<html>`
-- `float`的值不为`none`。
-- `position`的值不为`relative`和`static`。
-- `overflow`的值为`auto`,`scroll`或`hidden`。
-- `display`的值为`table-cell`, `table-caption`, `inline-block`中的任何一个。
+- 浮动元素，即`float`的值不为`none`。
+- 绝对定位元素，即`position`的值为`absolute`或`fixed`。
+- `inline-block`
+- `flex/grid`的子元素（前提是元素本身不是另一个`flex/grid`的容器）
+- `overflow`的值为`auto`、`scroll`或`hidden`。
 
-**作用**
 
-一：清除浮动（阻止高度塌陷）
+
+通过在根元素`<html>`这个BFC内部创建出新的BFC，我们的BFC将不受到外层BFC浮动`flow`的影响，而且我们的BFC包含了自身内部的浮动`flow`，还能够用来避免外边距合并（同属一个BFC的相邻元素会发生外边距margin合并）
+
+- 清除浮动（可用来阻止元素高度塌陷）
 
 ``` html
 <style>
@@ -534,7 +535,7 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 </body>
 ```
 
-二：外边距合并：同属一个BFC的相邻元素会发生外边距（margin）重叠。
+- 外边距合并
 
 ```html
 <style>
@@ -556,27 +557,11 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 </div>
 ```
 
-三：阻止元素被浮动元素覆盖，可用来实现**两列布局**
-
-``` html
-<style>
-    .float {
-        float: left;
-    }
-
-    .content {
-        overflow: auto;
-    }
-</style>
-<div class="float"></div>
-<div class="content"></div>
-```
-
 ### 清除浮动
 
-一：上述的BFC清除浮动
+- 通过上文提到的创建BFC来清除浮动
 
-二：添加额外标签，应用clear: both
+- 添加额外标签，应用`clear: both`
 
 ``` html
 <style>
@@ -597,7 +582,7 @@ BFC，也就是Block Formatting Contexts （块级格式化上下文)
 </div>
 ```
 
-三：使用伪元素，应用clear: both
+- 使用伪元素，应用`clear: both`
 
 ``` html
 <style>
