@@ -2,6 +2,27 @@
 sidebarDepth: 4
 ---
 # HTML
+### meta标签
+
+`meta`标签是网页的元数据，用来描述页面的信息，一个`meta`标签包括`name`和`content`的键值对。常见的`meta`标签有：
+
+``` html
+<meta charset="utf-8" /> <!-- 编码方式 -->
+<meta name="title" content="页面的标题" />
+<meta name="description" content="页面的描述" />
+<meta name="keywords" content="页面的关键词" />
+<meta http-equiv="refresh" content="3;url=messiahhh.github.io/blog/" /> <!-- 自动跳转 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"> <!-- 适配移动端viewport -->
+```
+
+上面提到的`title`、`description`、`keywords`组合起来就是搜索引擎SEO优化中经常提到的TDK。
+
+
+
+
+
+
+
 ### 资源预加载
 
 预加载资源时进入请求队列的先后顺序是根据资源在代码中出现的顺序决定的，我们也可以使用`preload`来手动调整资源的预加载顺序。
@@ -25,7 +46,7 @@ sidebarDepth: 4
 </body>
 ```
 
-### async and defer
+### script标签中async和defer的区别
 
 解析HTML的时候需要注意JavaScript**脚本的执行会阻塞HTML的解析**，因此当解析HTML解析到一行外链脚本的时候，我们需要等待**脚本的加载**、再等待**脚本的执行**，才能继续后续HTML的解析。
 
@@ -51,7 +72,10 @@ sidebarDepth: 4
 
 
 
+### img标签alt和title的区别
 
+- `alt`是图片加载失败时兜底显示的内容，是必要属性
+- `title`是鼠标hover到图片上时显示的内容，非必要属性
 
 
 
@@ -92,11 +116,3 @@ const processedContent = await remark()
 	.process(matterResult.content)
 const contentHtml = processedContent.toString()
 ```
-
-
-
-### link和@import的区别
-
-1. link是XHTML提供的标签，不仅可以加载CSS。@import是CSS提供的语法规则，只能加载CSS
-2. 加载页面时，`link`标签引入的 CSS 被同时加载；`@import`引入的 CSS 将在页面加载完毕后被加载。
-
