@@ -624,9 +624,83 @@ window.on('message', function (e) {
 
 
 
-## WebWorker
+## Web Worker
 
-> TODO
+``` js
+// main.js
+const worker = new Worker('./worker.js')
+
+worker.postMessage({
+  name: 'main.js'
+})
+
+worker.onmessage = function(e) {
+  console.log('data: ', e.data)
+}
+
+// worker.js
+self.onmessage = function(e) {
+		console.log('data: ', e.data)
+    self.postMessage({
+      name: 'worker.js'
+    })
+}
+```
+
+
+
+### [结构化克隆算法](https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Structured_clone_algorithm)
+
+结构化克隆用来实现复杂JavaScript对象的**深拷贝**，拥有比JSON序列化更强大的能力。在`window.postMessage`、Web Worker、IndexedDB等场景下的消息默认都会被结构化克隆，我们也可以直接调用`structuredClone()`来手动克隆对象。
+
+``` js
+const original = {
+    array: new Uint8Array(10),
+    set: new Set([1, 2, 3]),
+    map: new Map([['name', 'akara']])
+}
+const target = structuredClone(original)
+target.array[0] = 1;
+console.log(original.array.length) // 10 
+console.log(original.array[0]) // 0
+```
+
+
+
+### [可转移对象](https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Transferable_objects)
+
+可以看到借助结构化克隆的能力我们可以实现多线程之间复杂对象的传递，但深拷贝对性能的影响是很大的，好消息是ArrayBuffer是**可转移对象**，这意味着我们可以把它从主线程的缓存区转移到Worker线程的缓冲区中，实现快速和高效的零拷贝，此时我们在主线程中将无法再访问该变量。
+
+在结构化克隆当中，默认是不会转移这些可转移对象的所有权的，我们需要手动指定需要转移哪些对象。下面代码介绍了`structuredClone`方法指定需要转移的对象，其他的场景如Web Worker也都是在消息传递的时候通过额外的参数进行指定。
+
+``` js
+const original = {
+    array: new Uint8Array(10),
+    set: new Set([1, 2, 3]),
+    map: new Map([['name', 'akara']])
+}
+const target = structuredClone(original, { transfer: [original.array.buffer] }) // 指定需要转移的对象
+target.array[0] = 1;
+console.log(original.array.length) // 0 
+console.log(original.array[0]) // undefined
+```
+
+
+
+常见的可转移对象包括：
+
+- [`ArrayBuffer`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer)
+- [`MessagePort`](https://developer.mozilla.org/zh-CN/docs/Web/API/MessagePort)
+- [`ReadableStream`](https://developer.mozilla.org/zh-CN/docs/Web/API/ReadableStream)
+- [`WritableStream`](https://developer.mozilla.org/zh-CN/docs/Web/API/WritableStream)
+- [`TransformStream`](https://developer.mozilla.org/zh-CN/docs/Web/API/TransformStream)
+- [`AudioData`](https://developer.mozilla.org/en-US/docs/Web/API/AudioData)
+- [`ImageBitmap`](https://developer.mozilla.org/zh-CN/docs/Web/API/ImageBitmap)
+- [`VideoFrame`](https://developer.mozilla.org/en-US/docs/Web/API/VideoFrame)
+- [`OffscreenCanvas`](https://developer.mozilla.org/zh-CN/docs/Web/API/OffscreenCanvas)
+- [`RTCDataChannel`](https://developer.mozilla.org/zh-CN/docs/Web/API/RTCDataChannel)
+
+
 
 ### [SharedArrayBuffer](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer)
 
@@ -639,7 +713,7 @@ worker.postMessage(sab);
 
 
 
-但是想要开启SharedArrayBuffer的能力，我们需要设置两个 HTTP 消息头以跨域隔离你的站点：COOP和COEP
+而在之前的章节中我们也提到过为了开启SharedArrayBuffer的能力，我们需要设置两个 HTTP 消息头以跨域隔离你的站点：COOP和COEP
 
 ```js
 Cross-Origin-Opener-Policy: same-origin
@@ -656,6 +730,9 @@ Cross-Origin-Embedder-Policy: require-corp
   - 被注入在所有页面中的插件代码，和页面本身的脚本上下文互相独立，且可以访问部分插件能力。
 - [Extension Service Worker](https://developer.chrome.com/docs/extensions/mv3/service_workers/)
   - 主要用来响应各种用户事件，负责管理整个插件内外的数据通信，以及处理插件内部的数据存储和读写等逻辑。可以和Content-Script进行消息通信（JSON序列化的形式）
+- [Offscreen Document](https://developer.chrome.com/docs/extensions/reference/api/offscreen?hl=zh-cn)
+  - Service Worker本身无法访问DOM等文档类API，也无法通过`navigator`获取到媒体流，因此通过在Service Worker中实例化离屏文档，在它的内部实现媒体流的获取、录屏模块实例的管理和网络接口相关的调用。
+  
 
 
 
