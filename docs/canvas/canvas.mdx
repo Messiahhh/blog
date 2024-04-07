@@ -244,6 +244,22 @@ ctx.fillRect(50, 50, 200, 200)
 
 
 
+### requestAnimationFrame
+
+实现Canvas动画很简单，一般只需要遵循以下步骤即可：
+
+1. 清除画布
+2. 保存上下文状态
+3. 进行绘制
+4. 恢复上下文状态
+
+
+
+至于动画的调度则可以使用`setInterval`、`setTimeout`以及`requestAnimationFrame`。其中`setInterval`用的较少，而`setTimeout`和`rAF`的差异主要有以下几点：
+
+1. `rAF`的执行是根据屏幕刷新率来的；而`setTimeout`需要自己控制执行频率，无法适应不同刷新率的显示器。
+2. `rAF`在页面不可见时不会执行；而`setTimeout`仍然会执行，存在不必要的性能开销。
+
 
 
 ## OffscreenCanvas
