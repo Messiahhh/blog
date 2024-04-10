@@ -46,7 +46,7 @@ const recorder = new MediaRecorder(stream);
 ctx.fillRect(0, 0, 100, 100)
 ctx.strokeRect(20, 20, 40, 40)
 
-ctx.strokeRect(0, 0, canvas.width, canvas.height) // 清除整个画布内容
+ctx.clearRect(0, 0, canvas.width, canvas.height) // 清除整个画布内容
 ```
 
 
@@ -130,8 +130,10 @@ Canvas提供了坐标变换的能力，它能够移动我们的原点、旋转�
 ``` js
 ctx.save()
 
-ctx.tranlate(10, 10)
-ctx.scale(1, 2)
+ctx.tranlate(100, 100)
+ctx.rotate(Math.PI / 2) // 先移动中心点，再绕新的中心点进行旋转（设置旋转矩阵）
+ctx.tranlate(-100, -100) // 设置完旋转矩阵后把位移矩阵重置，方便后续绘制时坐标传入
+
 ctx.fillStyle = 'pink'
 ctx.fillRect(0, 0, 100, 100)
 
