@@ -10,151 +10,85 @@ const webgl = canvas.getContext('webgl');
 const webgl2 = canvas.getContext('webgl2');
 ```
 
-## 关键术语
-> WebGL上下文有大量的方法，弄清楚这些方法背后做了什么可以帮助我们更好地理解WebGL。[可视化网站](https://webglfundamentals.org/webgl/lessons/resources/webgl-state-diagram.html?exampleId=triangle#no-help)
+## `gl.drawArrays()`
 
-## ARRAY_BUFFER_BINDING（gl.ARRAY_BUFFER）
-ARRAY_BUFFER_BINDING表示WebGL上下文当前所绑定的GPU Buffer，默认为空。通过`gl.createBuffer()`可以创建多个GPU Buffer，并通过`gl.bindBuffer(gl.ARRAY_BUFFER)`来切换当前所绑定的Buffer，再通过`gl.bufferData(gl.ARRAY_BUFFER, xxx)`来写入数据到绑定的Buffer中。
+Canvas的2D渲染上下文给我们提供了若干简单的图形API来进行矩形、路径、文字的绘制能力，而WebGL渲染上下文本质上只给我们提供了一个绘制API：`gl.drawArrays`。拿这行代码`gl.drawArrays(gl.TRIANGLES, 0, 3)`举例子来说，它的作用很简单，就是绘制三个点。更具体的来说，这个函数是WebGL渲染管线的入口，它的本质是告诉GPU我们需要同时执行若干个顶点着色器，顶点着色器输出的顶点信息会在后续经过透视除法、裁剪、屏幕映射并进行图元装配得到三角形，三角形所围住的若干个屏幕像素都会分别执行像素着色器来得到每个像素点最终应用的颜色。这些像素点的信息都会被写入到默认帧缓冲，用于显示器的读取并展示。
 
 ``` js
-const buffer = gl.createBuffer();
-gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1.0, 1.0]), this.gl.STATIC_DRAW);
-```
+gl.drawArrays(gl.POINTS, 0, 3) // 绘制三个顶点，图元装配的时候组成点
 
-## FRAMEBUFFER_BINDING（gl.FRAMEBUFFER）
-FRAMEBUFFER_BINDING表示WebGL上下文当前所绑定的帧缓冲对象，默认为当前Canvas对象（有的地方会叫做默认帧缓冲）。通过`gl.createFrameBuffer()`可以创建多个帧缓冲对象，并通过`gl.bindFrameBuffer(gl.FRAMEBUFFER, xxx)`来切换当前所绑定的帧缓冲对象，我们会在当前所绑定的帧缓冲上绘制画面。因此可以用来实现离屏渲染，比如可以把第一次绘制写入的帧缓冲作为第二次绘制的纹理，来实现多个后处理效果的串联。
+gl.drawArrays(gl.LINES, 0, 2) // 绘制两个顶点，图元装配的时候组成线段
 
-``` js
-const fbo = gl.createFrameBuffer();
-gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-```
-
-## ACTIVE_TEXTURE（gl.TEXTURE_2D）
-纹理的绑定类似上面两个，但稍微复杂一点。简单来说，WebGL上下文存在8个纹理单元（BINDING），默认选中第0个纹理单元。
-
-通过`gl.activeTexture(gl['TEXTURE' + 单元号])`来设置当前选中的纹理单元，并通过`gl.bindTexture(gl.TEXTURE_2D, xxx)`来切换当前纹理单元所绑定的纹理数据，再通过`gl.texImage2D(gl.TEXTURE_2D, xxx)`来写入数据到目标纹理，一般我们还需要再通过`gl.texParameteri(gl.TEXTURE_2D)`来设置纹理的参数。
-
-``` js
-gl.activeTexture(gl.TEXTURE0) // 选中0号纹理单元
-gl.activeTexture(gl.TEXTURE7) // 选中7号纹理单元 
-
-const texture = gl.createTexture();
-gl.bindTexture(gl.TEXTURE_2D, texture);
-gl.texImage2D( // 写入数据到纹理
-  gl.TEXTURE_2D,
-  0,
-  gl.RGBA,
-  gl.RGBA,
-  gl.UNSIGNED_BYTE,
-  new Uint8Array([
-   255, 0, 0, 255,
-   0, 255, 0, 255,
-  ])
-);
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); // 设置纹理参数
-```
-
-## VERTEX_ARRAY_BINDING
-
-- 顶点缓冲对象（VBO）：一般用来保存顶点坐标、顶点颜色、UV信息、法线信息的Buffer也被称为顶点缓冲对象VBO。
-
-- 顶点数组对象（VAO）：我们绘制的每一个顶点，都对应一次顶点着色器的执行，而顶点着色器中的Attribute的取值需要由我们在外部指定。简单来说WebGL上下文中会维护一个类似于Map的顶点数组对象（VAO），记录了每个Attribute应该从哪个Buffer（VBO）中以多大的步长（size）和偏移值（offset）取值。
-
-``` js
-const location = gl.getAttribLocation(program, 'akara');
-gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-gl.enableVertexAttribArray(location);
-gl.vertexAttribPointer( // 这里有个隐式依赖，会把参数信息和当前绑定的gl.ARRAY_BUFFER一起注册到VAO中
-    location,     // location
-    3,            // size (components per iteration)
-    gl.FLOAT,     // type of to get from buffer
-    false,        // normalize
-    0,            // stride (bytes to advance each iteration)
-    0,            // offset (bytes from start of buffer)
-);
-```
-
-## CURRENT_PROGRAM
-一个WebGL上下文可以存在多个程序，并通过`gl.useProgram()`来切换程序。这也是为什么类似`gl.getAttribLocation()`和`gl.getUniformLocation()`的方法的第一个参数是目标程序。
-
-## VIEWPORT
-裁剪空间坐标会被GPU自动通过透视除法转换为标准化设备坐标NDC，我们还需要设置Viewport来告诉WebGl屏幕空间的大小，为后续像素着色器的执行做准备。
-
-``` js
-gl.viewport(0, 0, 100, 100)
-```
-
-## drawArrays
-通过`gl.drawArrays()`来执行实际的绘制指令。本质上我们是告诉`GPU`我们需要绘制多少个顶点，同时表明图元的类型（线段还是三角形）从而进行插值计算。
-
-``` js
-gl.drawArrays(gl.POINTS, 0, 3) // 绘制三个顶点
-
-gl.drawArrays(gl.LINES, 0, 2) // 绘制两个顶点，两个顶点之间的内容通过线性插值，因此最终看到的是线段
-
-gl.drawArrays(gl.TRIANGLES, 0, 3) // 绘制三个顶点，三个顶点之间的内容进行插值，因此最终看到的是三角形
+gl.drawArrays(gl.TRIANGLES, 0, 3) // 绘制三个顶点，图元装配的时候组成三角形
 
 // 先绘制buffer中前三个顶点，再绘制后三个顶点，总共六个
 gl.drawArrays(gl.TRIANGLES, 0, 3)
 gl.drawArrays(gl.TRIANGLES, 3, 3)
 ```
 
-## 渲染管线
-
-1. 准备阶段。包括着色器的编译、程序的链接、VBO的创建和顶点数据的写入、设置VAO信息、设置Uniform、设置纹理数据等。
-2. 渲染阶段。手动调用`gl.drawArrays()`发出绘制指令给CPU。
-3. 我们绘制多少个顶点，就会执行多少次顶点着色器。顶点着色器的目的是把顶点坐标转换成齐次裁剪空间下的坐标。
-    1. 模型变换。当我们从建模软件（Blender、Maya等）导出3D模型，模型的顶点坐标都是相对于模型自身坐标系的，在把模型放进我们的世界后我们需要知道模型顶点相对于世界坐标系的位置，因此需要通过**模型矩阵Model**把模型空间转换为世界空间。
-    2. 视图变换/观察变换。现在我们的世界空间中存在模型和相机，为了后续拿到模型在相机方向上的投影，我们先要知道模型相对于相机的位置，因此需要通过**视图矩阵View**把世界空间转换为相机空间（观察空间，其实只是坐标系变化了）
-    3. 投影变换。我们需要得到三维空间在相机方面上的投影，才能得到想要的二维画面。投影存在两种方式：**透视投影**和**正交投影**，透视投影是近大远小的真实系投影方式，而正交投影则是无视近大远小的法则，这两种投影也对应着不同的视锥体。简单来说视锥体外的内容是看不见的，这也方便我们在后续把视锥体外的顶点裁剪实现性能优化，我们可以先简单把视锥体空间视作齐次裁剪空间（实际上略有区别，但咱们先不管了，特别是对于透视投影的近大远小我们需要使用到齐次裁剪空间的W分量）。一般我们通过**投影矩阵Projection**来把相机空间变换到裁剪空间。
-
-![](https://img-blog.csdn.net/20171229111837073?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmllemhpaHVh/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
-
-4. GPU内部会自动通过透视除法（把所有分量都处以W分量）把裁剪空间转换为**标准化设备坐标（NDC）**（坐标都在-1到+1之间），然后再通过裁剪把相机范围外的顶点剔除（这些顶点反正看不到，就不需要参与后面的图元装配等环节啦），再会通过屏幕映射把-1到+1映射成我们的视口Viewport大小，再通过图元装配形成图形（如三角形），然后计算出图元所包含的像素区域，再会通过插值算出每个像素应该对应的Varying值用于后续像素着色器的计算。![img](https://img-blog.csdnimg.cn/b26e74a5ee5b4f8781cbe684ac25ebaa.png)
-5. 逐像素执行像素着色器（片段着色器），输出的内容会写入到帧缓冲，显示器会定期读取来显示内容。
-6. 深度测试等
-
-
-
-
+具体的WebGL渲染管线流程我们会在后续介绍，但从上面的描述中我们已经能够得到这样的信息：在调用绘制API`gl.drawArrays`之前，我们需要把我们的顶点着色器、像素着色器、以及这两个着色器中会用到的数据准备好，这些数据包含了GPU Buffer（包含顶点信息）、Uniform（着色器程序中的变量）、纹理（图像）等，我们接下来会逐个进行介绍。
 
 ## OpenGL Shading Language（GLSL）
 
-## Vertex Shader
+我们上面提到了顶点着色器和像素着色器，他们实际上是在GPU上运行的程序。在WebGL渲染管线中，绘制多少个顶点，就对应GPU会有多少个管道**并行**执行相同的**顶点着色器**来计算出各个顶点的裁剪空间坐标信息；顶点组成的图元包括多少个像素，就对应GPU会有多少个管道**并行**执行相同的像素着色器来计算出各个像素的颜色值。
+
+### 顶点着色器（Vertex Shader）
 
 ``` glsl
-// vertex shader 顶点着色器
 attribute vec2 a_position;
+attribute vec4 a_color;
+uniform int u_id;
+varying vec4 v_color;
 
 void main() {
+  vec4 v_color = a_color;
   gl_Position = vec4(a_position, 0.0, 1.0);
 }
 ```
+每次程序执行时`attribute`关键字标识的变量都是不同的，具体来说每次执行时都会从提前设置好的GPU Buffer中取值写入到`attribute`变量中，通常我们会用`attribute`表示顶点的初始坐标、颜色、UV值和法向量等。
+
+每次程序执行时`uniform`关键字标识的变量都是相同的，通常我们会在JavaScript中提前设置好`uniform`变量的值再执行着色器。这样我们可以通过修改`uniform`变量的值来统一修改着色器的逻辑。
+
+除了`attribute`和`uniform`变量，我们可以注意到程序中还有个`varying`变量，这个变量会在后续的像素着色器中被使用到。假如我们只绘制了两个顶点，第一个顶点的顶点颜色`a_color`为黑色，第二个顶点的顶点颜色`a_color`为白色，我们把这个值赋值给`varying`变量`v_color`，图元装配为线段后两个点之间会存在若干个像素，这些像素又应该是怎样的颜色呢，我们期望是一种**线性插值**的方式。这就是`varying`变量的作用，具体组合用法我们可以在下节的像素着色器中看到。
+
+而顶点着色器主函数最终的目的是把一个四维向量的裁剪空间坐标写入到内置的`gl_Position`变量中，用于渲染管线后续的流程。
+
 ![vs](https://images2018.cnblogs.com/blog/669331/201803/669331-20180302113903143-870412752.png)
 
-
-
-## Fragment Shader
+### 像素着色器（Fragment Shader）
 
 ``` glsl
 // fragment shader 片段着色器/像素着色器
-precision mediump float;
+precision mediump float; // 指定精度
+uniform int u_id;
+varying vec4 v_color;
 
 void main() {
-  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); 
+  gl_FragColor = v_color; 
 }
 ```
+在像素着色器中不存在`attribute`变量，只有`uniform`和`varying`变量，其中`uniform`变量的作用我们在之前介绍过了，是所有着色器共享的一个变量值。
+
+那`varying`变量`v_color`的值是从哪里来的呢，它是根据当前像素点在两个顶点（我们在上一节中只绘制了两个顶点）的位置来从两个顶点的`v_color`中进行**线性插值**，通俗点说的话就是靠近第一个顶点的像素这里的值是偏黑的，而靠近第二个顶点的像素这里的值是偏白的。如果图元不是线段而是三角形，本质也是在三个顶点中进行插值来得到当前像素对应的值。除了对颜色值插值还可以对UV坐标插值，来实现纹理的绘制，我们后续会进行相关的介绍。
+
+而像素着色器主函数最终的目的是把一个颜色值写入到内置的`gl_FragColor`变量中，用于写入帧缓冲来进行画面的呈现。
+
+
+
 ![fs](https://img-blog.csdn.net/20140917135608231)
 
-## attribute
-`attribute`是顶点着色器的参数，运行时GPU会根据我们提前在VAO中的设置来从Buffer中读取。一般来说我们会使用`attribute`来记录顶点坐标、颜色、UV、法向量等信息。
+### attribute
 
-## varying
-在顶点着色器中，我们除了会把数据写入到`gl_Position`外，可能还会把数据写入到`varying`类型的变量中。后续图元装配后，会通过插值计算出各个像素中对应的`varying`变量的值，然后这些值就会作为像素着色器的参数。
+我们上面介绍过了，`attribute`是顶点着色器的参数，顶点着色器每次执行时都会从GPU Buffer（VAO）中读取值。一般`attribute`来记录顶点坐标、颜色、UV、法向量等信息。
 
-## uniform
-`uniform`可以被顶点着色器以及片段着色器访问，可以理解成纯粹的全局变量。它的值需要我们在JS代码中手动设置。
+### varying
+
+我们会在顶点着色器中写入数据到`varying`变量中，在后续像素着色器中该`varying`变量的值是我们通过线性插值获取到的。通常可以用来传输顶点颜色、纹理UV值等。
+
+### uniform
+
+`uniform` 变量在顶点着色器以及片段着色器中都可以访问，它的值需要在JavaScript中进行设置，可以理解成比较纯粹的变量。
+
 ``` js
 const location1 = gl.getUniformLocation(program, "u_1");
 const location2 = gl.getUniformLocation(program, "u_2");
@@ -162,8 +96,10 @@ const location2 = gl.getUniformLocation(program, "u_2");
 gl.uniform1f(location1, 1.);
 gl.uniform1i(location2, 2);
 ```
-## texture
-纹理也是一种特殊的全局变量`uniform`，在Shader程序中它的数据类型为`sampler2D`，它的设置方式也类似普通的`uniform`。
+### 纹理（Texture）
+
+纹理是一种特殊的`uniform`变量，在着色器程序中它的数据类型为`sampler2D`。
+
 ``` js
 const texture = gl.createTexture();
 const unit = 3 // 我们的例子中随便选了个3号单元
@@ -198,10 +134,10 @@ void main() {
 
 ```
 
-## 数据类型
+### 数据类型
 GLSL中支持以下数据类型`float`、`int`、`vec2`、`vec3`、`vec4`、`mat2`、`mat3`、`mat4`等。
 
-## 内置函数
+### 工具函数
 
 - `abs(x)`，绝对值。
 - `floor(x)`，获取整数部分。
@@ -214,41 +150,151 @@ GLSL中支持以下数据类型`float`、`int`、`vec2`、`vec3`、`vec4`、`mat
 - `length(vec)`，返回向量的长度。
 
 
-## Viewport
 
-因为顶点着色器的目的是把(-1, -1, -1)到(1, 1, 1)的顶点信息通过写入`gl_Position`给到裁剪空间中，我们为了方便直接把写入Buffer的顶点都给定了(-1, -1)到(1, 1)的范围。
+## 底层实现
 
-假设我们想要顶点坐标看起来更直观一些，比如类似(100, 0)，(50, 50)这种顶点，并假设我们的视口（屏幕空间）宽高都是100*100，我们只需要在顶点着色器实现把这些坐标转换到裁剪空间坐标即可。事实上，你可以理解成我们把Z维相同的顶点通过正交投影转换到了我们的裁剪空间（w分量为1）
+> WebGL上下文有大量的方法，弄清楚这些方法背后做了什么可以帮助我们更好地理解WebGL。[可视化网站](https://webglfundamentals.org/webgl/lessons/resources/webgl-state-diagram.html?exampleId=triangle#no-help)
 
-``` glsl
-attribute vec2 a_position;
+### `gl.ARRAY_BUFFER`
+`gl.ARRAY_BUFFER`表示WebGL上下文当前所绑定的GPU Buffer，默认为空。通过`gl.createBuffer()`可以创建多个GPU Buffer，并通过`gl.bindBuffer(gl.ARRAY_BUFFER, buffer)`来切换当前所绑定的Buffer，再通过`gl.bufferData(gl.ARRAY_BUFFER, xxx)`来写入数据到绑定的Buffer中。
 
-uniform vec2 u_resolution; // 把视口作为uniform传入着色器
-
-void main() {
-  // 从像素坐标转换到 0.0 到 1.0
-  vec2 zeroToOne = a_position / u_resolution;
-
-  // 再把 0->1 转换 0->2
-  vec2 zeroToTwo = zeroToOne * 2.0;
-
-  // 把 0->2 转换到 -1->+1 (裁剪空间)
-  vec2 clipSpace = zeroToTwo - 1.0;
-
-  gl_Position = vec4(clipSpace, 0, 1);
-}
+``` js
+const buffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([1.0, 1.0]), this.gl.STATIC_DRAW);
 ```
 
-这时候，当我们传入一个(0, 0)的顶点，它会被转换为裁剪空间中的(-1, -1)，也就是画布的左下角。如果我们想要把画布的原点设置成左上角，就像Canvas 2D上下文那样，只需要把所有顶点的y轴翻转即可。
+### VBO与VAO
 
-``` glsl
-gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+- 顶点缓冲对象（VBO）：一般用来保存顶点坐标、顶点颜色、UV信息、法线信息的Buffer也被称为顶点缓冲对象VBO。
+
+- 顶点数组对象（VAO）：我们绘制的每一个顶点，都对应一次顶点着色器的执行，而顶点着色器中的Attribute的取值需要由我们在外部指定。简单来说WebGL上下文中会维护一个类似于Map的顶点数组对象（VAO），记录了每个Attribute应该从哪个Buffer（VBO）中以多大的步长（size）和偏移值（offset）取值。
+
+``` js
+const location = gl.getAttribLocation(program, 'akara');
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+gl.enableVertexAttribArray(location);
+gl.vertexAttribPointer( // 这里有个隐式依赖，会把参数信息和当前绑定的gl.ARRAY_BUFFER一起注册到VAO中
+    location,     // location
+    3,            // size (components per iteration)
+    gl.FLOAT,     // type of to get from buffer
+    false,        // normalize
+    0,            // stride (bytes to advance each iteration)
+    0,            // offset (bytes from start of buffer)
+);
+```
+
+### `gl.TEXTURE_2D`
+
+纹理的绑定类似于上面介绍的`gl.ARRAY_BUFFER`，不同的是WebGL上下文存在8个纹理，可以分别存储不同的纹理数据。
+
+- 选中纹理单元：`gl.activeTexture(gl['TEXTURE' + 单元号])`
+- 绑定纹理：`gl.bindTexture(gl.TEXTURE_2D, xxx)`
+- 写入纹理数据：`gl.texImage2D(gl.TEXTURE_2D, xxx)`
+- 设置纹理参数：`gl.texParameteri(gl.TEXTURE_2D)`
+
+``` js
+gl.activeTexture(gl.TEXTURE0) // 选中0号纹理单元
+gl.activeTexture(gl.TEXTURE7) // 选中7号纹理单元 
+
+const texture = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, texture);
+gl.texImage2D( // 写入数据到纹理
+  gl.TEXTURE_2D,
+  0,
+  gl.RGBA,
+  gl.RGBA,
+  gl.UNSIGNED_BYTE,
+  new Uint8Array([
+   255, 0, 0, 255,
+   0, 255, 0, 255,
+  ])
+);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); // 设置纹理参数
+```
+
+
+
+### `gl.FRAMEBUFFE`
+
+`gl.FRAMEBUFFE`表示WebGL上下文当前所绑定的帧缓冲对象，默认为当前Canvas对象（有的地方会叫做默认帧缓冲）。
+
+通过`gl.createFrameBuffer()`可以创建多个帧缓冲对象，并通过`gl.bindFrameBuffer(gl.FRAMEBUFFER, xxx)`来切换当前所绑定的帧缓冲对象，我们会在当前所绑定的帧缓冲上绘制画面。因此可以用来实现离屏渲染，比如可以把第一次绘制写入的帧缓冲作为第二次绘制的纹理，来实现多个后处理效果的串联。
+
+``` js
+const fbo = gl.createFrameBuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+```
+
+
+
+### Shader编译和链接
+
+我们之前介绍了着色器的语法和基本的原理，但是还没介绍如何编译和链接我们的程序。首先需要知道的事，一个WebGL上下文是可以存在多个程序的，我们可以通过`gl.useProgram()`来切换程序，这也是为什么类似`gl.getAttribLocation()`和`gl.getUniformLocation()`的方法的第一个参数是目标程序。
+
+``` js
+const vsSource = '...' // 顶点着色器源码
+const fsSource = '...' // 像素着色器源码
+
+const gl = canvas.getContext('webgl2');
+const vs = gl.createShader(gl.VERTEX_SHADER);
+gl.shaderSource(vs, vsSource);
+gl.compileShader(vs);
+
+const fs = gl.createShader(gl.FRAGMENT_SHADER);
+gl.shaderSource(fs, fsSource);
+gl.compileShader(fs);
+
+const program = gl.createProgram();
+gl.attachShader(program, vs);
+gl.attachShader(program, fs);
+gl.linkProgram(program);
+gl.useProgram(program);
 ```
 
 
 
 
-## 纹理UV坐标与采样
+
+
+
+### 初始化Viewport
+
+之前介绍过，在裁剪空间坐标通过透视除法转换为标准化设备坐标NDC后，会进行屏幕映射，因此我们需要告诉WebGL上下文我们的屏幕空间的大小。
+
+
+
+``` js
+gl.viewport(0, 0, 100, 100)
+```
+
+
+
+## WebGL渲染管线
+
+1. 准备阶段。包括着色器的编译、程序的链接、VBO的创建和顶点数据的写入、设置VAO信息、设置Uniform、设置纹理数据等。
+2. 渲染阶段。手动调用`gl.drawArrays()`发出绘制指令给CPU。
+3. 我们绘制多少个顶点，就会执行多少次顶点着色器。顶点着色器的目的是把顶点坐标转换成齐次裁剪空间下的坐标。
+    1. 模型变换。当我们从建模软件（Blender、Maya等）导出3D模型，模型的顶点坐标都是相对于模型自身坐标系的，在把模型放进我们的世界后我们需要知道模型顶点相对于世界坐标系的位置，因此需要通过**模型矩阵Model**把模型空间转换为世界空间。
+    2. 视图变换/观察变换。现在我们的世界空间中存在模型和相机，为了后续拿到模型在相机方向上的投影，我们先要知道模型相对于相机的位置，因此需要通过**视图矩阵View**把世界空间转换为相机空间（观察空间，其实只是坐标系变化了）
+    3. 投影变换。我们需要得到三维空间在相机方面上的投影，才能得到想要的二维画面。投影存在两种方式：**透视投影**和**正交投影**，透视投影是近大远小的真实系投影方式，而正交投影则是无视近大远小的法则，这两种投影也对应着不同的视锥体。简单来说视锥体外的内容是看不见的，这也方便我们在后续把视锥体外的顶点裁剪实现性能优化，我们可以先简单把视锥体空间视作齐次裁剪空间（实际上略有区别，但咱们先不管了，特别是对于透视投影的近大远小我们需要使用到齐次裁剪空间的W分量）。一般我们通过**投影矩阵Projection**来把相机空间变换到裁剪空间。
+
+![](https://img-blog.csdn.net/20171229111837073?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmllemhpaHVh/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+4. GPU内部会自动通过透视除法（把所有分量都处以W分量）把裁剪空间转换为**标准化设备坐标（NDC）**（坐标都在-1到+1之间），然后再通过裁剪把相机范围外的顶点剔除（这些顶点反正看不到，就不需要参与后面的图元装配等环节啦），再会通过屏幕映射把-1到+1映射成我们的视口Viewport大小，再通过图元装配形成图形（如三角形），然后计算出图元所包含的像素区域，再会通过插值算出每个像素应该对应的Varying值用于后续像素着色器的计算。![img](https://img-blog.csdnimg.cn/b26e74a5ee5b4f8781cbe684ac25ebaa.png)
+5. 逐像素执行像素着色器（片段着色器），输出的内容会写入到帧缓冲，显示器会定期读取来显示内容。
+6. 深度测试等
+
+
+
+
+
+
+
+
+
+
+## 纹理采样与UV坐标
 
 如何使用WebGL绘制一张图片？这要远比我们想象的要简单。
 
@@ -327,7 +373,7 @@ mat2 result = mat2(1., 1., 1. 1.) + mat2(1., 1., 1. 1.);
 mat2 result = mat2(vec2(1., 1.), vec2(2., 2.)) * mat2(vec2(1., 1.), vec2(2., 2.));
 ```
 
-## 实际运用
+### 实际运用
 通过矩阵右乘向量，我们可以把一个向量映射成新的向量；或者通过矩阵乘法，我们可以把一组向量映射成一组新的向量。比如说，我们可以实现坐标（向量）的缩放、旋转和裁剪、旋转等。
 
 比如对于二维坐标`vec2 point = vec2(x, y)`，通过简单的向量数乘即可把它拉伸为原来的数倍：`vec2 output = point * 2.`。如果想要进行不等比例的拉伸，则可以使用矩阵右乘向量：`vec3 output = mat2(vec2(2., 0.), vec2(0., 3.)) * point`。
@@ -336,6 +382,7 @@ mat2 result = mat2(vec2(1., 1.), vec2(2., 2.)) * mat2(vec2(1., 1.), vec2(2., 2.)
 
 我们上面介绍了拉伸和旋转都可以使用对应的矩阵，但还没有介绍位移操作。遗憾的是从数学几何的角度上看向量的位移并不是线性变换（而是属于仿射变换），因此我们无法像上面一样简单的提供一个位移矩阵来实现变换。
 一般我们得借助“升维”来实现，也就是引入齐次坐标。什么意思呢？具体的原理我们先不纠结，先说结论：对于一个二维向量我们不能提供一个二维位移矩阵，但我们可以把二维向量提升一个维度，然后就可以提供一个三维的位移矩阵来了！一般来说我们新给的维度值给个1就好。
+
 
 
 ## 随机数和噪声
@@ -369,6 +416,41 @@ float random (vec2 st) {
 ## 模糊效果
 
 > 高斯模糊
+
+
+
+## 坐标转换
+
+因为顶点着色器的目的是把(-1, -1, -1)到(1, 1, 1)的顶点信息通过写入`gl_Position`给到裁剪空间中，我们为了方便直接把写入Buffer的顶点都给定了(-1, -1)到(1, 1)的范围。
+
+假设我们想要顶点坐标看起来更直观一些，比如类似(100, 0)，(50, 50)这种顶点，并假设我们的视口（屏幕空间）宽高都是100*100，我们只需要在顶点着色器实现把这些坐标转换到裁剪空间坐标即可。事实上，你可以理解成我们把Z维相同的顶点通过正交投影转换到了我们的裁剪空间（w分量为1）
+
+``` glsl
+attribute vec2 a_position;
+
+uniform vec2 u_resolution; // 把视口作为uniform传入着色器
+
+void main() {
+  // 从像素坐标转换到 0.0 到 1.0
+  vec2 zeroToOne = a_position / u_resolution;
+
+  // 再把 0->1 转换 0->2
+  vec2 zeroToTwo = zeroToOne * 2.0;
+
+  // 把 0->2 转换到 -1->+1 (裁剪空间)
+  vec2 clipSpace = zeroToTwo - 1.0;
+
+  gl_Position = vec4(clipSpace, 0, 1);
+}
+```
+
+这时候，当我们传入一个(0, 0)的顶点，它会被转换为裁剪空间中的(-1, -1)，也就是画布的左下角。如果我们想要把画布的原点设置成左上角，就像Canvas 2D上下文那样，只需要把所有顶点的y轴翻转即可。
+
+``` glsl
+gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+```
+
+
 
 
 
