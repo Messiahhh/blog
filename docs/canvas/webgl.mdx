@@ -12,7 +12,7 @@ const webgl2 = canvas.getContext('webgl2');
 
 ## `gl.drawArrays()`
 
-Canvas的2D渲染上下文给我们提供了若干简单的图形API来进行矩形、路径、文字的绘制能力，而WebGL渲染上下文本质上只给我们提供了一个绘制API：`gl.drawArrays`。拿这行代码`gl.drawArrays(gl.TRIANGLES, 0, 3)`举例子来说，它的作用很简单，就是绘制三个点。更具体的来说，这个函数是WebGL渲染管线的入口，它的本质是告诉GPU我们需要同时执行若干个顶点着色器，顶点着色器输出的顶点信息会在后续经过透视除法、裁剪、屏幕映射并进行图元装配得到三角形，三角形所围住的若干个屏幕像素都会分别执行像素着色器来得到每个像素点最终应用的颜色。这些像素点的信息都会被写入到默认帧缓冲，用于显示器的读取并展示。
+Canvas的2D渲染上下文给我们提供了若干简单的图形API来进行矩形、路径、文字的绘制能力，而WebGL渲染上下文本质上只给我们提供了一个绘制API：`gl.drawArrays`。拿这行代码`gl.drawArrays(gl.TRIANGLES, 0, 3)`举例子来说，它的作用很简单，就是绘制三个点。更具体的来说，这个函数是WebGL渲染管线的入口，它的本质是告诉GPU我们需要同时执行三次顶点着色器，顶点着色器输出的顶点信息会在后续经过透视除法、裁剪、屏幕映射并进行图元装配得到三角形，三角形所围住的若干个屏幕像素都会分别执行像素着色器来得到每个像素点最终应用的颜色。这些像素点的信息都会被写入到默认帧缓冲，用于显示器的读取并展示。
 
 ``` js
 gl.drawArrays(gl.POINTS, 0, 3) // 绘制三个顶点，图元装配的时候组成点
@@ -30,7 +30,7 @@ gl.drawArrays(gl.TRIANGLES, 3, 3)
 
 ## OpenGL Shading Language（GLSL）
 
-我们上面提到了顶点着色器和像素着色器，他们实际上是在GPU上运行的程序。在WebGL渲染管线中，绘制多少个顶点，就对应GPU会有多少个管道**并行**执行相同的**顶点着色器**来计算出各个顶点的裁剪空间坐标信息；顶点组成的图元包括多少个像素，就对应GPU会有多少个管道**并行**执行相同的像素着色器来计算出各个像素的颜色值。
+我们上面提到了顶点着色器和像素着色器，他们实际上是在GPU上运行的程序。在WebGL渲染管线中，绘制多少个顶点，就对应GPU会有多少个管道**并行**执行相同的**顶点着色器**来计算出各个顶点的裁剪空间坐标信息；顶点组成的图元包括多少个像素，就对应GPU会有多少个管道**并行**执行相同的**像素着色器**来计算出各个像素的颜色值。
 
 ### 顶点着色器（Vertex Shader）
 
@@ -131,10 +131,29 @@ void main() {
    vec2 texcoord = vec2(0.5, 0.5); // 纹理的左下角为(0, 0)，右上角为(1, 1)，因此这里的(0.5, 0.5)为纹理中心点。一般这个uv值是通过varying传到像素着色器的。
    gl_FragColor = texture2D(u_texture, texcoord); // 纹理采样
 }
-
 ```
 
+### 纹理采样和UV坐标
+
+如何使用WebGL绘制一张图片？这要远比我们想象的要简单。
+
+首先我们需要绘制一个矩形，也就是两个三角形，即六个顶点。每个顶点着色器中还需要把顶点的UV信息存到Varying可变量里面，这样像素着色器中就可以借助UV信息来从纹理中进行采样了。需要注意的是，纹理采样的时候会把纹理的左下角视为原点（0, 0），右上角为(1, 1)。
+
+``` glsl
+precision mediump float;
+ 
+uniform sampler2D u_texture;
+ 
+void main() {
+   vec2 texcoord = vec2(0.5, 0.5); // 纹理的左下角为(0, 0)，右上角为(1, 1)，因此这里的(0.5, 0.5)为纹理中心点。一般这个uv值是通过varying传到像素着色器的。
+   gl_FragColor = texture2D(u_texture, texcoord); // 纹理采样
+}
+```
+
+
+
 ### 数据类型
+
 GLSL中支持以下数据类型`float`、`int`、`vec2`、`vec3`、`vec4`、`mat2`、`mat3`、`mat4`等。
 
 ### 工具函数
@@ -151,11 +170,38 @@ GLSL中支持以下数据类型`float`、`int`、`vec2`、`vec3`、`vec4`、`mat
 
 
 
-## 底层实现
+## 准备工作
 
 > WebGL上下文有大量的方法，弄清楚这些方法背后做了什么可以帮助我们更好地理解WebGL。[可视化网站](https://webglfundamentals.org/webgl/lessons/resources/webgl-state-diagram.html?exampleId=triangle#no-help)
 
+我们之前提到过，在调用绘制API`gl.drawArrays`之前我们需要准备好顶点着色器、像素着色器，假设我们现在已经准备好着色器的源码，接下来就要进行其他的准备工作了：包括着色器的编译和链接、GPU Buffer的准备、Uniform和纹理的写入等，以及一些其他通用参数的设置。
+
+### Shader编译和链接
+
+我们之前介绍了着色器的语法和基本的原理，但是还没介绍如何编译和链接我们的程序。首先需要知道的事，一个WebGL上下文是可以存在多个程序的，我们可以通过`gl.useProgram()`来切换程序，这也是为什么类似`gl.getAttribLocation()`和`gl.getUniformLocation()`的方法的第一个参数是目标程序。
+
+``` js
+const vsSource = '...' // 顶点着色器源码
+const fsSource = '...' // 像素着色器源码
+
+const gl = canvas.getContext('webgl2');
+const vs = gl.createShader(gl.VERTEX_SHADER);
+gl.shaderSource(vs, vsSource);
+gl.compileShader(vs);
+
+const fs = gl.createShader(gl.FRAGMENT_SHADER);
+gl.shaderSource(fs, fsSource);
+gl.compileShader(fs);
+
+const program = gl.createProgram();
+gl.attachShader(program, vs);
+gl.attachShader(program, fs);
+gl.linkProgram(program);
+gl.useProgram(program);
+```
+
 ### `gl.ARRAY_BUFFER`
+
 `gl.ARRAY_BUFFER`表示WebGL上下文当前所绑定的GPU Buffer，默认为空。通过`gl.createBuffer()`可以创建多个GPU Buffer，并通过`gl.bindBuffer(gl.ARRAY_BUFFER, buffer)`来切换当前所绑定的Buffer，再通过`gl.bufferData(gl.ARRAY_BUFFER, xxx)`来写入数据到绑定的Buffer中。
 
 ``` js
@@ -228,41 +274,15 @@ gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 
 
 
-### Shader编译和链接
-
-我们之前介绍了着色器的语法和基本的原理，但是还没介绍如何编译和链接我们的程序。首先需要知道的事，一个WebGL上下文是可以存在多个程序的，我们可以通过`gl.useProgram()`来切换程序，这也是为什么类似`gl.getAttribLocation()`和`gl.getUniformLocation()`的方法的第一个参数是目标程序。
-
-``` js
-const vsSource = '...' // 顶点着色器源码
-const fsSource = '...' // 像素着色器源码
-
-const gl = canvas.getContext('webgl2');
-const vs = gl.createShader(gl.VERTEX_SHADER);
-gl.shaderSource(vs, vsSource);
-gl.compileShader(vs);
-
-const fs = gl.createShader(gl.FRAGMENT_SHADER);
-gl.shaderSource(fs, fsSource);
-gl.compileShader(fs);
-
-const program = gl.createProgram();
-gl.attachShader(program, vs);
-gl.attachShader(program, fs);
-gl.linkProgram(program);
-gl.useProgram(program);
-```
 
 
 
 
 
 
-
-### 初始化Viewport
+### `gl.viewport()`
 
 之前介绍过，在裁剪空间坐标通过透视除法转换为标准化设备坐标NDC后，会进行屏幕映射，因此我们需要告诉WebGL上下文我们的屏幕空间的大小。
-
-
 
 ``` js
 gl.viewport(0, 0, 100, 100)
@@ -290,26 +310,6 @@ gl.viewport(0, 0, 100, 100)
 
 
 
-
-
-
-
-## 纹理采样与UV坐标
-
-如何使用WebGL绘制一张图片？这要远比我们想象的要简单。
-
-首先我们需要绘制一个矩形，也就是两个三角形，即六个顶点。每个顶点着色器中还需要把顶点的UV信息存到Varying可变量里面，这样像素着色器中就可以借助UV信息来从纹理中进行采样了。需要注意的是，纹理采样的时候会把纹理的左下角视为原点（0, 0），右上角为(1, 1)。
-
-``` glsl
-precision mediump float;
- 
-uniform sampler2D u_texture;
- 
-void main() {
-   vec2 texcoord = vec2(0.5, 0.5); // 纹理的左下角为(0, 0)，右上角为(1, 1)，因此这里的(0.5, 0.5)为纹理中心点。一般这个uv值是通过varying传到像素着色器的。
-   gl_FragColor = texture2D(u_texture, texcoord); // 纹理采样
-}
-```
 
 
 
@@ -373,7 +373,8 @@ mat2 result = mat2(1., 1., 1. 1.) + mat2(1., 1., 1. 1.);
 mat2 result = mat2(vec2(1., 1.), vec2(2., 2.)) * mat2(vec2(1., 1.), vec2(2., 2.));
 ```
 
-### 实际运用
+**实际运用**
+
 通过矩阵右乘向量，我们可以把一个向量映射成新的向量；或者通过矩阵乘法，我们可以把一组向量映射成一组新的向量。比如说，我们可以实现坐标（向量）的缩放、旋转和裁剪、旋转等。
 
 比如对于二维坐标`vec2 point = vec2(x, y)`，通过简单的向量数乘即可把它拉伸为原来的数倍：`vec2 output = point * 2.`。如果想要进行不等比例的拉伸，则可以使用矩阵右乘向量：`vec3 output = mat2(vec2(2., 0.), vec2(0., 3.)) * point`。
@@ -400,22 +401,6 @@ float random (vec2 st) {
     return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 ```
-
-
-
-## 混合模式
-
-## 溶解
-
-> TODO
-
-
-
-
-
-## 模糊效果
-
-> 高斯模糊
 
 
 
