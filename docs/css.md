@@ -33,7 +33,7 @@ sidebarDepth: 4
 
 - `static`
 - `relative`
-- `position`
+- `absolue`
 - `fixed`
 - `sticky`
 
