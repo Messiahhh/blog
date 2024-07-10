@@ -232,12 +232,37 @@ typedArray1[1] === 0 // true
 ```
 :::
 
+
+
+
+
 ### 字符集
 上一节介绍了编码和解码，一个字符通过不同的编码方式可以转换为不同格式的二进制，而除了编码的概念外我们可能还听说过Unicode和字符集。简单来说，每个字符都和对应的码点（CodePoint）存在一对一映射关系，而根据我们采用的编码方式的不同（`utf-8`、`utf-16`、`utf-32`），同一个码点又会对应不同的二进制数据。
 
 ``` js title="获取字符的码点"
 '你好'.codePointAt(0)
 ```
+
+
+
+### HTML实体字符（character Entities）
+
+``` html
+<span>&ZeroWidthSpace;</span>
+<span>&#8203;</span> <!-- unicode的十进制表示-->
+```
+
+
+
+### JavaScript字符表示
+
+``` js
+// 零宽字符 zeroWidthSpace
+const str = '\u200B' // unicode的十六进制表示
+```
+
+
+
 
 
 ### TextEncoder
