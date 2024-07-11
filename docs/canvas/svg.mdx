@@ -1,0 +1,209 @@
+# SVG
+
+SVG（可缩放矢量图形）的本质是一种XML语言，即可以单独使用也可以内联在HTML内部使用；和传统的位图不同，svg描述的是二维的矢量图。
+
+## 坐标系
+
+SVG的坐标系和Canvas完全一致。
+
+![](https://developer.mozilla.org/zh-CN/docs/Web/SVG/Tutorial/Positions/canvas_default_grid.png)
+
+### viewBox
+
+`svg`标签的`width`和`height`属性表示这个元素在页面中的像素宽高。而`viewBox`则是这个`svg`内部的一个视口，内部的坐标信息都是相对于`viewBox`的。
+
+``` xml
+<svg width="32" height="32" viewBox="0 0 100 100"></svg>
+```
+
+
+
+## 基本形状
+
+SVG提供了一批内置的形状。
+
+### 矩形
+
+``` xml
+<svg width="32" height="32" viewBox="0 0 100 100">
+	<rect x="0" y="0" width="100" height="100" fill="red"></rect>
+  <rect x="0" y="0" width="100" height="100" fill="pink" rx="10" ry="10"></rect> <!-- rx/ry设定radius -->
+</svg>
+```
+
+### 圆形
+
+``` xml
+<svg width="32" height="32" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="50" fill="blue"></circle>
+</svg>
+```
+
+### 椭圆
+
+``` xml
+<svg width="32" height="32" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" rx="30" ry="20" fill="pink"></circle>
+</svg>
+```
+
+
+
+### 线段
+
+``` xml
+<svg width="32" height="32" viewBox="0 0 100 100">
+  <line x1="10" x2="10" y1="50" y2="50" stroke="black" stroke-width="5"></line>
+</svg>
+```
+
+
+
+### 折线
+
+``` xml
+<svg width="32" height="32" viewBox="0 0 1000 1000">
+  <polyline points="60, 110 65, 120 70, 115 75, 130 80, 125 85, 140 90, 135 95, 150 100, 145"/>
+</svg>
+```
+
+
+
+### 多边形
+
+``` xml
+<svg width="32" height="32" viewBox="0 0 1000 1000">
+  <polygon points="50, 160 55, 180 70, 180 60, 190 65, 205 50, 195 35, 205 40, 190 30, 180 45, 180"/>
+</svg>
+```
+
+
+
+
+
+
+
+## 路径
+
+除了上述的内置形状外，SVG还提供了路径来实现复杂的矢量图形，其中属性`d`包含了一系列指令来表示路径由哪些点组成。
+
+``` xml
+<path d="M20,230 Q40,205 50,230 T90,230" fill="none" stroke="blue" stroke-width="5"/>
+```
+
+
+
+每一个指令都有两种表示方式。大写字母时，比如`L10 10`，这里的坐标`10 10`为相对于`viewBox`的绝对定位坐标；小写字母时，比如`l10 10`，这里的坐标`10 10`表示相当于当前点的位移量。
+
+
+
+### M指令
+
+相当于Canvas中的MoveTo。
+
+``` xml
+<path d="M10 10"/>
+```
+
+
+
+### L指令
+
+相当于Canvas中的LineTo。
+
+``` xml
+<path d="M10 10 L20 20"/>
+```
+
+
+
+### H指令
+
+相当于Canvas中的MoveTo，但仅在水平方向（Horizontal）绘制。
+
+``` xml
+<path d="M10 10 L20 20 h10"/>
+```
+
+
+
+### V指令
+
+相当于Canvas中的MoveTo，但仅在垂直方向（Vertical）绘制。
+
+``` xml
+<path d="M10 10 L20 20 h10 v10"/>
+```
+
+
+
+### C指令
+
+绘制三次贝塞尔曲线`bezierCurve`。从当前坐标绘制三次贝塞尔曲线，需要传入两个控制点坐标以及最终坐标的信息。什么是控制点？起点和控制点A的连线即为曲线最初的斜率，控制点B和终点的连线即为曲线最终的斜率。
+
+``` xml
+<svg width="190" height="160" xmlns="http://www.w3.org/2000/svg">
+  <path d="M 10 10 C 20 20, 40 20, 50 10" stroke="black" fill="transparent"/>
+</svg>
+```
+
+![](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths/cubic_bezier_curves_with_grid.png)
+
+### Q指令
+
+绘制二次贝塞尔曲线`quadraticCurve`。从当前坐标绘制二次贝塞尔曲线，需要传入一个控制点坐标以及最终坐标的信息。起点的连线与控制点A的连线即为曲线最初的斜率，控制点A和终点的连线即为曲线最终的斜率。
+
+``` xml
+<svg width="190" height="160" xmlns="http://www.w3.org/2000/svg">
+  <path d="M 10 80 Q 95 10 180 80" stroke="black" fill="transparent"/>
+</svg>
+```
+
+![](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths/quadratic_bezier_with_grid.png)
+
+
+
+
+
+### Z指令
+
+闭合路径，相当于Canvas中的closePath。
+
+``` xml
+<path d="M10 10 L20 20 h10 v10 Z"/>
+```
+
+
+
+
+
+### Path2D
+
+在Canvas的API`Path2D`中，我们可以传入一个svg的路径字符串（即属性`d`的值）来构造一条Canvas的路径。
+
+``` js
+const ctx = canvas.getContext('2d');
+const svgPath = `M10 10 L10 50 L 50 50 Z`;
+const path = new Path2D(svgPath);
+ctx.strokeStyle = 'pink'
+ctx.stroke(path)
+```
+
+``` js
+const ctx = canvas.getContext('2d');
+const svgPath = `M10 10 L10 50 L 50 50 Z`;
+const path = new Path2D(svgPath);
+ctx.fillStyle = 'pink'
+ctx.fill(path)
+```
+
+``` js
+const ctx = canvas.getContext('2d');
+const svgPath = `M10 10 L10 50 L 50 50 Z`;
+const path = new Path2D(svgPath);
+ctx.clip(path)
+
+ctx.fillStyle = 'pink'
+ctx.fillRect(0, 0, 30, 100)
+```
+

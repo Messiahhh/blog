@@ -198,6 +198,7 @@ const sidebars = {
       label: 'Canvas',
       items: [
         'canvas/canvas',
+        'canvas/svg',
         'canvas/2d',
       ],
     },
